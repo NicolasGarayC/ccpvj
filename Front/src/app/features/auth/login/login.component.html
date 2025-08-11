@@ -1,0 +1,86 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Red Mesh Comunitaria</h1>
+      <p>Centro Cultural</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <label for="nombreUsuario">Usuario</label>
+        <input
+          type="text"
+          id="nombreUsuario"
+          formControlName="nombreUsuario"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('nombreUsuario')"
+          placeholder="Ingrese su usuario"
+          autocomplete="username"
+        />
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('nombreUsuario')">
+          <div *ngIf="loginForm.get('nombreUsuario')?.errors?.['required']">
+            El usuario es requerido
+          </div>
+          <div *ngIf="loginForm.get('nombreUsuario')?.errors?.['maxlength']">
+            El usuario no puede exceder 100 caracteres
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+        <div class="password-input">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="contrasena"
+            formControlName="contrasena"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('contrasena')"
+            placeholder="Ingrese su contraseña"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePassword()"
+            tabindex="-1"
+          >
+            <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('contrasena')">
+          <div *ngIf="loginForm.get('contrasena')?.errors?.['required']">
+            La contraseña es requerida
+          </div>
+          <div *ngIf="loginForm.get('contrasena')?.errors?.['minlength']">
+            La contraseña debe tener al menos 6 caracteres
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-danger" *ngIf="errorMessage">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-login"
+        [disabled]="loginForm.invalid || isLoading"
+      >
+        <span *ngIf="isLoading" class="spinner"></span>
+        <span *ngIf="!isLoading">Iniciar Sesión</span>
+        <span *ngIf="isLoading">Iniciando...</span>
+      </button>
+    </form>
+
+    <div class="login-info">
+      <p><strong>Nota:</strong> Solo los educadores requieren autenticación</p>
+      <p>Los estudiantes pueden acceder sin registro</p>
+      <a routerLink="/" class="guest-link">
+        <i class="fas fa-arrow-left"></i>
+        Volver al inicio
+      </a>
+    </div>
+  </div>
+</div>
