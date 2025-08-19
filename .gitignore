@@ -36,7 +36,8 @@ Back/obj/Debug/
 .vs/
 Back/bin/
 Back/obj/
-
+Front/package-lock.json
+Front/node_modules/
 [Bb]uild/
 [Ll]og/
 [Ll]ogs/
