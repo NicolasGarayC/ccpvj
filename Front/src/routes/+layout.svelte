@@ -50,9 +50,6 @@
           <a href="/auth/login" class="bg-white text-indigo-600 px-3 py-1 rounded-md text-sm font-medium">
             {t('login')}
           </a>
-          <a href="/auth/register" class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-md text-sm font-medium">
-            {t('register')}
-          </a>
         {/if}
         <!-- Botón de cambio de idioma -->
         <button

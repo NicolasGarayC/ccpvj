@@ -16,9 +16,13 @@ export interface BlogPost {
   excerpt: string;
   publishDate: string;
   slug: string;
-  featuredImage?: string;
+  featuredMedia?: string; // Cambio: de featuredImage a featuredMedia para soportar videos
+  videoPoster?: string; // Nuevo: imagen de preview para videos
+  mediaType?: 'image' | 'video' | 'text'; // Nuevo: tipo de contenido
   authorId?: string;
   authorName?: string;
+  tags?: string[];
+  isPublished?: boolean;
 }
 
 export interface Course {
