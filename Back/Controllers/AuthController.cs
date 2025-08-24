@@ -20,7 +20,7 @@ namespace Back.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<LoginResponseDTO>> Login([FromBody] LoginRequestDTO request)
+        public async Task<ActionResult<Back.DTOs.LoginResponseDTO>> Login([FromBody] Back.DTOs.LoginRequestDTO request)
         {
             try
             {

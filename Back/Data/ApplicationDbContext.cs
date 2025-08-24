@@ -12,6 +12,8 @@ namespace Back.Data
 
         public DbSet<Usuario> Usuario { get; set; }
         public DbSet<Rol> Rol { get; set; }
+        public DbSet<Course> Course { get; set; }
+        public DbSet<Module> Module { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,6 +49,51 @@ namespace Back.Data
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Configuración de Course
+            modelBuilder.Entity<Course>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.ImagePath).HasMaxLength(500);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+
+                // Relación con Usuario (Educador)
+                entity.HasOne(c => c.Educator)
+                      .WithMany()
+                      .HasForeignKey(c => c.EducatorId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Índice para búsquedas
+                entity.HasIndex(e => e.Title);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsFeatured);
+            });
+
+            // Configuración de Module
+            modelBuilder.Entity<Module>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Content).HasColumnType("TEXT");
+                entity.Property(e => e.OrderNumber).IsRequired();
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+
+                // Relación con Course
+                entity.HasOne(m => m.Course)
+                      .WithMany(c => c.Modules)
+                      .HasForeignKey(m => m.CourseId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Índices para búsquedas y ordenamiento
+                entity.HasIndex(e => new { e.CourseId, e.OrderNumber });
+                entity.HasIndex(e => e.IsActive);
+            });
+
             // Datos semilla para Rol
             modelBuilder.Entity<Rol>().HasData(
                 new Rol
@@ -74,6 +121,48 @@ namespace Back.Data
                     Nombre = "Administrador",
                     Apellido = "Sistema",
                     IdRol = 1
+                }
+            );
+
+            // Datos semilla para Course
+            var courseId = Guid.NewGuid();
+            modelBuilder.Entity<Course>().HasData(
+                new Course
+                {
+                    Id = courseId,
+                    Title = "Introducción a la Programación",
+                    Description = "Curso básico de programación para principiantes",
+                    ImagePath = "/images/courses/programming-intro.jpg",
+                    IsActive = true,
+                    IsFeatured = true,
+                    CreatedAt = DateTime.UtcNow,
+                    EducatorId = 1
+                }
+            );
+
+            // Datos semilla para Module
+            modelBuilder.Entity<Module>().HasData(
+                new Module
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Conceptos Básicos",
+                    Description = "Introducción a los conceptos fundamentales de programación",
+                    Content = "En este módulo aprenderás los conceptos básicos de programación...",
+                    OrderNumber = 1,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CourseId = courseId
+                },
+                new Module
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Variables y Tipos de Datos",
+                    Description = "Aprende sobre variables y los diferentes tipos de datos",
+                    Content = "Las variables son contenedores que almacenan valores...",
+                    OrderNumber = 2,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    CourseId = courseId
                 }
             );
         }

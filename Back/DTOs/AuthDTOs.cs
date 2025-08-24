@@ -23,4 +23,8 @@ namespace Back.DTOs
         public string Message { get; set; } = string.Empty;
         public T? Data { get; set; }
     }
+
+    // Compatibilidad con nombres en minúscula/camelCase
+    public class LoginRequestDto : LoginRequestDTO { }
+    public class LoginResponseDto : LoginResponseDTO { }
 }

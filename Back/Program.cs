@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http; // FormOptions
 using Back.Data;
+using Back.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +13,11 @@ builder.Services.AddControllers();
 // Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IMediaService, MediaService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -28,6 +37,9 @@ builder.Services.AddSwaggerGen();
 
 // Authentication (si tienes autenticación configurada)
 builder.Services.AddAuthentication();
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options => { options.MultipartBodyLengthLimit = 500_000_000; });
+builder.Services.AddHostedService<MediaProcessingBackgroundService>();
 
 var app = builder.Build();
 
