@@ -66,9 +66,28 @@ public class UploadController : ControllerBase
         }
 
         var userId = User?.Identity?.Name ?? "unknown";
-        var media = await _mediaService.ProcessVideoUpload(tempFilePath, userId);
-        await _mediaService.SaveMediaMetadata(media);
-        var uploadId = Guid.NewGuid();
+        var fileName = Path.GetFileName(tempFilePath);
+        
+        // Crear estado de upload
+        var uploadId = await _mediaService.CreateUploadStatus(fileName, userId);
+        
+        // Iniciar procesamiento en background
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _mediaService.UpdateUploadStatus(uploadId, "processing", 10);
+                var media = await _mediaService.ProcessVideoUpload(tempFilePath, userId);
+                await _mediaService.UpdateUploadStatus(uploadId, "processing", 80);
+                await _mediaService.SaveMediaMetadata(media);
+                await _mediaService.UpdateUploadStatus(uploadId, "completed", 100, null, media.Id);
+            }
+            catch (Exception ex)
+            {
+                await _mediaService.UpdateUploadStatus(uploadId, "error", 0, ex.Message);
+            }
+        });
+        
         return Accepted(new { uploadId, status = "processing", message = "Video en procesamiento. Usa /api/upload/status/{uploadId} para verificar progreso" });
     }
 
@@ -119,8 +138,11 @@ public class UploadController : ControllerBase
     [HttpGet("status/{uploadId}")]
     public async Task<IActionResult> GetUploadStatus(Guid uploadId)
     {
-        // Simulación: siempre "processing"
-        return Ok(new { uploadId, status = "processing" });
+        var status = await _mediaService.GetUploadStatus(uploadId);
+        if (status == "not_found")
+            return NotFound(new { uploadId, status = "not_found", message = "Upload ID no encontrado" });
+        
+        return Ok(new { uploadId, status });
     }
 
     [HttpDelete("{mediaId}")]

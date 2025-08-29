@@ -14,6 +14,8 @@ namespace Back.Data
         public DbSet<Rol> Rol { get; set; }
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
+        public DbSet<MediaEntity> MediaEntity { get; set; }
+        public DbSet<UploadStatus> UploadStatus { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
