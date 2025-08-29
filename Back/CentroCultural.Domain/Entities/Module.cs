@@ -1,11 +1,12 @@
-using Back.CentroCultural.Domain.Entities;
+using Back.Models;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Back.Models
+namespace Back.CentroCultural.Domain.Entities
 {
-    [Table("Course")]
-    public class Course
+    [Table("Module")]
+    public class Module
     {
         [Key]
         [Column("Id")]
@@ -16,20 +17,18 @@ namespace Back.Models
         [Column("Title")]
         public string Title { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(1000)]
+        [MaxLength(500)]
         [Column("Description")]
         public string Description { get; set; } = string.Empty;
 
-        [MaxLength(500)]
-        [Column("ImagePath")]
-        public string ImagePath { get; set; } = string.Empty;
+        [Column("Content")]
+        public string Content { get; set; } = string.Empty;
+
+        [Column("OrderNumber")]
+        public int OrderNumber { get; set; }
 
         [Column("IsActive")]
         public bool IsActive { get; set; } = true;
-
-        [Column("IsFeatured")]
-        public bool IsFeatured { get; set; } = false;
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -38,13 +37,11 @@ namespace Back.Models
         public DateTime? UpdatedAt { get; set; }
 
         [Required]
-        [Column("EducatorId")]
-        public int EducatorId { get; set; }
+        [Column("CourseId")]
+        public Guid CourseId { get; set; }
 
-        // Navigation properties
-        [ForeignKey("EducatorId")]
-        public virtual Usuario Educator { get; set; } = null!;
-
-        public virtual ICollection<Module> Modules { get; set; } = new List<Module>();
+        // Navigation property
+        [ForeignKey("CourseId")]
+        public virtual Course Course { get; set; } = null!;
     }
 }

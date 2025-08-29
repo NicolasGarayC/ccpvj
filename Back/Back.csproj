@@ -17,18 +17,4 @@
     <PackageReference Include="xunit" Version="2.9.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="CentroCultural.API\Controllers\" />
-    <Folder Include="src\Core\Entities\" />
-    <Folder Include="src\Core\Interfaces\" />
-    <Folder Include="src\Infrastructure\Data\" />
-    <Folder Include="src\Infrastructure\Configuration\" />
-    <Folder Include="src\Application\Services\" />
-    <Folder Include="src\Application\DTOs\" />
-    <Folder Include="src\Application\Configuration\" />
-    <Folder Include="src\Presentation\Controllers\" />
-    <Folder Include="src\Presentation\Middleware\" />
-    <Folder Include="src\Presentation\Configuration\" />
-  </ItemGroup>
-
 </Project>
