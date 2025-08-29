@@ -16,7 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ICourseService, CourseService>();    
 builder.Services.AddScoped<IMediaService, MediaService>();
 
 // CORS
@@ -64,3 +64,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Necesario para pruebas de integración
+public partial class Program { }

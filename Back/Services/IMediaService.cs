@@ -1,4 +1,9 @@
 using System.Threading.Tasks;
+using Back.Models;
+using System;
+using System.IO;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Back.Services
 {
@@ -6,21 +11,9 @@ namespace Back.Services
     {
         Task<ValidationResult> ValidateImageFile(string filePath, long sizeBytes);
         Task<MediaEntity> ProcessImageUpload(string tempPath, string userId);
+        Task<MediaEntity> ProcessVideoUpload(string tempPath, string userId);
+        Task<MediaEntity> ProcessAudioUpload(string tempPath, string userId);
         Task SaveMediaMetadata(MediaEntity media);
-        // ...otros métodos para video, audio, cleanup, status, delete, get...
-    }
-
-    public class ValidationResult
-    {
-        public bool IsValid { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-    }
-
-    public class MediaEntity
-    {
-        public int Id { get; set; }
-        public string RelativePath { get; set; } = string.Empty;
-        public string ThumbnailPath { get; set; } = string.Empty;
-        public long SizeBytes { get; set; }
+        // ...otros métodos para cleanup, status, delete, get...
     }
 }
