@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Back.CentroCultural.Application.DTOs;
+using CentroCultural.Application.DTOs;
 
-namespace Back.CentroCultural.Application.Interfaces
+namespace CentroCultural.Application.Interfaces
 {
     public interface ICourseService
     {

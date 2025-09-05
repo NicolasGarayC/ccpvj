@@ -1,10 +1,10 @@
-using Back.CentroCultural.Application.DTOs;
-using Back.CentroCultural.Application.Interfaces;
+using CentroCultural.Application.DTOs;
+using CentroCultural.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace Back.Controllers
+namespace Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

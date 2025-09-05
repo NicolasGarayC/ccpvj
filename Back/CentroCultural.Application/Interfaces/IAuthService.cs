@@ -1,11 +1,15 @@
-using System.Threading.Tasks;
-using Back.CentroCultural.Application.DTOs;
+using CentroCultural.Application.DTOs.Auth;
+using CentroCultural.Application.Interfaces;
+using CentroCultural.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
-namespace Back.CentroCultural.Application.Interfaces
+namespace CentroCultural.Application.Interfaces
 {
     public interface IAuthService
     {
-        Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
-        Task<bool> ValidateUserAsync(string username, string password);
+        Task<AuthResponse?> LoginAsync(LoginRequest request);
+        Task<AuthResponse?> RefreshTokenAsync(RefreshTokenRequest request);
+        Task<bool> LogoutAsync(string refreshToken);
+        Task<bool> LogoutAllDevicesAsync(int userId);
     }
 }

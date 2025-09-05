@@ -1,6 +1,13 @@
-using Microsoft.AspNetCore.Http;
-using CentroCultural.Application.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using System.Text;
 using CentroCultural.Infrastructure.Configuration;
+using CentroCultural.Infrastructure.Middleware;
+using CentroCultural.Infrastructure.Services;
+using CentroCultural.Infrastructure.Data;
+using CentroCultural.Application.Interfaces;
+using CentroCultural.Application.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,8 +35,40 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Authentication
-builder.Services.AddAuthentication();
+// Configuración JWT
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+// Servicios JWT específicos (no están en las capas)
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Servicio de limpieza en background
+builder.Services.AddHostedService<TokenCleanupService>();
+
+// Configuración JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+
+if (jwtSettings == null)
+    throw new InvalidOperationException("JwtSettings configuration is missing");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // Configuración de archivos grandes
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options => 
@@ -49,13 +88,14 @@ if (app.Environment.IsDevelopment())
 // Ensure database is created
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<CentroCultural.Infrastructure.Data.ApplicationDbContext>();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.EnsureCreated();
 }
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAngular");
 app.UseAuthentication();
+app.UseMiddleware<TokenBlacklistMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

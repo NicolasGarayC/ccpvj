@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Back.CentroCultural.Application.DTOs
+namespace CentroCultural.Application.DTOs
 {
     public class CourseDto
     {

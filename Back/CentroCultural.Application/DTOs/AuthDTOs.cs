@@ -1,4 +1,4 @@
-namespace Back.CentroCultural.Application.DTOs
+namespace CentroCultural.Application.DTOs
 {
     public class LoginRequestDTO
     {

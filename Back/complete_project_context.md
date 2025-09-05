@@ -71,7 +71,7 @@ proyecto/
 │       │   └── centro-cultural.conf
 │       └── scripts/
 │           └── cleanup-media.sh
-├── back.sln
+├── sln
 └── README.md
 ```
 

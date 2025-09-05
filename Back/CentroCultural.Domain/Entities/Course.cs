@@ -1,8 +1,8 @@
-using Back.CentroCultural.Domain.Entities;
+using CentroCultural.Domain.Entities;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Back.Models
+namespace Models
 {
     [Table("Course")]
     public class Course

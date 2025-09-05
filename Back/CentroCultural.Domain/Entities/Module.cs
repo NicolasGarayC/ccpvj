@@ -1,9 +1,9 @@
-using Back.Models;
+using Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Back.CentroCultural.Domain.Entities
+namespace CentroCultural.Domain.Entities
 {
     [Table("Module")]
     public class Module

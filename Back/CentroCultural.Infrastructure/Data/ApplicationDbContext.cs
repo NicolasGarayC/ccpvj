@@ -1,5 +1,5 @@
-using Back.CentroCultural.Domain.Entities;
-using Back.Models;
+using CentroCultural.Domain.Entities;
+using Models;
 using CentroCultural.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -20,6 +20,8 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Module> Module { get; set; }
         public DbSet<MediaEntity> MediaEntity { get; set; }
         public DbSet<UploadStatus> UploadStatus { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -143,6 +145,42 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // Configuración de RefreshToken
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.IsRevoked).HasDefaultValue(false);
+                
+                // Relación con Usuario
+                entity.HasOne(rt => rt.Usuario)
+                      .WithMany()
+                      .HasForeignKey(rt => rt.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                
+                // Índices
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.ExpiresAt);
+            });
+
+            // Configuración de TokenBlacklist
+            modelBuilder.Entity<TokenBlacklist>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TokenJti).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.UserId).IsRequired();
+                
+                // Índices
+                entity.HasIndex(e => e.TokenJti).IsUnique();
+                entity.HasIndex(e => e.ExpiresAt);
+                entity.HasIndex(e => e.UserId);
             });
 
             // Datos semilla para Rol
