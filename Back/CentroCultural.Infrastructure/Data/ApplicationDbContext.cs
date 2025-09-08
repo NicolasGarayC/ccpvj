@@ -18,16 +18,22 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Rol> Rol { get; set; }
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
+        public DbSet<WorkItem> WorkItem { get; set; }
         public DbSet<MediaEntity> MediaEntity { get; set; }
         public DbSet<UploadStatus> UploadStatus { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
+        
+        // Blog system entities
+        public DbSet<BlogPost> BlogPost { get; set; }
+        public DbSet<BlogCategory> BlogCategory { get; set; }
+        public DbSet<Event>? Event { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuración de Rol
+            // Configuraciï¿½n de Rol
             modelBuilder.Entity<Rol>(entity =>
             {
                 entity.HasKey(e => e.IdRol);
@@ -35,7 +41,7 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.Descripcion).HasMaxLength(255);
             });
 
-            // Configuración de Usuario
+            // Configuraciï¿½n de Usuario
             modelBuilder.Entity<Usuario>(entity =>
             {
                 entity.HasKey(e => e.IdUsuario);
@@ -47,17 +53,17 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.Telefono).HasMaxLength(20);
                 entity.Property(e => e.IdRol).IsRequired();
 
-                // Índice único para nombre de usuario
+                // ï¿½ndice ï¿½nico para nombre de usuario
                 entity.HasIndex(e => e.NombreUsuario).IsUnique();
 
-                // Configuración de la relación con Rol
+                // Configuraciï¿½n de la relaciï¿½n con Rol
                 entity.HasOne(u => u.Rol)
                       .WithMany(r => r.Usuarios)
                       .HasForeignKey(u => u.IdRol)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Configuración de Course
+            // Configuraciï¿½n de Course
             modelBuilder.Entity<Course>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -68,19 +74,19 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.IsFeatured).HasDefaultValue(false);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
 
-                // Relación con Usuario (Educador)
+                // Relaciï¿½n con Usuario (Educador)
                 entity.HasOne(c => c.Educator)
                       .WithMany()
                       .HasForeignKey(c => c.EducatorId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // Índice para búsquedas
+                // ï¿½ndice para bï¿½squedas
                 entity.HasIndex(e => e.Title);
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.IsFeatured);
             });
 
-            // Configuración de Module
+            // Configuraciï¿½n de Module
             modelBuilder.Entity<Module>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -91,18 +97,42 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
 
-                // Relación con Course
+                // Relaciï¿½n con Course
                 entity.HasOne(m => m.Course)
                       .WithMany(c => c.Modules)
                       .HasForeignKey(m => m.CourseId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                // Índices para búsquedas y ordenamiento
+                // ï¿½ndices para bï¿½squedas y ordenamiento
                 entity.HasIndex(e => new { e.CourseId, e.OrderNumber });
                 entity.HasIndex(e => e.IsActive);
             });
 
-            // Configuración de MediaEntity
+            // ConfiguraciÃ³n de WorkItem
+            modelBuilder.Entity<WorkItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.LongText).HasColumnType("TEXT");
+                entity.Property(e => e.OrderNumber).IsRequired();
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.ImagePath).HasMaxLength(500);
+                entity.Property(e => e.VideoPath).HasMaxLength(500);
+
+                // RelaciÃ³n con Module
+                entity.HasOne(w => w.Module)
+                      .WithMany()
+                      .HasForeignKey(w => w.ModuleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Ãndices para bÃºsquedas y ordenamiento
+                entity.HasIndex(e => new { e.ModuleId, e.OrderNumber });
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            // Configuraciï¿½n de MediaEntity (contextual multimedia)
             modelBuilder.Entity<MediaEntity>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -114,8 +144,13 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.MimeType).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+                
+                // Contextual multimedia properties
+                entity.Property(e => e.ContentType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ContentId).IsRequired();
+                entity.Property(e => e.MediaType).IsRequired().HasMaxLength(50);
 
-                // Opción 1: Serializar el diccionario como JSON (recomendado)
+                // Serializar el diccionario como JSON
                 entity.Property(e => e.Metadata)
                       .HasConversion(
                           v => JsonSerializer.Serialize(v, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
@@ -126,11 +161,64 @@ namespace CentroCultural.Infrastructure.Data
                           }) ?? new Dictionary<string, object>())
                       .HasColumnType("TEXT");
 
-                // Opción 2: Si no necesitas la propiedad Metadata, puedes ignorarla
-                // entity.Ignore(e => e.Metadata);
+                // Ãndices para consultas contextuales
+                entity.HasIndex(e => new { e.ContentType, e.ContentId });
+                entity.HasIndex(e => e.MediaType);
+                entity.HasIndex(e => e.CreatedBy);
             });
 
-            // Configuración de UploadStatus
+            // ConfiguraciÃ³n de BlogCategory
+            modelBuilder.Entity<BlogCategory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Color).HasMaxLength(20).HasDefaultValue("#6B7280");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+
+                // Ãndice Ãºnico para el nombre
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
+            // ConfiguraciÃ³n de BlogPost
+            modelBuilder.Entity<BlogPost>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Content).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.Summary).HasMaxLength(500);
+                entity.Property(e => e.Slug).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.IsPublished).HasDefaultValue(false);
+                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
+                entity.Property(e => e.Views).HasDefaultValue(0);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.FeaturedImagePath).HasMaxLength(500);
+                entity.Property(e => e.PdfPath).HasMaxLength(500);
+                entity.Property(e => e.VideoPath).HasMaxLength(500);
+
+                // RelaciÃ³n con Usuario (Autor)
+                entity.HasOne(p => p.Author)
+                      .WithMany()
+                      .HasForeignKey(p => p.AuthorId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // RelaciÃ³n con BlogCategory
+                entity.HasOne(p => p.Category)
+                      .WithMany(c => c.BlogPosts)
+                      .HasForeignKey(p => p.CategoryId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                // Ãndices
+                entity.HasIndex(e => e.Slug).IsUnique();
+                entity.HasIndex(e => e.IsPublished);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.AuthorId);
+                entity.HasIndex(e => e.CategoryId);
+                entity.HasIndex(e => e.PublishedAt);
+                entity.HasIndex(e => e.Views);
+            });
+
+            // Configuraciï¿½n de UploadStatus
             modelBuilder.Entity<UploadStatus>(entity =>
             {
                 entity.HasKey(e => e.UploadId);
@@ -141,13 +229,13 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.UserId).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
                 
-                // Índices para búsquedas
+                // ï¿½ndices para bï¿½squedas
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.CreatedAt);
             });
 
-            // Configuración de RefreshToken
+            // Configuraciï¿½n de RefreshToken
             modelBuilder.Entity<RefreshToken>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -156,19 +244,19 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
                 entity.Property(e => e.IsRevoked).HasDefaultValue(false);
                 
-                // Relación con Usuario
+                // Relaciï¿½n con Usuario
                 entity.HasOne(rt => rt.Usuario)
                       .WithMany()
                       .HasForeignKey(rt => rt.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
                 
-                // Índices
+                // ï¿½ndices
                 entity.HasIndex(e => e.Token).IsUnique();
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.ExpiresAt);
             });
 
-            // Configuración de TokenBlacklist
+            // Configuraciï¿½n de TokenBlacklist
             modelBuilder.Entity<TokenBlacklist>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -177,7 +265,7 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
                 entity.Property(e => e.UserId).IsRequired();
                 
-                // Índices
+                // ï¿½ndices
                 entity.HasIndex(e => e.TokenJti).IsUnique();
                 entity.HasIndex(e => e.ExpiresAt);
                 entity.HasIndex(e => e.UserId);
@@ -219,8 +307,8 @@ namespace CentroCultural.Infrastructure.Data
                 new Course
                 {
                     Id = courseId,
-                    Title = "Introducción a la Programación",
-                    Description = "Curso básico de programación para principiantes",
+                    Title = "Introducciï¿½n a la Programaciï¿½n",
+                    Description = "Curso bï¿½sico de programaciï¿½n para principiantes",
                     ImagePath = "/images/courses/programming-intro.jpg",
                     IsActive = true,
                     IsFeatured = true,
@@ -236,9 +324,9 @@ namespace CentroCultural.Infrastructure.Data
                 new Module
                 {
                     Id = module1Id,
-                    Title = "Conceptos Básicos",
-                    Description = "Introducción a los conceptos fundamentales de programación",
-                    Content = "En este módulo aprenderás los conceptos básicos de programación...",
+                    Title = "Conceptos Bï¿½sicos",
+                    Description = "Introducciï¿½n a los conceptos fundamentales de programaciï¿½n",
+                    Content = "En este mï¿½dulo aprenderï¿½s los conceptos bï¿½sicos de programaciï¿½n...",
                     OrderNumber = 1,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,

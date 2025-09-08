@@ -1,0 +1,427 @@
+# Centro Cultural Víctor Jara - Backend API
+
+Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural Víctor Jara. Proporciona APIs REST seguras con autenticación JWT y gestión completa de usuarios.
+
+## 🏗️ Arquitectura
+
+### Stack Tecnológico
+- **.NET 8**: Framework backend con ASP.NET Core
+- **Entity Framework Core**: ORM para acceso a datos  
+- **SQL Server/SQLite**: Base de datos principal
+- **JWT + Refresh Tokens**: Autenticación segura con blacklist
+- **BCrypt**: Hash de contraseñas
+- **Swagger/OpenAPI**: Documentación automática de APIs
+
+### Arquitectura en Capas
+```
+📦 CentroCultural.API          # Controladores y configuración
+├── Controllers/               # Endpoints REST
+├── Middleware/               # Middleware personalizado
+└── Program.cs               # Configuración aplicación
+
+📦 CentroCultural.Application  # Lógica de negocio
+├── DTOs/                    # Objetos de transferencia
+├── Interfaces/              # Contratos de servicios
+├── Services/                # Implementación lógica negocio
+└── Configuration/           # Registro servicios
+
+📦 CentroCultural.Domain      # Entidades de dominio  
+└── Entities/                # Modelos de datos
+
+📦 CentroCultural.Infrastructure # Acceso a datos
+├── Data/                    # Contexto EF y configuraciones
+└── Services/                # Servicios infraestructura
+```
+
+## 🔐 Sistema de Autenticación
+
+### Características JWT
+- **Access Tokens**: 15 minutos de duración
+- **Refresh Tokens**: 7 días de duración  
+- **Token Blacklist**: Revocación segura en logout
+- **Renovación Automática**: Refresh transparente
+- **Multi-dispositivo**: Logout individual o total
+
+### Endpoints de Autenticación
+```http
+POST   /api/auth/login         # Login con credenciales
+POST   /api/auth/refresh       # Renovar access token
+POST   /api/auth/logout        # Logout individual (revoca refresh token)
+POST   /api/auth/logout-all    # Logout todos los dispositivos
+```
+
+## 👥 Sistema de Gestión de Usuarios
+
+### Características
+- **Registro Controlado**: Solo Admin/Colaboradores crean usuarios
+- **Roles Jerárquicos**: Asistente → Colaborador → Administrador  
+- **Gestión Completa**: CRUD, activación, cambio roles, reset password
+- **Validaciones**: Username único, roles válidos, permisos
+- **Estadísticas**: Métricas para administradores
+
+### Endpoints de Usuarios
+```http
+GET    /api/usermanagement              # Lista paginada con filtros [Admin+]
+GET    /api/usermanagement/{id}         # Usuario específico [Admin+]
+GET    /api/usermanagement/me           # Usuario actual
+POST   /api/usermanagement              # Crear usuario [Admin+]
+PUT    /api/usermanagement/{id}         # Actualizar usuario [Admin+]  
+DELETE /api/usermanagement/{id}         # Eliminar usuario [Admin]
+PATCH  /api/usermanagement/{id}/status  # Activar/desactivar [Admin+]
+PATCH  /api/usermanagement/{id}/role    # Cambiar rol [Admin+]
+POST   /api/usermanagement/{id}/reset-password # Resetear password [Admin+]
+GET    /api/usermanagement/roles        # Roles disponibles [Admin+]
+GET    /api/usermanagement/statistics   # Estadísticas [Admin]
+GET    /api/usermanagement/can-manage   # Verificar permisos
+GET    /api/usermanagement/check-username/{username} # Disponibilidad
+```
+
+## 🎓 Sistema de Cursos
+
+### Características
+- **Jerarquía**: Course → Module → WorkItem
+- **Multimedia Contextual**: Archivos vinculados a WorkItems
+- **Filtros Avanzados**: Por materia, destacados, autor
+- **Paginación**: Resultados optimizados
+- **Permisos**: Control por roles
+
+### Endpoints de Cursos
+```http
+GET    /api/course                    # Lista paginada
+GET    /api/course/all                # Todos los cursos  
+GET    /api/course/featured           # Cursos destacados
+GET    /api/course/{id}               # Curso específico
+GET    /api/course/{id}/modules       # Módulos del curso
+POST   /api/course                    # Crear [Colaborador+]
+PUT    /api/course/{id}               # Actualizar [Colaborador+]
+DELETE /api/course/{id}               # Eliminar [Colaborador+]
+GET    /api/course/my-courses         # Mis cursos [Colaborador+]
+GET    /api/course/subjects           # Materias disponibles
+GET    /api/course/statistics         # Estadísticas [Admin]
+```
+
+## 📝 Sistema de Blog
+
+### Características  
+- **Estados**: Borrador, Publicado, Destacado
+- **Multimedia**: Imágenes, PDFs, videos contextuales
+- **Acceso Público**: Lectura sin autenticación
+- **Gestión Roles**: Crear/editar según permisos
+
+### Endpoints de Blog
+```http
+GET    /api/blog                      # Posts públicos
+GET    /api/blog/{id}                 # Post específico
+GET    /api/blog/slug/{slug}          # Post por slug
+POST   /api/blog                      # Crear [Colaborador+]
+PUT    /api/blog/{id}                 # Actualizar [Colaborador+]
+DELETE /api/blog/{id}                 # Eliminar [Colaborador+]
+POST   /api/blog/{id}/publish         # Publicar [Colaborador+]
+POST   /api/blog/{id}/unpublish       # Despublicar [Colaborador+]
+```
+
+## 📁 Sistema de Multimedia
+
+### Características
+- **Multimedia Contextual**: Sin archivos huérfanos
+- **Validación Estricta**: Solo contenido vinculado
+- **Organización**: Directorios por tipo de contenido
+- **Limpieza Automática**: Eliminación en cascada
+
+### Endpoints de Upload
+```http
+POST   /api/upload/course/{id}/images     # Imagen para curso
+POST   /api/upload/workitem/{id}/images   # Imagen para WorkItem
+POST   /api/upload/workitem/{id}/videos   # Video para WorkItem  
+POST   /api/upload/blog/{id}/images       # Imagen para blog
+POST   /api/upload/blog/{id}/videos       # Video para blog
+POST   /api/upload/blog/{id}/documents    # PDF para blog
+```
+
+## 🚀 Inicio Rápido
+
+### Prerrequisitos
+- .NET 8 SDK
+- SQL Server o SQLite
+- Visual Studio 2022 / VS Code
+
+### Configuración
+```bash
+# Restaurar paquetes
+dotnet restore
+
+# Configurar cadena conexión en appsettings.json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=CentroCultural;..."
+  },
+  "JwtSettings": {
+    "Key": "your-secret-key-here",
+    "Issuer": "CentroCultural",
+    "Audience": "CentroCultural-Users"
+  }
+}
+
+# Aplicar migraciones
+dotnet ef database update
+
+# Ejecutar aplicación
+dotnet run
+```
+
+### Desarrollo
+```bash
+dotnet run                    # Ejecutar aplicación
+dotnet watch                  # Hot reload
+dotnet ef migrations add <name> # Nueva migración
+dotnet ef database update    # Aplicar migraciones
+dotnet test                   # Ejecutar pruebas
+```
+
+## 🗄️ Base de Datos
+
+### Entidades Principales
+```csharp
+// Usuarios y autenticación
+public class Usuario
+{
+    public int IdUsuario { get; set; }
+    public string NombreUsuario { get; set; }
+    public string Contrasena { get; set; } // Hash BCrypt
+    public string Nombre { get; set; }
+    public string Apellido { get; set; }
+    public string Telefono { get; set; }
+    public int IdRol { get; set; }
+    public Rol Rol { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class RefreshToken
+{
+    public int Id { get; set; }
+    public string Token { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public int UserId { get; set; }
+    public bool IsRevoked { get; set; }
+}
+
+public class TokenBlacklist
+{
+    public int Id { get; set; }
+    public string TokenJti { get; set; }
+    public DateTime ExpiresAt { get; set; }
+    public int UserId { get; set; }
+}
+
+// Sistema educativo
+public class Course
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Subject { get; set; }
+    public bool IsFeatured { get; set; }
+    public List<Module> Modules { get; set; }
+}
+
+public class WorkItem  
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public string Content { get; set; }
+    public string ImagePath { get; set; }
+    public string VideoPath { get; set; }
+    public int ModuleId { get; set; }
+}
+```
+
+### Configuración Entity Framework
+```csharp
+// ApplicationDbContext.cs
+public class ApplicationDbContext : DbContext
+{
+    public DbSet<Usuario> Usuario { get; set; }
+    public DbSet<RefreshToken> RefreshToken { get; set; }
+    public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
+    public DbSet<Course> Course { get; set; }
+    public DbSet<Module> Module { get; set; }
+    public DbSet<WorkItem> WorkItem { get; set; }
+    public DbSet<BlogPost> BlogPost { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Configuraciones de entidades
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+    }
+}
+```
+
+## 🔧 Configuración Avanzada
+
+### JWT Settings
+```json
+{
+  "JwtSettings": {
+    "Key": "your-very-long-secret-key-at-least-256-bits",
+    "Issuer": "CentroCultural.API",
+    "Audience": "CentroCultural.Users",
+    "AccessTokenExpirationMinutes": 15,
+    "RefreshTokenExpirationDays": 7
+  }
+}
+```
+
+### Middleware Pipeline
+```csharp
+// Program.cs
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseCors();
+app.UseAuthentication();      // JWT validation
+app.UseMiddleware<TokenBlacklistMiddleware>(); // Custom blacklist
+app.UseAuthorization();       // Role-based authorization
+app.MapControllers();
+```
+
+### Servicios Registrados
+```csharp
+// ApplicationServiceRegistration.cs
+public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+{
+    services.AddScoped<IAuthService, AuthService>();
+    services.AddScoped<IJwtService, JwtService>();
+    services.AddScoped<IUserManagementService, UserManagementService>();
+    services.AddScoped<ICourseService, CourseService>();
+    services.AddScoped<IBlogService, BlogService>();
+    services.AddScoped<IMediaService, MediaService>();
+    
+    return services;
+}
+```
+
+## 🛡️ Seguridad
+
+### Características Implementadas
+- **JWT con Blacklist**: Revocación segura de tokens
+- **Hash BCrypt**: Contraseñas nunca en texto plano  
+- **Roles Jerárquicos**: Control granular de permisos
+- **Validación Entrada**: DTOs con validaciones
+- **HTTPS Only**: Comunicación cifrada
+- **CORS Configurado**: Origen controlado
+
+### Middleware de Seguridad
+```csharp
+public class TokenBlacklistMiddleware
+{
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    {
+        var token = context.Request.Headers["Authorization"]
+            .FirstOrDefault()?.Split(" ").Last();
+
+        if (token != null && await _blacklistService.IsTokenBlacklistedAsync(token))
+        {
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsync("Token has been revoked");
+            return;
+        }
+
+        await next(context);
+    }
+}
+```
+
+## 🧪 Testing
+
+### Estructura de Pruebas
+```
+tests/
+├── Back.Tests/
+│   ├── Controllers/         # Pruebas controladores
+│   ├── Services/           # Pruebas lógica negocio  
+│   ├── Integration/        # Pruebas integración
+│   └── Fixtures/          # Datos de prueba
+```
+
+### Comandos Testing
+```bash
+dotnet test                           # Todas las pruebas
+dotnet test --filter Category=Unit   # Solo unitarias
+dotnet test --filter Category=Integration # Solo integración
+dotnet test --collect:"XPlat Code Coverage" # Con cobertura
+```
+
+## 📊 Monitoreo y Logging
+
+### Configuración Logging
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "CentroCultural": "Debug"
+    }
+  }
+}
+```
+
+### Health Checks
+```csharp
+services.AddHealthChecks()
+    .AddDbContext<ApplicationDbContext>()
+    .AddCheck<AuthServiceHealthCheck>("auth-service");
+
+app.MapHealthChecks("/health");
+```
+
+## 🚀 Despliegue
+
+### Build para Producción
+```bash
+dotnet publish -c Release -o ./publish
+```
+
+### Docker Support
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "CentroCultural.API.dll"]
+```
+
+### Variables de Entorno
+```bash
+ASPNETCORE_ENVIRONMENT=Production
+ConnectionStrings__DefaultConnection="Server=..."
+JwtSettings__Key="production-secret-key"
+```
+
+## 📈 Performance
+
+### Optimizaciones Implementadas
+- **Entity Framework**: Lazy loading, query optimization
+- **Caching**: Response caching para endpoints públicos
+- **Compression**: Gzip response compression
+- **Pagination**: Resultados limitados por página
+- **Connection Pooling**: Pool de conexiones DB
+
+### Métricas Target
+- **Response Time**: < 200ms (endpoints simples)
+- **Throughput**: > 1000 RPS
+- **Memory Usage**: < 512MB
+- **DB Connections**: Pool optimizado
+
+---
+
+**Backend API desarrollado con .NET 8 para máxima seguridad y performance** 🚀

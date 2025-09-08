@@ -3,8 +3,7 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async ({ locals, cookies, request }) => {
 	// Si no hay usuario en locals, verificar localStorage a través de cookies/headers de demo
 	if (!locals.user) {
-		// En una app real, aquí manejarías la sesión apropiadamente
-		// Para demo, podemos usar una cookie especial
+		// Leer usuario desde cookie o localStorage (simulado por cookie 'demo-user')
 		const demoUser = cookies.get('demo-user');
 		if (demoUser) {
 			try {
@@ -15,13 +14,15 @@ export const load: LayoutServerLoad = async ({ locals, cookies, request }) => {
 			}
 		}
 	}
-
+	// Adaptar estructura al backend real
 	return {
 		user: locals.user ? {
-			id: locals.user.id,
-			username: locals.user.username,
-			nombre: locals.user.username, // Adaptar según tu estructura
-			role: 'student' // Adaptar según tu estructura
+			idUsuario: locals.user.id,
+			nombreUsuario: locals.user.username,
+			nombre: locals.user.nombre || locals.user.username,
+			apellido: locals.user.apellido || '',
+			telefono: locals.user.telefono || '',
+			nombreRol: locals.user.role || 'Estudiante'
 		} : null
 	};
 };

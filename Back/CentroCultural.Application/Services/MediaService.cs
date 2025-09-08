@@ -27,21 +27,22 @@ namespace CentroCultural.Application.Services
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
             if (!allowedExtensions.Contains(ext))
-                return Task.FromResult(new ValidationResult { IsValid = false, ErrorMessage = "Extensión no permitida" });
+                return Task.FromResult(new ValidationResult { IsValid = false, ErrorMessage = "Extensiï¿½n no permitida" });
             if (sizeBytes > 20 * 1024 * 1024)
                 return Task.FromResult(new ValidationResult { IsValid = false, ErrorMessage = "Archivo demasiado grande" });
             return Task.FromResult(new ValidationResult { IsValid = true });
         }
 
-        public async Task<MediaEntity> ProcessImageUpload(string tempPath, string userId)
+        public async Task<MediaEntity> ProcessImageUpload(string tempPath, string userId, string contentType, Guid contentId)
         {
             return await Task.Run(() =>
             {
-                Directory.CreateDirectory(UploadsRootImages);
+                var contextualPath = GetContextualPath(contentType, contentId, "images");
+                Directory.CreateDirectory(contextualPath);
                 Directory.CreateDirectory(ThumbnailsRoot);
 
                 var fileName = Path.GetFileName(tempPath);
-                var destPath = Path.Combine(UploadsRootImages, fileName);
+                var destPath = Path.Combine(contextualPath, fileName);
                 var thumbPath = Path.Combine(ThumbnailsRoot, fileName);
 
                 File.Move(tempPath, destPath, true);
@@ -50,14 +51,17 @@ namespace CentroCultural.Application.Services
                 var media = new MediaEntity
                 {
                     FileName = fileName,
-                    RelativePath = $"images/{fileName}",
+                    RelativePath = GetRelativePath(contentType, contentId, "images", fileName),
                     ThumbnailPath = $"processed/images/thumbnails/{fileName}",
                     Type = MediaType.Image,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = GetMimeType(fileName),
                     CreatedBy = userId ?? string.Empty,
                     CreatedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, object>()
+                    Metadata = new Dictionary<string, object>(),
+                    ContentType = contentType,
+                    ContentId = contentId,
+                    MediaType = "image"
                 };
 
                 return media;
@@ -70,49 +74,57 @@ namespace CentroCultural.Application.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<MediaEntity> ProcessVideoUpload(string tempPath, string userId)
+        public async Task<MediaEntity> ProcessVideoUpload(string tempPath, string userId, string contentType, Guid contentId)
         {
             return await Task.Run(() =>
             {
-                Directory.CreateDirectory(UploadsRootVideos);
+                var contextualPath = GetContextualPath(contentType, contentId, "videos");
+                Directory.CreateDirectory(contextualPath);
                 var fileName = Path.GetFileName(tempPath);
-                var destPath = Path.Combine(UploadsRootVideos, fileName);
+                var destPath = Path.Combine(contextualPath, fileName);
                 File.Move(tempPath, destPath, true);
                 var media = new MediaEntity
                 {
                     FileName = fileName,
-                    RelativePath = $"videos/{fileName}",
+                    RelativePath = GetRelativePath(contentType, contentId, "videos", fileName),
                     ThumbnailPath = string.Empty,
                     Type = MediaType.Video,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = "video/mp4",
                     CreatedBy = userId ?? string.Empty,
                     CreatedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, object>()
+                    Metadata = new Dictionary<string, object>(),
+                    ContentType = contentType,
+                    ContentId = contentId,
+                    MediaType = "video"
                 };
                 return media;
             });
         }
 
-        public async Task<MediaEntity> ProcessAudioUpload(string tempPath, string userId)
+        public async Task<MediaEntity> ProcessAudioUpload(string tempPath, string userId, string contentType, Guid contentId)
         {
             return await Task.Run(() =>
             {
-                Directory.CreateDirectory(UploadsRootAudio);
+                var contextualPath = GetContextualPath(contentType, contentId, "audio");
+                Directory.CreateDirectory(contextualPath);
                 var fileName = Path.GetFileName(tempPath);
-                var destPath = Path.Combine(UploadsRootAudio, fileName);
+                var destPath = Path.Combine(contextualPath, fileName);
                 File.Move(tempPath, destPath, true);
                 var media = new MediaEntity
                 {
                     FileName = fileName,
-                    RelativePath = $"audio/{fileName}",
+                    RelativePath = GetRelativePath(contentType, contentId, "audio", fileName),
                     ThumbnailPath = string.Empty,
                     Type = MediaType.Audio,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = "audio/mpeg",
                     CreatedBy = userId ?? string.Empty,
                     CreatedAt = DateTime.UtcNow,
-                    Metadata = new Dictionary<string, object>()
+                    Metadata = new Dictionary<string, object>(),
+                    ContentType = contentType,
+                    ContentId = contentId,
+                    MediaType = "audio"
                 };
                 return media;
             });
@@ -241,7 +253,47 @@ namespace CentroCultural.Application.Services
             {
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".png" => "image/png",
+                ".mp4" => "video/mp4",
+                ".webm" => "video/webm",
+                ".mov" => "video/quicktime",
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                ".ogg" => "audio/ogg",
+                ".pdf" => "application/pdf",
                 _ => "application/octet-stream"
+            };
+        }
+
+        // CONTEXTUAL MULTIMEDIA HELPER METHODS
+        private string GetContextualPath(string contentType, Guid contentId, string mediaType)
+        {
+            var basePath = "/home/user/ccpvj/Data/var/www/media/uploads";
+            return Path.Combine(basePath, mediaType, contentType, contentId.ToString());
+        }
+
+        private string GetRelativePath(string contentType, Guid contentId, string mediaType, string fileName)
+        {
+            return $"{mediaType}/{contentType}/{contentId}/{fileName}";
+        }
+
+        public async Task<IEnumerable<MediaEntity>> GetMediaByContentAsync(string contentType, Guid contentId)
+        {
+            return await _context.MediaEntity
+                .Where(m => m.ContentType == contentType && m.ContentId == contentId)
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<bool> ValidateContentExistsAsync(string contentType, Guid contentId)
+        {
+            return contentType.ToLower() switch
+            {
+                "course" => await _context.Course.AnyAsync(c => c.Id == contentId),
+                "module" => await _context.Module.AnyAsync(m => m.Id == contentId),
+                "workitem" => await _context.WorkItem.AnyAsync(w => w.Id == contentId),
+                "blog" => _context.BlogPost != null && await _context.BlogPost.AnyAsync(b => b.Id == contentId),
+                "event" => _context.Event != null && await _context.Event.AnyAsync(e => e.Id == contentId),
+                _ => false
             };
         }
     }

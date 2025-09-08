@@ -1,0 +1,332 @@
+using CentroCultural.Application.DTOs;
+using CentroCultural.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace CentroCultural.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class BlogController : ControllerBase
+    {
+        private readonly IBlogService _blogService;
+        private readonly ILogger<BlogController> _logger;
+
+        public BlogController(IBlogService blogService, ILogger<BlogController> logger)
+        {
+            _blogService = blogService;
+            _logger = logger;
+        }
+
+        // GET: api/blog
+        [HttpGet]
+        public async Task<ActionResult<BlogPostPagedResultDto>> GetBlogPosts([FromQuery] BlogPostSearchDto searchDto)
+        {
+            try
+            {
+                var result = await _blogService.GetBlogPostsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting blog posts");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<BlogPostDto>> GetBlogPost(Guid id)
+        {
+            try
+            {
+                var post = await _blogService.GetBlogPostByIdAsync(id);
+                if (post == null)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return Ok(post);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting blog post with ID: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/slug/{slug}
+        [HttpGet("slug/{slug}")]
+        public async Task<ActionResult<BlogPostDto>> GetBlogPostBySlug(string slug)
+        {
+            try
+            {
+                var post = await _blogService.GetBlogPostBySlugAsync(slug);
+                if (post == null)
+                    return NotFound($"Post con slug '{slug}' no encontrado");
+
+                // Increment views for public access
+                await _blogService.IncrementViewsAsync(post.Id);
+
+                return Ok(post);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting blog post with slug: {Slug}", slug);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // POST: api/blog
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost]
+        public async Task<ActionResult<BlogPostDto>> CreateBlogPost([FromBody] CreateBlogPostDto createDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("Usuario no autenticado correctamente");
+
+                var post = await _blogService.CreateBlogPostAsync(createDto, userIdClaim);
+                return CreatedAtAction(nameof(GetBlogPost), new { id = post.Id }, post);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating blog post");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // PUT: api/blog/{id}
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateBlogPost(Guid id, [FromBody] UpdateBlogPostDto updateDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("Usuario no autenticado correctamente");
+
+                var post = await _blogService.UpdateBlogPostAsync(id, updateDto, userIdClaim);
+                if (post == null)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return Ok(post);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para editar este post");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating blog post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // DELETE: api/blog/{id}
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBlogPost(Guid id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("Usuario no autenticado correctamente");
+
+                var result = await _blogService.DeleteBlogPostAsync(id, userIdClaim);
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para eliminar este post");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting blog post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // POST: api/blog/{id}/publish
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost("{id}/publish")]
+        public async Task<IActionResult> PublishBlogPost(Guid id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("Usuario no autenticado correctamente");
+
+                var result = await _blogService.PublishBlogPostAsync(id, userIdClaim);
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para publicar este post");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error publishing blog post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // POST: api/blog/{id}/unpublish
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost("{id}/unpublish")]
+        public async Task<IActionResult> UnpublishBlogPost(Guid id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("Usuario no autenticado correctamente");
+
+                var result = await _blogService.UnpublishBlogPostAsync(id, userIdClaim);
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para despublicar este post");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unpublishing blog post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/featured
+        [HttpGet("featured")]
+        public async Task<ActionResult<IEnumerable<BlogPostSummaryDto>>> GetFeaturedPosts([FromQuery] int count = 5)
+        {
+            try
+            {
+                var posts = await _blogService.GetFeaturedPostsAsync(count);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting featured posts");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/popular
+        [HttpGet("popular")]
+        public async Task<ActionResult<IEnumerable<BlogPostSummaryDto>>> GetPopularPosts([FromQuery] int count = 10)
+        {
+            try
+            {
+                var posts = await _blogService.GetPopularPostsAsync(count);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting popular posts");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/recent
+        [HttpGet("recent")]
+        public async Task<ActionResult<IEnumerable<BlogPostSummaryDto>>> GetRecentPosts([FromQuery] int count = 10)
+        {
+            try
+            {
+                var posts = await _blogService.GetRecentPostsAsync(count);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting recent posts");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/blog/stats
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetBlogStatistics()
+        {
+            try
+            {
+                var stats = await _blogService.GetBlogStatisticsAsync();
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting blog statistics");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // POST: api/blog/check-slug
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost("check-slug")]
+        public async Task<IActionResult> CheckSlugAvailability([FromBody] CheckSlugDto checkSlugDto)
+        {
+            try
+            {
+                var isAvailable = await _blogService.IsSlugAvailableAsync(checkSlugDto.Slug, checkSlugDto.ExcludePostId);
+                return Ok(new { isAvailable });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking slug availability");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // POST: api/blog/generate-slug
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost("generate-slug")]
+        public async Task<IActionResult> GenerateSlug([FromBody] GenerateSlugDto generateSlugDto)
+        {
+            try
+            {
+                var slug = await _blogService.GenerateUniqueSlugAsync(generateSlugDto.Title, generateSlugDto.ExcludePostId);
+                return Ok(new { slug });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating slug");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+    }
+
+    // Helper DTOs for slug operations
+    public class CheckSlugDto
+    {
+        public string Slug { get; set; } = string.Empty;
+        public Guid? ExcludePostId { get; set; }
+    }
+
+    public class GenerateSlugDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public Guid? ExcludePostId { get; set; }
+    }
+}

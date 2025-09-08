@@ -1,38 +1,81 @@
 import { initializeOfflineBlogData, loadBlogPost, blogPosts, latestBlogPosts } from '$lib/data/stores/blogStore';
 import type { BlogPost } from '$lib/data/models/interfaces';
 
+interface CreateArticleData {
+  title: string;
+  summary: string;
+  content: string;
+  tags: string;
+  isPublished: boolean;
+  isFeatured: boolean;
+  featuredImagePath?: string;
+  media?: Array<{
+    mediaId: number;
+    orderIndex: number;
+    caption: string;
+    altText: string;
+  }>;
+}
+
 class BlogService {
   private isOnline = false;
+  private baseURL = 'https://localhost:5251/api';
+  private offlinePosts: BlogPost[] = [];
 
   constructor() {
-    // Intenta detectar si hay conexión al backend
     this.checkConnection();
   }
 
   private async checkConnection() {
     try {
-      const response = await fetch('/api/health-check', { method: 'HEAD', timeout: 1000 });
+      const response = await fetch(`${this.baseURL}/article/featured?count=1`, { 
+        method: 'HEAD', 
+        signal: AbortSignal.timeout(2000) 
+      });
       this.isOnline = response.ok;
     } catch (error) {
       this.isOnline = false;
       console.log('Modo offline activado para blog');
-      // Si no hay conexión, inicializa con datos locales
       initializeOfflineBlogData();
     }
+  }
+
+  private getAuthHeaders() {
+    const token = sessionStorage.getItem('accessToken');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  private adaptBackendToFrontend(backendArticle: any): BlogPost {
+    return {
+      id: backendArticle.id,
+      title: backendArticle.title,
+      slug: backendArticle.slug,
+      excerpt: backendArticle.summary,
+      content: backendArticle.content,
+      featuredMedia: backendArticle.featuredImagePath,
+      videoPoster: null,
+      tags: backendArticle.tags ? backendArticle.tags.split(',').map((t: string) => t.trim()) : [],
+      status: backendArticle.isPublished ? 'published' : 'draft',
+      publishDate: backendArticle.publishedAt || backendArticle.createdAt,
+      authorId: backendArticle.authorId,
+      authorName: backendArticle.authorName || 'Autor',
+      createdAt: backendArticle.createdAt,
+      updatedAt: backendArticle.updatedAt
+    };
   }
 
   async getLatestPosts(): Promise<BlogPost[]> {
     try {
       if (this.isOnline) {
-        const response = await fetch('/api/blog/latest');
+        const response = await fetch(`${this.baseURL}/article/featured?count=6`);
         if (response.ok) {
           const data = await response.json();
-          latestBlogPosts.set(data);
-          return data;
+          const posts = Array.isArray(data) ? data.map(this.adaptBackendToFrontend) : [];
+          latestBlogPosts.set(posts);
+          return posts;
         }
       }
       
-      // Si estamos offline o la petición falló, usa datos locales
       let localPosts: BlogPost[] = [];
       latestBlogPosts.subscribe(value => { localPosts = value; })();
       
@@ -54,13 +97,13 @@ class BlogService {
   async getPostBySlug(slug: string): Promise<BlogPost | null> {
     try {
       if (this.isOnline) {
-        const response = await fetch(`/api/blog/${slug}`);
+        const response = await fetch(`${this.baseURL}/article/slug/${slug}`);
         if (response.ok) {
-          return await response.json();
+          const data = await response.json();
+          return this.adaptBackendToFrontend(data);
         }
       }
       
-      // Modo offline
       return loadBlogPost(slug);
     } catch (error) {
       console.error(`Error cargando post ${slug}:`, error);
@@ -71,15 +114,15 @@ class BlogService {
   async getAllPosts(): Promise<BlogPost[]> {
     try {
       if (this.isOnline) {
-        const response = await fetch('/api/blog');
+        const response = await fetch(`${this.baseURL}/article?isPublished=true&take=50`);
         if (response.ok) {
           const data = await response.json();
-          blogPosts.set(data);
-          return data;
+          const posts = Array.isArray(data) ? data.map(this.adaptBackendToFrontend) : [];
+          blogPosts.set(posts);
+          return posts;
         }
       }
       
-      // Si estamos offline o la petición falló, usa datos locales
       let localPosts: BlogPost[] = [];
       blogPosts.subscribe(value => { localPosts = value; })();
       
@@ -97,7 +140,183 @@ class BlogService {
       return localPosts;
     }
   }
+
+  async createPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    const articleData: CreateArticleData = {
+      title: post.title,
+      summary: post.excerpt,
+      content: post.content || post.excerpt,
+      tags: post.tags?.join(',') || '',
+      isPublished: post.status === 'published',
+      isFeatured: false,
+      featuredImagePath: post.featuredMedia || undefined
+    };
+
+    try {
+      const response = await fetch(`${this.baseURL}/article`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(articleData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const createdArticle = await response.json();
+      return this.adaptBackendToFrontend(createdArticle);
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
+  }
+
+  async updatePost(id: number, post: Partial<BlogPost>): Promise<BlogPost> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    const updateData: Partial<CreateArticleData> = {};
+    
+    if (post.title) updateData.title = post.title;
+    if (post.excerpt) updateData.summary = post.excerpt;
+    if (post.content) updateData.content = post.content;
+    if (post.tags) updateData.tags = post.tags.join(',');
+    if (post.status) updateData.isPublished = post.status === 'published';
+    if (post.featuredMedia) updateData.featuredImagePath = post.featuredMedia;
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const updatedArticle = await response.json();
+      return this.adaptBackendToFrontend(updatedArticle);
+    } catch (error) {
+      console.error('Error updating post:', error);
+      throw error;
+    }
+  }
+
+  async deletePost(id: number): Promise<void> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/${id}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
+  }
+
+  async publishPost(id: number): Promise<void> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/${id}/publish`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      throw error;
+    }
+  }
+
+  async unpublishPost(id: number): Promise<void> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/${id}/unpublish`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error unpublishing post:', error);
+      throw error;
+    }
+  }
+
+  async getMyArticles(): Promise<BlogPost[]> {
+    if (!this.isOnline) {
+      throw new Error('Función no disponible en modo offline');
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/my-articles`, {
+        headers: this.getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return Array.isArray(data) ? data.map(this.adaptBackendToFrontend) : [];
+      }
+
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error loading my articles:', error);
+      throw error;
+    }
+  }
+
+  async getPopularTags(): Promise<string[]> {
+    if (!this.isOnline) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/article/tags/popular?count=10`);
+      if (response.ok) {
+        return await response.json();
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading popular tags:', error);
+      return [];
+    }
+  }
 }
 
-// Exportar una instancia única
 export const blogService = new BlogService();

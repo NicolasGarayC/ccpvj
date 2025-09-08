@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace Controllers
+namespace CentroCultural.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -19,8 +19,25 @@ namespace Controllers
             _logger = logger;
         }
 
+        // GET: api/course
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CourseDto>>> GetAllCourses()
+        public async Task<ActionResult<CoursePagedResultDto>> GetCourses([FromQuery] CourseSearchDto searchDto)
+        {
+            try
+            {
+                var courses = await _courseService.GetCoursesAsync(searchDto);
+                return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo cursos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // GET: api/course/all
+        [HttpGet("all")]
+        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetAllCourses()
         {
             try
             {
@@ -34,12 +51,13 @@ namespace Controllers
             }
         }
 
+        // GET: api/course/featured
         [HttpGet("featured")]
-        public async Task<ActionResult<IEnumerable<CourseDto>>> GetFeaturedCourses()
+        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetFeaturedCourses([FromQuery] int count = 6)
         {
             try
             {
-                var courses = await _courseService.GetFeaturedCoursesAsync();
+                var courses = await _courseService.GetFeaturedCoursesAsync(count);
                 return Ok(courses);
             }
             catch (Exception ex)
@@ -49,6 +67,7 @@ namespace Controllers
             }
         }
 
+        // GET: api/course/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<CourseDetailDto>> GetCourse(Guid id)
         {
@@ -69,7 +88,7 @@ namespace Controllers
         }
 
         [HttpGet("{courseId}/modules")]
-        public async Task<ActionResult<IEnumerable<ModuleDto>>> GetCourseModules(Guid courseId)
+        public async Task<ActionResult<IEnumerable<ModuleSummaryDto>>> GetCourseModules(Guid courseId)
         {
             try
             {
@@ -78,25 +97,34 @@ namespace Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo m�dulos del curso: {CourseId}", courseId);
+                _logger.LogError(ex, "Error obteniendo m�dulos del curso: {CourseId}", courseId);
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        [Authorize(Roles = "Educador")]
+        // POST: api/course
+        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost]
         public async Task<ActionResult<CourseDto>> CreateCourse([FromBody] CreateCourseDto courseDto)
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId)) // Changed Guid.TryParse to int.TryParse
+                if (string.IsNullOrEmpty(userIdClaim))
                 {
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var course = await _courseService.CreateCourseAsync(courseDto, userId); // userId is now an int
+                var course = await _courseService.CreateCourseAsync(courseDto, userIdClaim);
                 return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para crear cursos");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -105,24 +133,33 @@ namespace Controllers
             }
         }
 
-        [Authorize(Roles = "Educador")]
+        // PUT: api/course/{id}
+        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseDto courseDto)
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId)) // Changed Guid.TryParse to int.TryParse
+                if (string.IsNullOrEmpty(userIdClaim))
                 {
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.UpdateCourseAsync(id, courseDto, userId); // userId is now an int
+                var result = await _courseService.UpdateCourseAsync(id, courseDto, userIdClaim);
 
                 if (!result)
-                    return NotFound($"Curso con ID {id} no encontrado o no tienes permisos para editarlo");
+                    return NotFound($"Curso con ID {id} no encontrado");
 
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para editar este curso");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -131,24 +168,29 @@ namespace Controllers
             }
         }
 
-        [Authorize(Roles = "Educador")]
+        // DELETE: api/course/{id}
+        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourse(Guid id)
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId)) // Changed Guid.TryParse to int.TryParse
+                if (string.IsNullOrEmpty(userIdClaim))
                 {
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.DeleteCourseAsync(id, userId); // Changed userId type to int
+                var result = await _courseService.DeleteCourseAsync(id, userIdClaim);
 
                 if (!result)
-                    return NotFound($"Curso con ID {id} no encontrado o no tienes permisos para eliminarlo");
+                    return NotFound($"Curso con ID {id} no encontrado");
 
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para eliminar este curso");
             }
             catch (Exception ex)
             {
@@ -157,24 +199,202 @@ namespace Controllers
             }
         }
 
-        [Authorize(Roles = "Educador")]
+        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpGet("my-courses")]
-        public async Task<ActionResult<IEnumerable<CourseDto>>> GetMyCourses()
+        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetMyCourses()
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                if (string.IsNullOrEmpty(userIdClaim))
                 {
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var courses = await _courseService.GetCoursesByEducatorAsync(userId);
+                var courses = await _courseService.GetCoursesByEducatorAsync(userIdClaim);
                 return Ok(courses);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error obteniendo cursos del educador");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [Authorize(Roles = "Administrador")]
+        [HttpGet("statistics")]
+        public async Task<ActionResult<object>> GetCourseStatistics()
+        {
+            try
+            {
+                var statistics = await _courseService.GetCourseStatisticsAsync();
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo estadísticas de cursos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("subjects")]
+        public async Task<ActionResult<IEnumerable<string>>> GetAvailableSubjects()
+        {
+            try
+            {
+                var subjects = await _courseService.GetAvailableSubjectsAsync();
+                return Ok(subjects);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo materias disponibles");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("modules/{id}")]
+        public async Task<ActionResult<ModuleDetailDto>> GetModule(Guid id)
+        {
+            try
+            {
+                var module = await _courseService.GetModuleByIdAsync(id);
+                
+                if (module == null)
+                    return NotFound($"Módulo con ID {id} no encontrado");
+
+                return Ok(module);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo módulo con ID: {ModuleId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPost("modules")]
+        public async Task<ActionResult<ModuleDto>> CreateModule([FromBody] CreateModuleDto moduleDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized("Usuario no autenticado correctamente");
+                }
+
+                var module = await _courseService.CreateModuleAsync(moduleDto, userIdClaim);
+                return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para crear módulos en este curso");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creando módulo");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPut("modules/{id}")]
+        public async Task<IActionResult> UpdateModule(Guid id, [FromBody] UpdateModuleDto moduleDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized("Usuario no autenticado correctamente");
+                }
+
+                var result = await _courseService.UpdateModuleAsync(id, moduleDto, userIdClaim);
+
+                if (!result)
+                    return NotFound($"Módulo con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para editar este módulo");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando módulo: {ModuleId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpDelete("modules/{id}")]
+        public async Task<IActionResult> DeleteModule(Guid id)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized("Usuario no autenticado correctamente");
+                }
+
+                var result = await _courseService.DeleteModuleAsync(id, userIdClaim);
+
+                if (!result)
+                    return NotFound($"Módulo con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para eliminar este módulo");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error eliminando módulo: {ModuleId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [Authorize(Roles = "Colaborador,Administrador")]
+        [HttpPatch("modules/{id}/reorder")]
+        public async Task<IActionResult> ReorderModule(Guid id, [FromBody] ReorderModuleDto reorderDto)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized("Usuario no autenticado correctamente");
+                }
+
+                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, userIdClaim);
+
+                if (!result)
+                    return NotFound($"Módulo con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para reordenar módulos en este curso");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reordenando módulo: {ModuleId}", id);
                 return StatusCode(500, "Error interno del servidor");
             }
         }

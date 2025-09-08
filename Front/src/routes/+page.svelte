@@ -1,37 +1,68 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { t as paraglideT, locale, availableLocales } from '$lib/paraglide/runtime';
 	import BlogPostCard from '$lib/components/blog/BlogPostCard.svelte';
 	import FeatureCard from '$lib/components/common/FeatureCard.svelte';
+	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
 	import { blogService } from '$lib/services/blog/blogService';
 	import { courseService } from '$lib/services/courses/courseService';
+	import { authService } from '$lib/services/authService';
 	import type { BlogPost, Course } from '$lib/data/models/interfaces';
 
-	let t = (key: string) => key;
+	// Simple fallback translation function
+	let t = (key: string) => {
+		const translations = {
+			'centroTitle': 'Centro Cultural Víctor Jara',
+			'centroDescription': 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje',
+			'welcomeToCentro': 'Bienvenido al Centro Cultural',
+			'centroPurpose': 'Red Comunitaria de Aprendizaje',
+			'educatorLogin': 'Acceso Educadores',
+			'browseMaterials': 'Explorar Materiales',
+			'educatorDashboard': 'Panel Educador',
+			'createContent': 'Crear Contenido',
+			'myMaterials': 'Mis Materiales',
+			'availableCourses': 'Cursos Disponibles',
+			'totalModules': 'Módulos Totales',
+			'studentsServed': 'Estudiantes Atendidos',
+			'preuniversity': 'Preuniversitario',
+			'basicComputing': 'Computación Básica',
+			'craftWorkshop': 'Taller de Artesanía'
+		};
+		return translations[key] || key;
+	};
 
-	// Usar el store reactivo de Svelte para el idioma
-	$: currentLocale = $locale;
+	let currentLocale = 'es';
 
 	onMount(() => {
-		t = paraglideT;
+		// Try to load paraglide if available
+		try {
+			import('$lib/paraglide/runtime').then(module => {
+				if (module.translate) {
+					t = module.translate;
+				}
+			}).catch(err => {
+				console.log('Paraglide not available, using fallback translations');
+			});
+		} catch (err) {
+			console.log('Paraglide module not found, using fallback translations');
+		}
 	});
 
 	function switchLocale() {
-		const next = availableLocales.find((l) => l !== $locale) || 'es';
-		locale.set(next);
+		currentLocale = currentLocale === 'es' ? 'en' : 'es';
 	}
 
-	$: isLoggedIn = $page.data.user !== null && $page.data.user !== undefined;
-	$: isEducator = isLoggedIn && $page.data.user?.role === 'educator';
+	$: isLoggedIn = authService.isAuthenticated();
+	$: user = authService.getUser();
+	$: isEducator = isLoggedIn && user?.nombreRol === 'Educador';
 
 	let latestBlogPosts: BlogPost[] = [];
 	let featuredCourses: Course[] = [];
 
 	$: educationalModules = [
-		{ id: 'preuniversitario', title: t('preuniversity'), modules: 3, icon: 'fa-graduation-cap' },
-		{ id: 'computacion', title: t('basicComputing'), modules: 4, icon: 'fa-laptop-code' },
-		{ id: 'artesania', title: t('craftWorkshop'), modules: 2, icon: 'fa-paint-brush' }
+		{ id: 'preuniversitario', title: t('preuniversity') || 'Preuniversitario', modules: 3, icon: 'fa-graduation-cap' },
+		{ id: 'computacion', title: t('basicComputing') || 'Computación Básica', modules: 4, icon: 'fa-laptop-code' },
+		{ id: 'artesania', title: t('craftWorkshop') || 'Taller de Artesanía', modules: 2, icon: 'fa-paint-brush' }
 	];
 
 	onMount(async () => {
@@ -45,8 +76,8 @@
 </script>
 
 <svelte:head>
-	<title>{t('centroTitle')}</title>
-	<meta name="description" content={t('centroDescription')} />
+	<title>{t('centroTitle') || 'Centro Cultural Víctor Jara'}</title>
+	<meta name="description" content={t('centroDescription') || 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje'} />
 	<link
 		rel="stylesheet"
 		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -58,46 +89,46 @@
 	class="relative bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-700 py-16 text-white"
 >
 	<div class="container mx-auto flex flex-col items-center px-4 text-center">
-		<h1 class="mb-4 text-5xl font-bold drop-shadow md:text-6xl">{t('welcomeToCentro')}</h1>
-		<p class="mx-auto mb-8 max-w-2xl text-xl text-indigo-100 md:text-2xl">{t('centroPurpose')}</p>
+		<h1 class="mb-4 text-5xl font-bold drop-shadow md:text-6xl">{t('welcomeToCentro') || 'Bienvenido al Centro Cultural'}</h1>
+		<p class="mx-auto mb-8 max-w-2xl text-xl text-indigo-100 md:text-2xl">{t('centroPurpose') || 'Red Comunitaria de Aprendizaje'}</p>
 		<div class="mt-4 flex flex-wrap justify-center gap-4">
 			{#if !isLoggedIn}
 				<a href="/auth/login" class="flex items-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-indigo-700 shadow transition-all hover:bg-gray-100">
 					<i class="fas fa-sign-in-alt"></i>
-					{t('educatorLogin')}
+					{t('educatorLogin') || 'Acceso Educadores'}
 				</a>
 				<a href="/courses" class="flex items-center gap-2 rounded-lg border-2 border-white bg-transparent px-8 py-3 font-semibold text-white transition-all hover:bg-white/20">
 					<i class="fas fa-book-open"></i>
-					{t('browseMaterials')}
+					{t('browseMaterials') || 'Explorar Materiales'}
 				</a>
 			{:else if isEducator}
 				<a href="/dashboard" class="flex items-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-indigo-700 shadow transition-all hover:bg-gray-100">
 					<i class="fas fa-tachometer-alt"></i>
-					{t('educatorDashboard')}
+					{t('educatorDashboard') || 'Panel Educador'}
 				</a>
 				<a href="/editor" class="flex items-center gap-2 rounded-lg border-2 border-white bg-transparent px-8 py-3 font-semibold text-white transition-all hover:bg-white/20">
 					<i class="fas fa-edit"></i>
-					{t('createContent')}
+					{t('createContent') || 'Crear Contenido'}
 				</a>
 			{:else}
 				<a href="/courses" class="flex items-center gap-2 rounded-lg bg-white px-8 py-3 font-semibold text-indigo-700 shadow transition-all hover:bg-gray-100">
 					<i class="fas fa-graduation-cap"></i>
-					{t('myMaterials')}
+					{t('myMaterials') || 'Mis Materiales'}
 				</a>
 			{/if}
 		</div>
 		<div class="mt-10 flex justify-center gap-8">
 			<div class="text-center">
 				<div class="text-3xl font-bold">3</div>
-				<div class="text-indigo-100">{t('availableCourses')}</div>
+				<div class="text-indigo-100">{t('availableCourses') || 'Cursos Disponibles'}</div>
 			</div>
 			<div class="text-center">
 				<div class="text-3xl font-bold">9</div>
-				<div class="text-indigo-100">{t('totalModules')}</div>
+				<div class="text-indigo-100">{t('totalModules') || 'Módulos Totales'}</div>
 			</div>
 			<div class="text-center">
 				<div class="text-3xl font-bold">30+</div>
-				<div class="text-indigo-100">{t('studentsServed')}</div>
+				<div class="text-indigo-100">{t('studentsServed') || 'Estudiantes Atendidos'}</div>
 			</div>
 		</div>
 	</div>
@@ -135,6 +166,15 @@
 				{t('viewAllNews')}
 				<i class="fas fa-arrow-right ml-2"></i>
 			</a>
+		</div>
+	</div>
+</section>
+
+<!-- Próximos eventos -->
+<section class="py-16">
+	<div class="container mx-auto px-4">
+		<div class="max-w-4xl mx-auto">
+			<UpcomingEventsWidget limit={5} />
 		</div>
 	</div>
 </section>

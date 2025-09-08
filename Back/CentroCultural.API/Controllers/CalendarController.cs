@@ -1,0 +1,443 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using CentroCultural.Application.DTOs;
+using CentroCultural.Application.Interfaces;
+using System.Security.Claims;
+
+namespace CentroCultural.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CalendarController : ControllerBase
+    {
+        private readonly ICalendarService _calendarService;
+        private readonly ILogger<CalendarController> _logger;
+
+        public CalendarController(ICalendarService calendarService, ILogger<CalendarController> logger)
+        {
+            _calendarService = calendarService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Obtiene un evento específico por ID
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<EventDto>> GetEvent(Guid id)
+        {
+            try
+            {
+                var eventDto = await _calendarService.GetEventByIdAsync(id);
+                if (eventDto == null)
+                {
+                    return NotFound($"Evento con ID {id} no encontrado");
+                }
+                return Ok(eventDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener el evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene una lista paginada de eventos con filtros
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<EventPagedResultDto>> GetEvents([FromQuery] EventSearchDto searchDto)
+        {
+            try
+            {
+                var result = await _calendarService.GetEventsAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene vista de calendario para un mes/semana/día específico
+        /// </summary>
+        [HttpGet("calendar-view")]
+        public async Task<ActionResult<CalendarViewDto>> GetCalendarView([FromQuery] DateTime viewDate, [FromQuery] string viewType = "month")
+        {
+            try
+            {
+                var result = await _calendarService.GetCalendarViewAsync(viewDate, viewType);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener vista de calendario");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Crea un nuevo evento (requiere autenticación)
+        /// </summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<EventDto>> CreateEvent([FromBody] CreateEventDto createEventDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var eventDto = await _calendarService.CreateEventAsync(createEventDto, userId.Value);
+                return CreatedAtAction(nameof(GetEvent), new { id = eventDto.Id }, eventDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear evento");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Actualiza un evento existente (solo organizador o admin)
+        /// </summary>
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<ActionResult<EventDto>> UpdateEvent(Guid id, [FromBody] UpdateEventDto updateEventDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var eventDto = await _calendarService.UpdateEventAsync(id, updateEventDto, userId.Value);
+                return Ok(eventDto);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para editar este evento");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Elimina un evento (solo organizador o admin)
+        /// </summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<ActionResult> DeleteEvent(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var success = await _calendarService.DeleteEventAsync(id, userId.Value);
+                if (!success)
+                {
+                    return NotFound("Evento no encontrado o sin permisos para eliminarlo");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos próximos
+        /// </summary>
+        [HttpGet("upcoming")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetUpcomingEvents([FromQuery] int limit = 10)
+        {
+            try
+            {
+                var events = await _calendarService.GetUpcomingEventsAsync(limit);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos próximos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos destacados
+        /// </summary>
+        [HttpGet("featured")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetFeaturedEvents([FromQuery] int limit = 5)
+        {
+            try
+            {
+                var events = await _calendarService.GetFeaturedEventsAsync(limit);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos destacados");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene tipos de eventos disponibles
+        /// </summary>
+        [HttpGet("types")]
+        public async Task<ActionResult<IEnumerable<EventTypeDto>>> GetEventTypes()
+        {
+            try
+            {
+                var eventTypes = await _calendarService.GetEventTypesAsync();
+                return Ok(eventTypes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener tipos de eventos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos por tipo
+        /// </summary>
+        [HttpGet("type/{eventType}")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetEventsByType(
+            string eventType, 
+            [FromQuery] DateTime? startDate = null, 
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var events = await _calendarService.GetEventsByTypeAsync(eventType, startDate, endDate);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos por tipo {EventType}", eventType);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos relacionados a un curso
+        /// </summary>
+        [HttpGet("course/{courseId}")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetEventsByCourse(Guid courseId)
+        {
+            try
+            {
+                var events = await _calendarService.GetEventsByCourseAsync(courseId);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos del curso {CourseId}", courseId);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos relacionados a un post de blog
+        /// </summary>
+        [HttpGet("blog/{blogPostId}")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetEventsByBlogPost(Guid blogPostId)
+        {
+            try
+            {
+                var events = await _calendarService.GetEventsByBlogPostAsync(blogPostId);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos del blog post {BlogPostId}", blogPostId);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Genera ocurrencias de un evento recurrente en un rango de fechas
+        /// </summary>
+        [HttpGet("{id}/recurrences")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GenerateRecurringEvents(
+            Guid id, 
+            [FromQuery] DateTime startDate, 
+            [FromQuery] DateTime endDate)
+        {
+            try
+            {
+                var occurrences = await _calendarService.GenerateRecurringEventsAsync(id, startDate, endDate);
+                return Ok(occurrences);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar recurrencias del evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Registra un usuario a un evento (requiere autenticación)
+        /// </summary>
+        [HttpPost("{id}/register")]
+        [Authorize]
+        public async Task<ActionResult> RegisterToEvent(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var success = await _calendarService.RegisterToEventAsync(id, userId.Value);
+                if (!success)
+                {
+                    return BadRequest("No se pudo registrar al evento");
+                }
+
+                return Ok(new { message = "Registrado exitosamente al evento" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al registrar usuario al evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Desregistra un usuario de un evento (requiere autenticación)
+        /// </summary>
+        [HttpPost("{id}/unregister")]
+        [Authorize]
+        public async Task<ActionResult> UnregisterFromEvent(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var success = await _calendarService.UnregisterFromEventAsync(id, userId.Value);
+                if (!success)
+                {
+                    return BadRequest("No se pudo desregistrar del evento");
+                }
+
+                return Ok(new { message = "Desregistrado exitosamente del evento" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al desregistrar usuario del evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene eventos en los que está registrado el usuario actual
+        /// </summary>
+        [HttpGet("my-registrations")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetMyRegisteredEvents()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var events = await _calendarService.GetUserRegisteredEventsAsync(userId.Value);
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener eventos registrados del usuario");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Marca o desmarca un evento como destacado (solo admin)
+        /// </summary>
+        [HttpPatch("{id}/featured")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult> SetEventFeatured(Guid id, [FromBody] bool isFeatured)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var success = await _calendarService.SetEventFeaturedAsync(id, isFeatured, userId.Value);
+                if (!success)
+                {
+                    return NotFound("Evento no encontrado");
+                }
+
+                return Ok(new { message = $"Evento {(isFeatured ? "marcado" : "desmarcado")} como destacado" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cambiar estado destacado del evento {EventId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene estadísticas de eventos (solo admin)
+        /// </summary>
+        [HttpGet("statistics")]
+        [Authorize(Roles = "Administrador")]
+        public async Task<ActionResult> GetEventStatistics([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var statistics = await _calendarService.GetEventStatisticsAsync(startDate, endDate);
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener estadísticas de eventos");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el ID del usuario actual desde el token JWT
+        /// </summary>
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
+        }
+    }
+}
