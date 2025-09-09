@@ -14,6 +14,7 @@ namespace CentroCultural.Application.Configuration
             services.AddScoped<IBlogService, BlogService>();
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<ICalendarService, CalendarService>();
+            services.AddScoped<IEventService, EventService>();
             services.AddScoped<IUserManagementService, UserManagementService>();
             
             return services;

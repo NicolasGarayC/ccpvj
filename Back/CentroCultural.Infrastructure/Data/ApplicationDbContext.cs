@@ -1,6 +1,5 @@
 using CentroCultural.Domain.Entities;
 using Models;
-using CentroCultural.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;

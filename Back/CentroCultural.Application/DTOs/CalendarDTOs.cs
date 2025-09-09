@@ -159,4 +159,42 @@ namespace CentroCultural.Application.DTOs
         public string Icon { get; set; } = "calendar";
         public int Count { get; set; }
     }
+
+    // DTOs para eventos detallados
+    public class EventDetailDto : EventDto
+    {
+        public List<EventRegistrationDto> Registrations { get; set; } = new List<EventRegistrationDto>();
+        public bool IsUserRegistered { get; set; }
+        public bool CanUserRegister { get; set; }
+    }
+
+    // DTOs para registraciones de eventos
+    public class EventRegistrationDto
+    {
+        public Guid Id { get; set; }
+        public Guid EventId { get; set; }
+        public string EventTitle { get; set; } = string.Empty;
+        public int? UserId { get; set; }
+        public string? UserName { get; set; }
+        public string ContactName { get; set; } = string.Empty;
+        public string ContactEmail { get; set; } = string.Empty;
+        public string? ContactPhone { get; set; }
+        public string Status { get; set; } = "Pendiente"; // Pendiente, Confirmada, Cancelada
+        public DateTime RegisteredAt { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class CreateEventRegistrationDto
+    {
+        public string ContactName { get; set; } = string.Empty;
+        public string ContactEmail { get; set; } = string.Empty;
+        public string? ContactPhone { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class UpdateRegistrationStatusDto
+    {
+        public string Status { get; set; } = string.Empty; // Pendiente, Confirmada, Cancelada
+        public string? Notes { get; set; }
+    }
 }
