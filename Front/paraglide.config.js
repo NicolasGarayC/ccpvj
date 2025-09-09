@@ -5,5 +5,7 @@ export default {
   // Idiomas disponibles
   availableLanguageTags: ['es', 'en'],
   // Idioma por defecto
-  defaultLanguageTag: 'es'
+  defaultLanguageTag: 'es',
+  // Configuración para evitar recompilaciones excesivas
+  watch: false
 };

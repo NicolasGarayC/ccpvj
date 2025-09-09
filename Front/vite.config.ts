@@ -14,6 +14,14 @@ export default defineConfig({
 			outdir: './src/lib/paraglide'
 		})
 	],
+	server: {
+		watch: {
+			ignored: [
+				'**/project.inlang/cache/**',
+				'**/src/lib/paraglide/**'
+			]
+		}
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

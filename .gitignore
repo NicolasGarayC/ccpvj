@@ -24,6 +24,8 @@ vite.config.ts.timestamp-*
 
 # Paraglide
 src/lib/paraglide
+Front/src/lib/paraglide
+Front/project.inlang/cache
 
 
 *storybook.log
