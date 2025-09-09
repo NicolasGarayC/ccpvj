@@ -21,6 +21,10 @@ namespace Models
         [Column("Description")]
         public string Description { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        [Column("Subject")]
+        public string Subject { get; set; } = "General";
+
         [MaxLength(500)]
         [Column("ImagePath")]
         public string ImagePath { get; set; } = string.Empty;

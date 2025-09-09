@@ -40,6 +40,12 @@ namespace CentroCultural.Domain.Entities
         [Column("IdRol")]
         public int IdRol { get; set; }
 
+        // Propiedades adicionales para compatibilidad con servicios
+        public int Id => IdUsuario;
+        public bool EsActivo { get; set; } = true;
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+        public DateTime? FechaActualizacion { get; set; }
+
         // Navigation property
         [ForeignKey("IdRol")]
         public virtual Rol Rol { get; set; } = null!;

@@ -133,7 +133,7 @@ namespace CentroCultural.Application.Services
                 IsActive = eventEntity.IsActive,
                 IsFeatured = eventEntity.IsFeatured,
                 MaxAttendees = eventEntity.MaxAttendees,
-                CurrentAttendees = eventEntity.Registrations.Count(r => r.Status == "Confirmada"),
+                CurrentAttendees = eventEntity.Registrations.Count(r => r.Status == RegistrationStatus.Confirmed),
                 RequiresRegistration = eventEntity.RequiresRegistration,
                 RegistrationDeadline = eventEntity.RegistrationDeadline,
                 ImagePath = eventEntity.ImagePath,
@@ -157,13 +157,13 @@ namespace CentroCultural.Application.Services
                     Id = r.Id,
                     EventId = r.EventId,
                     EventTitle = eventEntity.Title,
-                    UserId = r.UserId,
+                    UserId = r.IsGuest ? null : r.UserId,
                     UserName = r.User != null ? r.User.Nombre + " " + r.User.Apellido : null,
-                    ContactName = r.ContactName,
-                    ContactEmail = r.ContactEmail,
-                    ContactPhone = r.ContactPhone,
-                    Status = r.Status,
-                    RegisteredAt = r.RegisteredAt,
+                    ContactName = r.IsGuest ? r.GuestName ?? "" : (r.User?.Nombre + " " + r.User?.Apellido) ?? "",
+                    ContactEmail = r.IsGuest ? r.GuestEmail ?? "" : "",
+                    ContactPhone = r.IsGuest ? r.GuestPhone : "",
+                    Status = r.Status.ToString(),
+                    RegisteredAt = r.RegistrationDate,
                     Notes = r.Notes
                 }).ToList()
             };
@@ -426,13 +426,13 @@ namespace CentroCultural.Application.Services
                     Id = r.Id,
                     EventId = r.EventId,
                     EventTitle = eventEntity.Title,
-                    UserId = r.UserId,
+                    UserId = r.IsGuest ? null : r.UserId,
                     UserName = r.User != null ? r.User.Nombre + " " + r.User.Apellido : null,
-                    ContactName = r.ContactName,
-                    ContactEmail = r.ContactEmail,
-                    ContactPhone = r.ContactPhone,
-                    Status = r.Status,
-                    RegisteredAt = r.RegisteredAt,
+                    ContactName = r.IsGuest ? r.GuestName ?? "" : (r.User?.Nombre + " " + r.User?.Apellido) ?? "",
+                    ContactEmail = r.IsGuest ? r.GuestEmail ?? "" : "",
+                    ContactPhone = r.IsGuest ? r.GuestPhone : "",
+                    Status = r.Status.ToString(),
+                    RegisteredAt = r.RegistrationDate,
                     Notes = r.Notes
                 })
                 .ToListAsync();
@@ -454,17 +454,16 @@ namespace CentroCultural.Application.Services
 
             // Verificar cupo
             var currentRegistrations = await _context.EventRegistration
-                .CountAsync(r => r.EventId == eventId && r.Status == "Confirmada");
+                .CountAsync(r => r.EventId == eventId && r.Status == RegistrationStatus.Confirmed);
 
             if (eventEntity.MaxAttendees.HasValue && currentRegistrations >= eventEntity.MaxAttendees.Value)
                 throw new InvalidOperationException("No hay cupos disponibles");
 
-            int? userIdInt = null;
-            if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out int parsedUserId))
-                userIdInt = parsedUserId;
+            int userIdInt = 0;
+            bool isGuest = string.IsNullOrEmpty(userId) || !int.TryParse(userId, out userIdInt);
 
-            // Verificar si ya está inscrito
-            if (userIdInt.HasValue)
+            // Verificar si ya está inscrito (solo para usuarios registrados)
+            if (!isGuest)
             {
                 var existingRegistration = await _context.EventRegistration
                     .FirstOrDefaultAsync(r => r.EventId == eventId && r.UserId == userIdInt);
@@ -476,12 +475,13 @@ namespace CentroCultural.Application.Services
             {
                 Id = Guid.NewGuid(),
                 EventId = eventId,
-                UserId = userIdInt,
-                ContactName = registrationDto.ContactName,
-                ContactEmail = registrationDto.ContactEmail,
-                ContactPhone = registrationDto.ContactPhone,
-                Status = "Pendiente",
-                RegisteredAt = DateTime.Now,
+                UserId = isGuest ? 0 : userIdInt, // 0 para guests
+                IsGuest = isGuest,
+                GuestName = isGuest ? registrationDto.ContactName : null,
+                GuestEmail = isGuest ? registrationDto.ContactEmail : null,
+                GuestPhone = isGuest ? registrationDto.ContactPhone : null,
+                Status = RegistrationStatus.Pending,
+                RegistrationDate = DateTime.Now,
                 Notes = registrationDto.Notes
             };
 
@@ -493,12 +493,12 @@ namespace CentroCultural.Application.Services
                 Id = registration.Id,
                 EventId = registration.EventId,
                 EventTitle = eventEntity.Title,
-                UserId = registration.UserId,
-                ContactName = registration.ContactName,
-                ContactEmail = registration.ContactEmail,
-                ContactPhone = registration.ContactPhone,
-                Status = registration.Status,
-                RegisteredAt = registration.RegisteredAt,
+                UserId = registration.IsGuest ? null : registration.UserId,
+                ContactName = registration.IsGuest ? registration.GuestName ?? "" : "",
+                ContactEmail = registration.IsGuest ? registration.GuestEmail ?? "" : "",
+                ContactPhone = registration.IsGuest ? registration.GuestPhone : "",
+                Status = registration.Status.ToString(),
+                RegisteredAt = registration.RegistrationDate,
                 Notes = registration.Notes
             };
         }
@@ -520,7 +520,10 @@ namespace CentroCultural.Application.Services
             if (user == null || (registration.Event.OrganizerId != userIdInt && user.IdRol != 3))
                 throw new UnauthorizedAccessException();
 
-            registration.Status = statusDto.Status;
+            if (Enum.TryParse<RegistrationStatus>(statusDto.Status, out var status))
+                registration.Status = status;
+            else
+                throw new ArgumentException("Estado de inscripción inválido");
             registration.Notes = statusDto.Notes;
 
             await _context.SaveChangesAsync();

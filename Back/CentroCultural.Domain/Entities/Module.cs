@@ -40,8 +40,10 @@ namespace CentroCultural.Domain.Entities
         [Column("CourseId")]
         public Guid CourseId { get; set; }
 
-        // Navigation property
+        // Navigation properties
         [ForeignKey("CourseId")]
         public virtual Course Course { get; set; } = null!;
+        
+        public virtual ICollection<WorkItem> WorkItems { get; set; } = new List<WorkItem>();
     }
 }

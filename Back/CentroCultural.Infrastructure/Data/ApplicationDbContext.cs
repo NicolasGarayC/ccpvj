@@ -14,6 +14,7 @@ namespace CentroCultural.Infrastructure.Data
         }
 
         public DbSet<Usuario> Usuario { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Rol> Rol { get; set; }
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
@@ -26,7 +27,11 @@ namespace CentroCultural.Infrastructure.Data
         // Blog system entities
         public DbSet<BlogPost> BlogPost { get; set; }
         public DbSet<BlogCategory> BlogCategory { get; set; }
-        public DbSet<Event>? Event { get; set; }
+        
+        // Event system entities
+        public DbSet<Event> Event { get; set; }
+        public DbSet<Event> Events { get; set; }
+        public DbSet<EventRegistration> EventRegistration { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +56,11 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.Apellido).HasMaxLength(100);
                 entity.Property(e => e.Telefono).HasMaxLength(20);
                 entity.Property(e => e.IdRol).IsRequired();
+                
+                // Propiedades adicionales para compatibilidad
+                entity.Property(e => e.EsActivo).HasDefaultValue(true);
+                entity.Property(e => e.FechaCreacion).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.FechaActualizacion);
 
                 // �ndice �nico para nombre de usuario
                 entity.HasIndex(e => e.NombreUsuario).IsUnique();
@@ -270,19 +280,57 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.UserId);
             });
 
+            // Configuración de EventRegistration
+            modelBuilder.Entity<EventRegistration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.EventId).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.RegistrationDate).IsRequired().HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.Notes).HasMaxLength(500);
+                entity.Property(e => e.GuestName).HasMaxLength(100);
+                entity.Property(e => e.GuestEmail).HasMaxLength(100);
+                entity.Property(e => e.GuestPhone).HasMaxLength(20);
+                entity.Property(e => e.IsGuest).HasDefaultValue(false);
+
+                // Relaciones
+                entity.HasOne(er => er.Event)
+                      .WithMany(e => e.Registrations)
+                      .HasForeignKey(er => er.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(er => er.User)
+                      .WithMany()
+                      .HasForeignKey(er => er.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Índices
+                entity.HasIndex(e => e.EventId);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.RegistrationDate);
+                entity.HasIndex(e => e.Status);
+            });
+
             // Datos semilla para Rol
             modelBuilder.Entity<Rol>().HasData(
                 new Rol
                 {
                     IdRol = 1,
-                    NombreRol = "Educador",
-                    Descripcion = "Rol de educador del sistema"
+                    NombreRol = "Asistente",
+                    Descripcion = "Rol de asistente del sistema, solo lectura"
                 },
                 new Rol
                 {
                     IdRol = 2,
-                    NombreRol = "Estudiante",
-                    Descripcion = "Rol de estudiante del sistema"
+                    NombreRol = "Colaborador",
+                    Descripcion = "Rol de colaborador del sistema, puede crear y editar contenido"
+                },
+                new Rol
+                {
+                    IdRol = 3,
+                    NombreRol = "Administrador",
+                    Descripcion = "Rol de administrador del sistema, acceso completo"
                 }
             );
 
@@ -296,7 +344,7 @@ namespace CentroCultural.Infrastructure.Data
                     FechaRegistro = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                     Nombre = "Administrador",
                     Apellido = "Sistema",
-                    IdRol = 1
+                    IdRol = 3
                 }
             );
 

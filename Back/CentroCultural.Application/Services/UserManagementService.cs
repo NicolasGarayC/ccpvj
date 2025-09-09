@@ -102,6 +102,15 @@ namespace CentroCultural.Application.Services
             }
 
             // Crear el usuario
+            // Convertir string role a IdRol
+            int rolId = createUserDto.Role switch
+            {
+                "Asistente" => 1,
+                "Colaborador" => 2,
+                "Administrador" => 3,
+                _ => 1 // Default Asistente
+            };
+
             var user = new Usuario
             {
                 NombreUsuario = createUserDto.Username,
@@ -109,9 +118,10 @@ namespace CentroCultural.Application.Services
                 Nombre = createUserDto.Nombre,
                 Apellido = createUserDto.Apellido,
                 Telefono = createUserDto.Telefono,
-                Rol = createUserDto.Role,
+                IdRol = rolId,
                 EsActivo = true,
-                FechaCreacion = DateTime.UtcNow
+                FechaCreacion = DateTime.UtcNow,
+                FechaRegistro = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
             };
 
             _context.Usuarios.Add(user);
@@ -357,7 +367,7 @@ namespace CentroCultural.Application.Services
                 Nombre = user.Nombre,
                 Apellido = user.Apellido,
                 Telefono = user.Telefono,
-                Role = user.Rol,
+                Role = user.Rol?.NombreRol ?? "Asistente",
                 CreatedAt = user.FechaCreacion,
                 UpdatedAt = user.FechaActualizacion,
                 IsActive = user.EsActivo
