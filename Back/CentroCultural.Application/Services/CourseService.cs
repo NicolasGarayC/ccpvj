@@ -3,6 +3,7 @@ using CentroCultural.Domain.Entities;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
 using CentroCultural.Infrastructure.Data;
+using Models;
 
 namespace CentroCultural.Application.Services
 {

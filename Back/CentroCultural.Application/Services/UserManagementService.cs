@@ -37,7 +37,7 @@ namespace CentroCultural.Application.Services
 
             if (!string.IsNullOrEmpty(searchDto.Role))
             {
-                query = query.Where(u => u.Rol == searchDto.Role);
+                query = query.Where(u => u.Rol.NombreRol == searchDto.Role);
             }
 
             if (searchDto.IsActive.HasValue)
@@ -79,7 +79,7 @@ namespace CentroCultural.Application.Services
         {
             // Verificar permisos del usuario que crea
             var creatorUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == createdByUserId);
-            if (creatorUser == null || !CanManageUsers(creatorUser.Rol))
+            if (creatorUser == null || !CanManageUsers(creatorUser.Rol.NombreRol))
             {
                 throw new UnauthorizedAccessException("No tienes permisos para crear usuarios");
             }
@@ -96,7 +96,7 @@ namespace CentroCultural.Application.Services
                 throw new InvalidOperationException("Rol inválido");
             }
 
-            if (!CanAssignRole(creatorUser.Rol, createUserDto.Role))
+            if (!CanAssignRole(creatorUser.Rol.NombreRol, createUserDto.Role))
             {
                 throw new UnauthorizedAccessException($"No tienes permisos para asignar el rol {createUserDto.Role}");
             }
@@ -145,7 +145,7 @@ namespace CentroCultural.Application.Services
             }
 
             // Solo admin puede editar otros admins
-            if (user.Rol == "Administrador" && updaterUser.Rol != "Administrador" && user.Id != updatedByUserId)
+            if (user.Rol.NombreRol == "Administrador" && updaterUser.Rol.NombreRol != "Administrador" && user.Id != updatedByUserId)
             {
                 throw new UnauthorizedAccessException("Solo un administrador puede editar otro administrador");
             }
@@ -160,12 +160,22 @@ namespace CentroCultural.Application.Services
             }
 
             // Verificar cambio de rol
-            if (updateUserDto.Role != user.Rol)
+            if (updateUserDto.Role != user.Rol.NombreRol)
             {
-                if (!IsValidRole(updateUserDto.Role) || !CanAssignRole(updaterUser.Rol, updateUserDto.Role))
+                if (!IsValidRole(updateUserDto.Role) || !CanAssignRole(updaterUser.Rol.NombreRol, updateUserDto.Role))
                 {
                     throw new UnauthorizedAccessException($"No tienes permisos para asignar el rol {updateUserDto.Role}");
                 }
+                
+                // Convertir rol string a IdRol
+                int newRolId = updateUserDto.Role switch
+                {
+                    "Asistente" => 1,
+                    "Colaborador" => 2,
+                    "Administrador" => 3,
+                    _ => user.IdRol // Mantener rol actual si es inválido
+                };
+                user.IdRol = newRolId;
             }
 
             // Actualizar campos
@@ -173,7 +183,6 @@ namespace CentroCultural.Application.Services
             user.Nombre = updateUserDto.Nombre;
             user.Apellido = updateUserDto.Apellido;
             user.Telefono = updateUserDto.Telefono;
-            user.Rol = updateUserDto.Role;
             user.EsActivo = updateUserDto.IsActive;
             user.FechaActualizacion = DateTime.UtcNow;
 
@@ -193,7 +202,7 @@ namespace CentroCultural.Application.Services
             if (user == null) return false;
 
             var deleterUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == deletedByUserId);
-            if (deleterUser == null || deleterUser.Rol != "Administrador")
+            if (deleterUser == null || deleterUser.Rol.NombreRol != "Administrador")
             {
                 throw new UnauthorizedAccessException("Solo los administradores pueden eliminar usuarios");
             }
@@ -264,9 +273,17 @@ namespace CentroCultural.Application.Services
             var changerUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == changedByUserId);
             
             if (user == null || changerUser == null) return false;
-            if (!IsValidRole(newRole) || !CanAssignRole(changerUser.Rol, newRole)) return false;
+            if (!IsValidRole(newRole) || !CanAssignRole(changerUser.Rol.NombreRol, newRole)) return false;
 
-            user.Rol = newRole;
+            // Convertir rol string a IdRol
+            int newRolId = newRole switch
+            {
+                "Asistente" => 1,
+                "Colaborador" => 2,
+                "Administrador" => 3,
+                _ => user.IdRol // Mantener rol actual si es inválido
+            };
+            user.IdRol = newRolId;
             user.FechaActualizacion = DateTime.UtcNow;
             
             await _context.SaveChangesAsync();
@@ -286,13 +303,13 @@ namespace CentroCultural.Application.Services
         public async Task<bool> CanUserManageOtherUsersAsync(int userId)
         {
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
-            return user != null && CanManageUsers(user.Rol);
+            return user != null && CanManageUsers(user.Rol.NombreRol);
         }
 
         public async Task<bool> CanUserChangeRoleAsync(int userId, string targetRole)
         {
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
-            return user != null && CanAssignRole(user.Rol, targetRole);
+            return user != null && CanAssignRole(user.Rol.NombreRol, targetRole);
         }
 
         public async Task<UserStatsDto> GetUserStatisticsAsync()
@@ -300,8 +317,9 @@ namespace CentroCultural.Application.Services
             var totalUsers = await _context.Usuarios.CountAsync();
             var activeUsers = await _context.Usuarios.CountAsync(u => u.EsActivo);
             var usersByRole = await _context.Usuarios
+                .Include(u => u.Rol)
                 .Where(u => u.EsActivo)
-                .GroupBy(u => u.Rol)
+                .GroupBy(u => u.Rol.NombreRol)
                 .ToDictionaryAsync(g => g.Key, g => g.Count());
             
             var lastUserCreated = await _context.Usuarios

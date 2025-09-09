@@ -45,6 +45,7 @@ namespace CentroCultural.Domain.Entities
         public bool EsActivo { get; set; } = true;
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
         public DateTime? FechaActualizacion { get; set; }
+        public string Role => Rol?.NombreRol ?? "Asistente";
 
         // Navigation property
         [ForeignKey("IdRol")]
