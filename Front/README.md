@@ -1,6 +1,6 @@
 # Centro Cultural Víctor Jara - Frontend
 
-Frontend de la plataforma Centro Cultural Víctor Jara, desarrollado con SvelteKit 5 y diseñado para gestión contextual de multimedia educativa y cultural.
+Frontend de la plataforma Centro Cultural Víctor Jara, desarrollado con SvelteKit 5 y diseñado para funcionar **exclusivamente en Red MESH autónoma** sin acceso a Internet, con gestión contextual de multimedia educativa y cultural.
 
 ## 🎯 Características Principales
 
@@ -26,80 +26,81 @@ Frontend de la plataforma Centro Cultural Víctor Jara, desarrollado con SvelteK
 - **🚫 Registro Público Deshabilitado**: Solo Admin/Colaboradores crean usuarios
 - **📊 Panel Dedicado**: Interface completa en /dashboard/users
 
-#### 🔐 **Autenticación JWT Integrada**
-- **JWT + Refresh Tokens**: Sistema profesional integrado con backend .NET
-- **Renovación Automática**: Tokens renovados transparentemente (15min/7días)
-- **Logout Seguro**: Revocación en blacklist del backend
+#### 🔐 **Autenticación JWT Offline**
+- **JWT + Refresh Tokens**: Sistema profesional completamente offline integrado con backend .NET
+- **Renovación Automática**: Tokens renovados localmente (15min/7días) sin servicios externos
+- **Logout Seguro**: Revocación en blacklist local del backend
 - **Almacenamiento Seguro**: Access tokens (localStorage) + Refresh (httpOnly cookies)
-- **APIs Proxy**: Transparencia entre frontend y backend para compatibilidad
+- **APIs Proxy**: Comunicación exclusiva dentro de Red MESH
 
 ## 🏗️ Stack Tecnológico
 
 ```json
 {
   "framework": "SvelteKit 5",
-  "language": "TypeScript",
-  "styling": "TailwindCSS 4.0",
-  "database": "SQLite + Drizzle ORM",
-  "auth": "JWT integrado con backend .NET + refresh tokens",
-  "i18n": "Paraglide.js",
-  "testing": "Vitest + Playwright",
-  "dev": "Storybook",
+  "language": "TypeScript", 
+  "styling": "TailwindCSS 4.0 (recursos locales)",
+  "database": "SQLite + Drizzle ORM (offline)",
+  "auth": "JWT offline con backend .NET + refresh tokens",
+  "network": "Red MESH exclusiva - SIN Internet",
+  "i18n": "Paraglide.js (offline)",
+  "testing": "Vitest + Playwright (offline)",
+  "dev": "Storybook (recursos locales)",
   "linting": "ESLint + Prettier"
 }
 ```
 
 ## 🚀 Inicio Rápido
 
-### Instalación
+### Instalación en Red MESH
 ```bash
-# Instalar dependencias
-npm install
+# Instalar dependencias (desde cache local - SIN descargas de Internet)
+npm install --offline --cache /path/to/local/npm/cache
 
-# Inicializar base de datos contextual
+# Inicializar base de datos contextual SQLite local
 ../init_contextual_database.sh
 
-# Iniciar desarrollo
-npm run dev
+# Iniciar desarrollo en Red MESH
+npm run dev -- --host [IP-SERVER-MESH] --port 5173
 ```
 
 ### Comandos Disponibles
 
-#### Desarrollo
+#### Desarrollo Red MESH
 ```bash
-npm run dev              # Servidor desarrollo (http://localhost:5173)
-npm run dev -- --open    # Servidor + abrir navegador
-npm run preview          # Vista previa build producción
+npm run dev -- --host [IP-SERVER-MESH]     # Servidor accesible en red MESH
+npm run dev -- --host [IP-SERVER-MESH] --open  # + abrir navegador
+npm run preview -- --host [IP-SERVER-MESH] # Vista previa build para MESH
 ```
 
-#### Build y Despliegue
+#### Build y Despliegue MESH
 ```bash
-npm run build            # Build para producción
-npm run check            # Verificación TypeScript/Svelte
+npm run build            # Build optimizado para Red MESH (sin dependencias externas)
+npm run check            # Verificación TypeScript/Svelte (offline)
 npm run format           # Formatear código (Prettier)
 npm run lint             # Verificar formato
 ```
 
-#### Base de Datos
+#### Base de Datos SQLite Local
 ```bash
-npm run db:generate      # Generar migraciones Drizzle
-npm run db:push          # Aplicar cambios schema
-npm run db:migrate       # Ejecutar migraciones
-npm run db:studio        # Abrir Drizzle Studio
-npm run db:seed          # Poblar con datos de prueba
+npm run db:generate      # Generar migraciones Drizzle (offline)
+npm run db:push          # Aplicar cambios schema SQLite local
+npm run db:migrate       # Ejecutar migraciones (base local)
+npm run db:studio        # Abrir Drizzle Studio (http://[IP-SERVER-MESH]:4983)
+npm run db:seed          # Poblar con datos de prueba (offline)
 ```
 
-#### Testing
+#### Testing Offline
 ```bash
-npm run test:unit        # Pruebas unitarias (Vitest)
-npm run test:e2e         # Pruebas E2E (Playwright)
-npm run test:e2e:ui      # UI de Playwright
+npm run test:unit        # Pruebas unitarias (Vitest) - offline
+npm run test:e2e         # Pruebas E2E (Playwright) - red MESH local
+npm run test:e2e:ui      # UI de Playwright - http://[IP-SERVER-MESH]:port
 ```
 
-#### Storybook
+#### Storybook Red MESH
 ```bash
-npm run storybook        # Desarrollo componentes
-npm run build-storybook  # Build Storybook
+npm run storybook -- --host [IP-SERVER-MESH]  # Desarrollo componentes accesible en MESH
+npm run build-storybook  # Build Storybook (recursos locales)
 ```
 
 ## 📁 Estructura del Proyecto
@@ -479,37 +480,52 @@ UPLOAD_PATH="../Data/media"
 }
 ```
 
-## 🚀 Build y Despliegue
+## 🚀 Build y Despliegue Red MESH
 
-### Build para Producción
+### Build para Producción MESH
 ```bash
 npm run build
-# Genera en build/ con:
-# - Archivos estáticos optimizados
-# - Chunks JS minimizados
-# - CSS purgado con Tailwind
+# Genera en build/ optimizado para Red MESH:
+# - Archivos estáticos sin dependencias externas
+# - Chunks JS minimizados (sin CDNs)
+# - CSS purgado con Tailwind (recursos locales)
+# - Assets autocontenidos para red MESH
 ```
 
-### Análisis Bundle
+### Análisis Bundle MESH
 ```bash
-npx vite-bundle-analyzer build/
+npx vite-bundle-analyzer build/  # Verificar que no hay dependencias externas
+```
+
+### Despliegue en Server MESH
+```bash
+# Copiar build al servidor MESH
+scp -r build/ mesh-admin@[IP-SERVER-MESH]:/var/www/centro-cultural/
+
+# Configurar NGINX en server MESH
+sudo cp ../Infraestructure/nginx/sites-available/centro-cultural.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/centro-cultural.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ## 📊 Performance
 
-### Optimizaciones Implementadas
-- **Code Splitting**: Rutas lazy-loaded automáticamente
-- **Image Optimization**: WebP + lazy loading
-- **CSS Purging**: Solo estilos usados en build
-- **Tree Shaking**: Eliminación código no usado
-- **Preloading**: Links críticos pre-cargados
+### Optimizaciones Red MESH
+- **Code Splitting**: Rutas lazy-loaded (recursos locales)
+- **Image Optimization**: WebP + lazy loading (sin CDNs externos)
+- **CSS Purging**: Solo estilos usados (TailwindCSS local)
+- **Tree Shaking**: Eliminación código no usado 
+- **Preloading**: Links críticos pre-cargados (recursos MESH)
+- **Bundle Autocontenido**: Sin dependencias de servicios externos
+- **Cache Estratégico**: Optimizado para red MESH local
 
-### Métricas Target
-- **First Contentful Paint**: < 1.5s
-- **Largest Contentful Paint**: < 2.5s
-- **Cumulative Layout Shift**: < 0.1
-- **First Input Delay**: < 100ms
+### Métricas Target Red MESH
+- **First Contentful Paint**: < 1.5s (red MESH local)
+- **Largest Contentful Paint**: < 2.5s (sin latencia Internet)
+- **Cumulative Layout Shift**: < 0.1 (recursos locales)
+- **First Input Delay**: < 100ms (respuesta inmediata MESH)
+- **Network Requests**: 0 externas (100% autocontenido)
 
 ---
 
-**Desarrollado con SvelteKit 5 para máxima eficiencia y experiencia de usuario** 🚀
+**Desarrollado con SvelteKit 5 para máxima eficiencia en Red MESH autónoma** 🌐🚀

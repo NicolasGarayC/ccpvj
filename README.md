@@ -1,6 +1,6 @@
 # Centro Cultural Víctor Jara - Platform
 
-Una plataforma web completa para centros culturales comunitarios, diseñada para funcionar offline con arquitectura MESH y gestión contextual de multimedia.
+Una plataforma web completa para centros culturales comunitarios, diseñada para funcionar en **Red MESH autónoma** sin acceso a Internet, con gestión contextual de multimedia.
 
 ## 🏗️ Arquitectura del Proyecto
 
@@ -9,7 +9,8 @@ Una plataforma web completa para centros culturales comunitarios, diseñada para
 - **Backend**: .NET 8 (ASP.NET Core) con arquitectura en capas
 - **Base de Datos**: SQLite con Drizzle ORM (Frontend) + Entity Framework (Backend)
 - **Servidor Web**: NGINX para proxy inverso y multimedia
-- **Autenticación**: Sistema JWT integrado con refresh tokens y renovación automática
+- **Red**: **Red MESH autónoma** - Sin dependencias de Internet
+- **Autenticación**: Sistema JWT integrado con refresh tokens (completamente offline)
 
 ### Principio Arquitectónico Central
 **🎯 MULTIMEDIA CONTEXTUAL**: Todos los archivos multimedia pertenecen a contenido específico - NO existe multimedia independiente.
@@ -28,9 +29,10 @@ Event → [poster promocional, imágenes]
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
-- Node.js 18+ y npm/pnpm
-- .NET 8 SDK (opcional)
-- SQLite
+- **Infraestructura Red MESH**: Routers MESH + Server local
+- Node.js 18+ y npm/pnpm (instalados en server MESH)
+- .NET 8 SDK (instalado en server MESH)
+- SQLite (base de datos autocontenida)
 
 ### Configuración de Desarrollo
 
@@ -41,18 +43,18 @@ cd ccpvj
 ./init_contextual_database.sh  # Crear base de datos contextual
 ```
 
-2. **Frontend (Primario)**:
+2. **Frontend (Red MESH)**:
 ```bash
 cd Front/
-npm install
-npm run dev  # http://localhost:5173
+npm install  # Sin descargas de Internet - usar cache local
+npm run dev  # http://[IP-SERVER-MESH]:5173
 ```
 
-3. **Backend (Opcional)**:
+3. **Backend (Red MESH)**:
 ```bash
 cd Back/
-dotnet restore
-dotnet run   # http://localhost:5000
+dotnet restore  # Desde packages locales
+dotnet run      # http://[IP-SERVER-MESH]:5000
 ```
 
 ## 📋 Sistema de Gestión de Contenido
@@ -316,10 +318,10 @@ ccpvj/
 - Imágenes promocionales contextuales
 - Sistema de inscripciones
 
-#### 🌐 Red MESH
-- Sincronización entre nodos
-- Funcionamiento completamente offline
-- Distribución de contenido
+#### 🌐 Red MESH Avanzada
+- **Sincronización entre nodos MESH**: Replicación de datos entre routers
+- **Distribución de contenido**: Propagación automática en la red MESH
+- **Balanceo de carga**: Distribución de usuarios entre nodos MESH
 
 ## 🧪 Testing
 
@@ -337,27 +339,38 @@ cd Back/
 dotnet test            # Pruebas unitarias
 ```
 
-## 🚀 Despliegue
+## 🚀 Despliegue en Red MESH
 
-### Desarrollo
+### Desarrollo (Red MESH Local)
 ```bash
-# Frontend
-cd Front/ && npm run dev
+# Frontend en Server MESH
+cd Front/ && npm run dev  # Accesible desde todos los nodos MESH
 
-# Backend (opcional)
-cd Back/ && dotnet run
+# Backend en Server MESH  
+cd Back/ && dotnet run    # API disponible en red MESH
 ```
 
-### Producción
+### Producción (Red MESH)
 ```bash
-# Build Frontend
-cd Front/ && npm run build
+# Build Frontend para Red MESH
+cd Front/ && npm run build  # Sin dependencias externas
 
-# Build Backend
-cd Back/ && dotnet publish -c Release
+# Build Backend para Red MESH
+cd Back/ && dotnet publish -c Release  # Autocontenido
 
-# NGINX
-# Configurar archivos en Infraestructure/nginx/
+# NGINX en Server MESH
+# Configurar proxy para red MESH (ver Infraestructure/nginx/)
+sudo cp Infraestructure/nginx/sites-available/centro-cultural.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/centro-cultural.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 🌐 Configuración Red MESH
+```bash
+# Configurar IPs de la red MESH en archivos de configuración
+# Frontend: src/lib/config/mesh.ts
+# Backend: appsettings.json
+# NGINX: sites-available/centro-cultural.conf
 ```
 
 ## 📖 Documentación Adicional
@@ -369,12 +382,14 @@ cd Back/ && dotnet publish -c Release
 
 ## 🤝 Contribución
 
-Este proyecto está diseñado para centros culturales comunitarios. Las contribuciones deben mantener:
+Este proyecto está diseñado para centros culturales comunitarios en **Red MESH autónoma**. Las contribuciones deben mantener:
 
 1. **Arquitectura Contextual**: Multimedia siempre vinculada a contenido
 2. **Roles Diferenciados**: Respeto al sistema de permisos
 3. **Eficiencia de Recursos**: Mínimo consumo de CPU/procesamiento
-4. **Offline-First**: Funcionamiento sin conexión a internet
+4. **MESH-First**: Funcionamiento **exclusivo en Red MESH sin Internet**
+5. **Autocontenido**: Sin dependencias externas ni servicios cloud
+6. **Distribución MESH**: Compatibilidad con replicación entre nodos
 
 ## 📄 Licencia
 
@@ -383,10 +398,11 @@ Proyecto desarrollado para Centro Cultural Víctor Jara - Bogotá, Colombia.
 ## 🏗️ Estado del Proyecto
 
 **🟢 Producción Lista**: Frontend completo con autenticación JWT, gestión de cursos, blog y sistema de usuarios
-**🟢 Backend Integrado**: APIs JWT con refresh tokens, gestión de usuarios y multimedia contextual
-**🟢 Autenticación Segura**: Sistema JWT profesional con renovación automática y logout seguro
-**🟡 NGINX**: Configuraciones preparadas para despliegue
-**🔵 MESH**: Infraestructura documentada, implementación pendiente
+**🟢 Backend Integrado**: APIs JWT con refresh tokens, gestión de usuarios y multimedia contextual  
+**🟢 Autenticación Segura**: Sistema JWT profesional offline con renovación automática
+**🟢 Red MESH**: Configurado para funcionar exclusivamente en Red MESH sin Internet
+**🟡 NGINX**: Configuraciones Red MESH preparadas para despliegue
+**🔵 MESH Avanzada**: Sincronización entre nodos y distribución automática (pendiente)
 
 ---
 

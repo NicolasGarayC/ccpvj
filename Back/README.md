@@ -1,16 +1,17 @@
 # Centro Cultural Víctor Jara - Backend API
 
-Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural Víctor Jara. Proporciona APIs REST seguras con autenticación JWT y gestión completa de usuarios.
+Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural Víctor Jara. Proporciona APIs REST seguras con autenticación JWT completamente **offline en Red MESH autónoma** sin acceso a Internet.
 
 ## 🏗️ Arquitectura
 
 ### Stack Tecnológico
-- **.NET 8**: Framework backend con ASP.NET Core
-- **Entity Framework Core**: ORM para acceso a datos  
-- **SQL Server/SQLite**: Base de datos principal
-- **JWT + Refresh Tokens**: Autenticación segura con blacklist
-- **BCrypt**: Hash de contraseñas
-- **Swagger/OpenAPI**: Documentación automática de APIs
+- **.NET 8**: Framework backend con ASP.NET Core (deployment autocontenido)
+- **Entity Framework Core**: ORM para acceso a datos offline
+- **SQLite**: Base de datos principal (autocontenida, sin servidor externo)
+- **JWT + Refresh Tokens**: Autenticación completamente offline con blacklist local
+- **BCrypt**: Hash de contraseñas (sin dependencias externas)
+- **Swagger/OpenAPI**: Documentación automática (recursos locales)
+- **Red MESH**: APIs disponibles exclusivamente en red MESH local
 
 ### Arquitectura en Capas
 ```
@@ -141,41 +142,44 @@ POST   /api/upload/blog/{id}/documents    # PDF para blog
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
-- .NET 8 SDK
-- SQL Server o SQLite
-- Visual Studio 2022 / VS Code
+- **Server Red MESH** con .NET 8 SDK instalado
+- **SQLite** (base de datos autocontenida - NO requiere servidor externo)
+- **Visual Studio 2022 / VS Code** (instalado en server MESH)
+- **Red MESH configurada** sin acceso a Internet
 
-### Configuración
+### Configuración Red MESH
 ```bash
-# Restaurar paquetes
-dotnet restore
+# Restaurar paquetes (desde cache local - SIN Internet)
+dotnet restore --source /path/to/local/nuget/cache
 
-# Configurar cadena conexión en appsettings.json
+# Configurar para Red MESH en appsettings.json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=CentroCultural;..."
+    "DefaultConnection": "Data Source=../Data/ccpvj.db;Cache=Shared;"
   },
   "JwtSettings": {
-    "Key": "your-secret-key-here",
-    "Issuer": "CentroCultural",
-    "Audience": "CentroCultural-Users"
-  }
+    "Key": "your-mesh-secret-key-256-bits-minimum",
+    "Issuer": "CentroCultural-MESH",
+    "Audience": "CentroCultural-MESH-Users"
+  },
+  "AllowedHosts": "[IP-RANGE-MESH]:*",  # Solo IPs de red MESH
+  "Urls": "http://[IP-SERVER-MESH]:5000"
 }
 
-# Aplicar migraciones
+# Aplicar migraciones (base de datos SQLite local)
 dotnet ef database update
 
-# Ejecutar aplicación
-dotnet run
+# Ejecutar en Server MESH
+dotnet run --urls="http://[IP-SERVER-MESH]:5000"
 ```
 
-### Desarrollo
+### Desarrollo en Red MESH
 ```bash
-dotnet run                    # Ejecutar aplicación
-dotnet watch                  # Hot reload
-dotnet ef migrations add <name> # Nueva migración
-dotnet ef database update    # Aplicar migraciones
-dotnet test                   # Ejecutar pruebas
+dotnet run --urls="http://[IP-SERVER-MESH]:5000"  # API en red MESH
+dotnet watch --urls="http://[IP-SERVER-MESH]:5000" # Hot reload MESH
+dotnet ef migrations add <name>     # Nueva migración (offline)
+dotnet ef database update          # Aplicar migraciones SQLite local
+dotnet test                         # Pruebas unitarias (offline)
 ```
 
 ## 🗄️ Base de Datos
@@ -375,36 +379,46 @@ services.AddHealthChecks()
 app.MapHealthChecks("/health");
 ```
 
-## 🚀 Despliegue
+## 🚀 Despliegue en Red MESH
 
-### Build para Producción
+### Build para Producción MESH
 ```bash
-dotnet publish -c Release -o ./publish
+# Build autocontenido para Red MESH (sin dependencias externas)
+dotnet publish -c Release -r linux-x64 --self-contained true -o ./publish-mesh
+
+# Copiar a Server MESH
+scp -r ./publish-mesh mesh-admin@[IP-SERVER-MESH]:/opt/centro-cultural/
 ```
 
-### Docker Support
+### Docker Support para Red MESH
 ```dockerfile
+# Imagen base sin conectividad externa
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+EXPOSE 5000
 
+# Build autocontenido
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish -c Release --self-contained true -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+# Configurar para red MESH local
+ENV ASPNETCORE_URLS=http://+:5000
 ENTRYPOINT ["dotnet", "CentroCultural.API.dll"]
 ```
 
-### Variables de Entorno
+### Variables de Entorno Red MESH
 ```bash
 ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__DefaultConnection="Server=..."
-JwtSettings__Key="production-secret-key"
+ASPNETCORE_URLS=http://[IP-SERVER-MESH]:5000
+ConnectionStrings__DefaultConnection="Data Source=/data/ccpvj.db;Cache=Shared;"
+JwtSettings__Key="mesh-production-secret-key-256-bits"
+JwtSettings__Issuer="CentroCultural-MESH"
+JwtSettings__Audience="CentroCultural-MESH-Users"
 ```
 
 ## 📈 Performance
@@ -424,4 +438,4 @@ JwtSettings__Key="production-secret-key"
 
 ---
 
-**Backend API desarrollado con .NET 8 para máxima seguridad y performance** 🚀
+**Backend API desarrollado con .NET 8 para máxima seguridad y performance en Red MESH autónoma** 🌐🚀
