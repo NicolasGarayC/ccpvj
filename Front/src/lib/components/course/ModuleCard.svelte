@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { Module } from '$lib/services/course/courseService';
+	import type { Module } from '$lib/services/courseService';
 
 	export let module: Module;
 	export let showActions = false;

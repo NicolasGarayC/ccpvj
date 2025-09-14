@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using CentroCultural.Domain.Entities;
-using CentroCultural.Domain.Enums;
 using CentroCultural.Domain.Exceptions;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
 using CentroCultural.Infrastructure.Data;
+using MediaTypeEnum = CentroCultural.Domain.Enums.MediaType;
 
 namespace CentroCultural.Application.Services
 {
@@ -53,7 +53,7 @@ namespace CentroCultural.Application.Services
                     FileName = fileName,
                     RelativePath = GetRelativePath(contentType, contentId, "images", fileName),
                     ThumbnailPath = $"processed/images/thumbnails/{fileName}",
-                    Type = MediaType.Image,
+                    Type = CentroCultural.Domain.Enums.MediaType.Image,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = GetMimeType(fileName),
                     CreatedBy = userId ?? string.Empty,
@@ -88,7 +88,7 @@ namespace CentroCultural.Application.Services
                     FileName = fileName,
                     RelativePath = GetRelativePath(contentType, contentId, "videos", fileName),
                     ThumbnailPath = string.Empty,
-                    Type = MediaType.Video,
+                    Type = CentroCultural.Domain.Enums.MediaType.Video,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = "video/mp4",
                     CreatedBy = userId ?? string.Empty,
@@ -116,7 +116,7 @@ namespace CentroCultural.Application.Services
                     FileName = fileName,
                     RelativePath = GetRelativePath(contentType, contentId, "audio", fileName),
                     ThumbnailPath = string.Empty,
-                    Type = MediaType.Audio,
+                    Type = CentroCultural.Domain.Enums.MediaType.Audio,
                     SizeBytes = new FileInfo(destPath).Length,
                     MimeType = "audio/mpeg",
                     CreatedBy = userId ?? string.Empty,
@@ -225,7 +225,7 @@ namespace CentroCultural.Application.Services
         {
             var query = _context.MediaEntity.AsQueryable();
             if (filter.Type.HasValue)
-                query = query.Where(m => m.Type == filter.Type.Value);
+                query = query.Where(m => (int)m.Type == (int)filter.Type.Value);
             if (!string.IsNullOrEmpty(filter.CreatedBy))
                 query = query.Where(m => m.CreatedBy == filter.CreatedBy);
             return await query.ToListAsync();

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { workItemService, type CreateWorkItemDto, type UpdateWorkItemDto, type WorkItem } from '$lib/services/course/workItemService';
+	import { courseService, type CreateWorkItemDto, type UpdateWorkItemDto, type WorkItem } from '$lib/services/courseService';
 	import MediaUploader from '../blog/MediaUploader.svelte';
 
 	export let workItem: WorkItem | null = null; // null for create, WorkItem for edit
@@ -76,7 +76,7 @@
 					videoPath: formData.videoPath || undefined
 				};
 				
-				await workItemService.updateWorkItem(workItem.id, updateData);
+				await courseService.updateWorkItem(workItem.id, updateData);
 				dispatch('success', { type: 'update', id: workItem.id });
 			} else {
 				const createData: CreateWorkItemDto = {
@@ -89,7 +89,7 @@
 					videoPath: formData.videoPath || undefined
 				};
 				
-				const newWorkItem = await workItemService.createWorkItem(createData);
+				const newWorkItem = await courseService.createWorkItem(createData);
 				dispatch('success', { type: 'create', workItem: newWorkItem });
 			}
 		} catch (error) {

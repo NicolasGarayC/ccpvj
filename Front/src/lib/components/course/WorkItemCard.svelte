@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { WorkItem } from '$lib/services/course/workItemService';
+	import type { WorkItem } from '$lib/services/courseService';
 
 	export let workItem: WorkItem;
 	export let showActions = false;

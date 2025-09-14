@@ -33,9 +33,27 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Event> Events { get; set; }
         public DbSet<EventRegistration> EventRegistration { get; set; }
 
+        // Library system entities
+        public DbSet<LibraryResource> LibraryResources { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (optionsBuilder.IsConfigured)
+            {
+                // Enable foreign key constraints for SQLite
+                optionsBuilder.UseSqlite(options => options.CommandTimeout(30))
+                            .EnableSensitiveDataLogging(false)
+                            .EnableServiceProviderCaching()
+                            .EnableDetailedErrors();
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Configure SQLite to enforce foreign key constraints
+            modelBuilder.HasAnnotation("Sqlite:CheckConstraints", true);
 
             // Configuraci�n de Rol
             modelBuilder.Entity<Rol>(entity =>
@@ -310,6 +328,52 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.RegistrationDate);
                 entity.HasIndex(e => e.Status);
+            });
+
+            // Configuración de LibraryResource
+            modelBuilder.Entity<LibraryResource>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.Description).HasMaxLength(2000);
+                entity.Property(e => e.Authors).IsRequired().HasColumnType("TEXT");
+                entity.Property(e => e.PublishYear);
+                entity.Property(e => e.Category).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.MediaType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.FilePath).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.FileSize).IsRequired();
+                entity.Property(e => e.MimeType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ThumbnailPath).HasMaxLength(500);
+                entity.Property(e => e.Downloadable).HasDefaultValue(true);
+                entity.Property(e => e.DownloadCount).HasDefaultValue(0);
+                entity.Property(e => e.Tags).HasColumnType("TEXT");
+                entity.Property(e => e.ISBN).HasMaxLength(50);
+                entity.Property(e => e.Duration);
+                entity.Property(e => e.Language).IsRequired().HasMaxLength(10).HasDefaultValue("es");
+                entity.Property(e => e.UploadedBy).IsRequired();
+                entity.Property(e => e.UploadedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(e => e.UpdatedAt);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
+
+                // Relación con Usuario
+                entity.HasOne(lr => lr.Uploader)
+                      .WithMany()
+                      .HasForeignKey("UploadedBy")
+                      .HasPrincipalKey("IdUsuario")
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Índices
+                entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.Category);
+                entity.HasIndex(e => e.MediaType);
+                entity.HasIndex(e => e.Language);
+                entity.HasIndex(e => e.UploadedBy);
+                entity.HasIndex(e => e.UploadedAt);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.Downloadable);
             });
 
             // Datos semilla para Rol

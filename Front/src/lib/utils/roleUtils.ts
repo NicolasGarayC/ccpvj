@@ -1,8 +1,8 @@
 // Role definitions for the Centro Cultural application
 export const ROLES = {
-	ASISTENTE: 'Asistente', // Read-only access, no authentication required
-	COLABORADOR: 'Colaborador', // Can create, edit, and delete content
-	ADMINISTRADOR: 'Administrador' // Full administrative access
+	ASISTENTE: 'asistente', // Read-only access, no authentication required
+	COLABORADOR: 'colaborador', // Can create, edit, and delete content
+	ADMINISTRADOR: 'administrador' // Full administrative access
 } as const;
 
 export type UserRole = typeof ROLES[keyof typeof ROLES];

@@ -7,7 +7,7 @@ export const user = sqliteTable('user', {
 	nombre: text('nombre'),
 	apellido: text('apellido'),
 	telefono: text('telefono'),
-	role: text('role').notNull().default('Asistente'),
+	role: text('role').notNull().default('asistente'), // asistente, colaborador, administrador
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -24,12 +24,38 @@ export const course = sqliteTable('course', {
 	id: text('id').primaryKey(),
 	title: text('title').notNull(),
 	description: text('description').notNull(),
+	subject: text('subject').notNull(), // Matemáticas, Física, Sociales, Economía
 	imagePath: text('image_path'),
 	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 	isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }),
-	educatorId: integer('educator_id').notNull()
+	educatorId: text('educator_id').notNull().references(() => user.id)
+});
+
+export const module = sqliteTable('module', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	description: text('description').notNull(),
+	orderNumber: integer('order_number').notNull(),
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+	courseId: text('course_id').notNull().references(() => course.id, { onDelete: 'cascade' }),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
+export const workItem = sqliteTable('work_item', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	description: text('description'),
+	longText: text('long_text'),
+	imagePath: text('image_path'),
+	videoPath: text('video_path'),
+	orderNumber: integer('order_number').notNull(),
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+	moduleId: text('module_id').notNull().references(() => module.id, { onDelete: 'cascade' }),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
 export const blogPost = sqliteTable('blog_post', {
@@ -44,7 +70,7 @@ export const blogPost = sqliteTable('blog_post', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }),
 	publishedAt: integer('published_at', { mode: 'timestamp' }),
-	authorId: integer('author_id').notNull(),
+	authorId: text('author_id').notNull().references(() => user.id),
 	categoryId: text('category_id'),
 	featuredImagePath: text('featured_image_path'),
 	pdfPath: text('pdf_path'),
@@ -82,7 +108,7 @@ export const event = sqliteTable('event', {
 	
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }),
-	organizerId: integer('organizer_id').notNull()
+	organizerId: text('organizer_id').notNull().references(() => user.id)
 });
 
 export const eventRegistration = sqliteTable('event_registration', {
@@ -99,6 +125,12 @@ export type InsertUser = typeof user.$inferInsert;
 
 export type Course = typeof course.$inferSelect;
 export type InsertCourse = typeof course.$inferInsert;
+
+export type Module = typeof module.$inferSelect;
+export type InsertModule = typeof module.$inferInsert;
+
+export type WorkItem = typeof workItem.$inferSelect;
+export type InsertWorkItem = typeof workItem.$inferInsert;
 
 export type BlogPost = typeof blogPost.$inferSelect;
 export type InsertBlogPost = typeof blogPost.$inferInsert;

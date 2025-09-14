@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { courseService, type CreateModuleDto, type UpdateModuleDto, type Module } from '$lib/services/course/courseService';
+	import { courseService, type CreateModuleDto, type UpdateModuleDto, type Module } from '$lib/services/courseService';
 
 	export let module: Module | null = null; // null for create, Module for edit
 	export let courseId: string;

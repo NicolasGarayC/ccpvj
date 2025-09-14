@@ -73,3 +73,7 @@ TestResults/
 packages/
 *.nuget.props
 *.nuget.targets
+tests/Back.Tests/bin/Debug/
+tests/Back.Tests/obj/
+tests/Back.Tests/obj
+tests/Back.Tests/obj/Debug/net9.0/ref/Back.Tests.dll

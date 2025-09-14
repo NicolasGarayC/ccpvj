@@ -12,11 +12,11 @@
     loading = true;
     try {
       await authService.logout();
-      goto('/auth/login');
+      goto('/');
     } catch (error) {
       console.error('Error durante logout:', error);
       // Redirigir de todos modos si hay error
-      goto('/auth/login');
+      goto('/');
     } finally {
       loading = false;
     }

@@ -22,6 +22,13 @@ if (!fs.existsSync(dbFilePath)) {
   throw new Error(`SQLite database file not found at ${dbFilePath}. Please create the file or check the path.`);
 }
 
-const client = createClient({ url: dbUrl });
+const client = createClient({ 
+  url: dbUrl,
+  // Enable foreign key constraints for data integrity
+  syncUrl: undefined
+});
+
+// Enable foreign key constraints on every connection
+client.execute('PRAGMA foreign_keys = ON');
 
 export const db = drizzle(client, { schema });

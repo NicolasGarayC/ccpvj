@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type CourseSearchParams } from '$lib/services/course/courseService';
+	import { courseService, type CourseSearchParams } from '$lib/services/courseService';
 
 	export let searchParams: CourseSearchParams;
 

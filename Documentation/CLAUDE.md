@@ -1,191 +1,178 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides technical context to Claude Code when working with this repository.
 
-## Project Overview
+## Project Technical Overview
 
-This is a **Centro Cultural Víctor Jara** platform - an offline-capable web application designed for a community cultural center in Bogotá. The project uses **contextual multimedia architecture** where all media files MUST belong to specific content (no independent multimedia).
+**Centro Cultural Víctor Jara** - SvelteKit 5 web platform for community cultural center (Bogotá).
+**Current Status**: ✅ CORE FUNCTIONALITY WORKING - APIs functional, database unified, roles corrected.
 
-**Key Architectural Principle**: **NO INDEPENDENT MULTIMEDIA** - Every file belongs to specific content:
-- **Educational**: Course → Module → WorkItem (with contextual images/videos)
-- **Blog**: Articles with contextual featured images, PDFs, videos
-- **Events**: Cultural events with promotional posters/images
+**Key Architectural Concept**: Contextual multimedia (no independent files - all media belongs to specific content).
 
-The project consists of a bilingual (Spanish/English) frontend built with SvelteKit 5 and optional .NET 8 backend, optimized for mesh networking and minimal resource consumption.
+## Technology Stack
 
-## Common Development Commands
+- **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS + Drizzle ORM
+- **Database**: SQLite (`D:/ccpvj/Data/ccpvj.db`)
+- **Backend**: Optional .NET 8 (mostly unused)
+- **Authentication**: Cookie-based sessions (SvelteKit primary)
 
-### Frontend (SvelteKit 5 + TypeScript)
+## Development Commands
+
+### Frontend (Primary)
 ```bash
 cd Front/
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run preview          # Preview production build
-npm run check            # Run TypeScript/Svelte checks
-npm run format           # Format code with Prettier
-npm run lint             # Check formatting
-npm run test:unit        # Run unit tests with Vitest
-npm run test:e2e         # Run Playwright e2e tests
-npm run storybook        # Start Storybook component development
+npm run dev              # Start development server (http://localhost:5173)
+npm run build            # Production build
+npm run check            # TypeScript checks
+npm run db:studio        # Drizzle Studio database GUI
+npm run db:push          # Update database schema
 ```
 
-### Database (Drizzle ORM + SQLite) - Contextual Schema
+### Database
 ```bash
-cd Front/
-# Initialize contextual database
-../init_contextual_database.sh    # Use contextual schema with WorkItems
-
-# Standard Drizzle commands
-npm run db:generate      # Generate migrations
-npm run db:push          # Push contextual schema changes
-npm run db:migrate       # Run migrations
-npm run db:studio        # Open Drizzle Studio GUI
-npm run db:seed          # Seed database with test users
+# SQLite database located at: D:/ccpvj/Data/ccpvj.db
+# Environment: DATABASE_URL="file:D:/ccpvj/Data/ccpvj.db"
 ```
 
-### Backend (.NET 8)
-```bash
-cd Back/
-dotnet run               # Start API server (port 5000)
-dotnet build             # Build solution
-dotnet test              # Run tests
-dotnet ef migrations add <name>  # Create EF migration
-dotnet ef database update       # Apply migrations
+## Project Structure
+
+```
+Front/src/
+├── routes/                    # SvelteKit routes + API endpoints
+│   ├── api/courses/          # ⚠️ Course APIs (have errors)
+│   ├── auth/login/           # ⚠️ Login page (auth issues)
+│   └── courses/              # ⚠️ Course pages (backend fails)
+├── lib/
+│   ├── components/           # Svelte components (visual only)
+│   ├── services/             # ⚠️ API services (connection errors)
+│   └── server/               # Database + auth logic
+│
+Data/
+├── ccpvj.db                  # SQLite database (connection issues)
+└── scripts/                  # Database setup scripts
 ```
 
-## Architecture Overview
+## Database Schema (SQLite)
 
-### Contextual Multimedia System
-**CRITICAL**: All multimedia MUST be contextual - never independent
-```
-Educational Flow:
-Course (Matemáticas, Física, Sociales, Economía)
-  ├── Module (Lessons)
-      └── WorkItem (with title, description, long text, image, video)
+**Important**: Foreign keys enabled with `PRAGMA foreign_keys = ON`
 
-Blog Flow:
-BlogPost → contextual multimedia (featured image, PDF, video)
+### Core Tables
+```sql
+-- Authentication
+user (id TEXT, username TEXT, password_hash TEXT, role TEXT)
+session (id TEXT, user_id TEXT, expires_at INTEGER)
 
-Event Flow:
-Event → contextual poster/promotional image
-```
-
-### Frontend Architecture (SvelteKit 5) - Primary Stack
-- **Framework**: SvelteKit 5 with TypeScript and Tailwind CSS 4.0
-- **Database**: Drizzle ORM with SQLite (`/home/user/ccpvj/Data/ccpvj.db`)
-- **Authentication**: Session-based auth using @oslojs/crypto (cookies)
-- **Schema**: Contextual multimedia schema with WorkItem entity
-- **Internationalization**: Paraglide.js for Spanish/English support
-- **Components**: Component-driven development with Storybook
-- **Testing**: Vitest for unit tests, Playwright for e2e
-
-### Backend Architecture (.NET 8 - Optional/Legacy)
-```
-CentroCultural.API/          # Controllers, Program.cs, API configuration
-CentroCultural.Application/  # Services, DTOs, Business logic interfaces
-CentroCultural.Domain/       # Entities, Enums, Domain exceptions (WorkItem added)
-CentroCultural.Infrastructure/ # Data access, JWT services, Middleware
+-- Educational System
+course (id TEXT, title TEXT, subject TEXT, educator_id TEXT, ...)
+module (id TEXT, course_id TEXT, title TEXT, order_number INTEGER, ...)
+work_item (id TEXT, module_id TEXT, title TEXT, long_text TEXT, image_path TEXT, video_path TEXT, ...)
 ```
 
-**Key Features Implemented:**
-- SvelteKit session-based authentication (Primary)
-- .NET JWT authentication (Optional/Legacy)
-- Contextual multimedia upload system
-- WorkItem entity for educational content
-- Course management system with hierarchical structure
-- Background services for contextual cleanup
+## Current Technical Issues
 
-## Important File Locations
+### ✅ Working Modules
+- **Course System**: ✅ APIs functional, database unified
+- **Authentication**: ✅ Session management working
+- **Database**: ✅ SQLite connection stable, foreign keys enabled
+- **Role System**: ✅ Unified roles (asistente, colaborador, administrador)
 
-### Frontend Key Files (Contextual)
-- `Front/src/lib/server/db/schema.ts` - **CONTEXTUAL** database schema (user, Course, Module, WorkItem, MediaFile)
-- `Front/src/lib/server/auth.ts` - Session-based authentication logic
-- `Front/src/hooks.server.ts` - SvelteKit server hooks with session validation
-- `Front/src/routes/+layout.server.ts` - Layout server data with user context
-- `Front/src/routes/api/auth/` - Authentication API endpoints
-- `Front/src/routes/auth/login/` - Functional login page
-- `Front/src/routes/dashboard/` - Protected dashboard page
-- `Front/drizzle.config.ts` - Database configuration pointing to contextual DB
+### ⚠️ Needs Development
+- **Blog System**: Partial implementation, needs completion
+- **File Upload**: Contextual upload system not implemented
+- **Frontend Integration**: Some components need backend connection
+- **Testing**: No comprehensive test coverage
 
-### Backend Key Files
-- `Back/CentroCultural.API/Program.cs` - API startup configuration
-- `Back/CentroCultural.Infrastructure/Data/ApplicationDbContext.cs` - EF Core context
-- `Back/CentroCultural.API/Controllers/` - REST API endpoints
-- `Back/CentroCultural.Application/Services/` - Business logic services
+### 🔧 Recently Fixed
+- **Schema Conflicts**: ✅ Resolved duplicate table issues
+- **Role Inconsistencies**: ✅ Unified to lowercase roles
+- **API Endpoints**: ✅ Working with correct database schema
+- **Foreign Keys**: ✅ All references working properly
 
-### Configuration Files (Contextual)
-- `database_tables_contextual_fixed.sql` - **CONTEXTUAL** SQL schema with WorkItems
-- `init_contextual_database.sh` - Database initialization script
-- `CONTEXTUAL_MULTIMEDIA_GUIDE.md` - Complete contextual implementation guide
-- `Front/package.json` - Frontend dependencies and scripts
-- `Infraestructure/nginx/` - NGINX configurations for contextual uploads
-- `Back/Back.csproj` - Backend dependencies (optional)
-- `tests/Back.Tests/Back.Tests.csproj` - Test project configuration
+## API Endpoints Status
 
-## Development Workflow
+**✅ Course APIs** (functional):
+- `GET/POST /api/courses` - ✅ Working with unified schema
+- `GET /api/courses/all` - ✅ Returns course list with educator info
+- `GET /api/courses/featured` - ✅ Functional
+- `GET /api/courses/subjects` - ✅ Returns available subjects
+- `GET /api/courses/[id]` - ✅ Course details with modules
+- `POST /api/courses/modules` - ✅ Module creation working
+- `POST /api/courses/workitems` - ✅ WorkItem creation working
+- `PUT/DELETE` endpoints - ✅ With proper role validation
 
-### Running the Contextual Stack
-1. **Initialize Database**: `./init_contextual_database.sh` (creates contextual schema)
-2. **Frontend (Primary)**: `cd Front && npm run dev` (runs on http://localhost:5173)
-3. **Backend (Optional)**: `cd Back && dotnet run` (runs on http://localhost:5000)
-4. **NGINX (Production)**: Use configurations from `Infraestructure/nginx/`
-5. **Database**: SQLite with contextual schema at `/home/user/ccpvj/Data/ccpvj.db`
+**❌ Upload APIs** (not implemented):
+- `/api/upload/*` - No upload functionality exists
 
-### API Endpoints (Contextual)
+**✅ Auth APIs** (working):
+- `POST /api/auth/login` - ✅ Session management working
+- `POST /api/auth/logout` - ✅ Session cleanup working
+- `GET /api/auth/me` - ✅ User info retrieval
 
-**Frontend SvelteKit APIs (Primary):**
-- `POST /api/auth/login` - Session-based authentication 
-- `POST /api/auth/logout` - Session termination
-- `GET /api/auth/status` - Check authentication status
-- `GET /api/test-auth` - Test database connectivity
+## Development Priorities
 
-**Contextual Upload APIs (To Implement):**
-- `POST /api/upload/workitems` - Upload for work items (images, videos)
-- `POST /api/upload/blog` - Upload for blog posts (images, PDFs, videos)
-- `POST /api/upload/events` - Upload for events (promotional images)
-- `POST /api/upload/courses` - Upload for courses (banners, thumbnails)
+1. **Complete blog system** - Finish blog post management
+2. **Add contextual upload** - File upload system missing
+3. **Testing coverage** - Add comprehensive tests
+4. **Frontend-backend integration** - Connect remaining components
+5. **Performance optimization** - Cache and optimize queries
 
-**Backend .NET APIs (Optional/Legacy):**
-- `POST /api/auth/login` - JWT authentication
-- `POST /api/auth/refresh` - JWT refresh tokens
-- Course management endpoints
+## Key Files to Focus On
 
-### Testing Strategy (Contextual)
-- **Frontend**: Unit tests with Vitest, E2E with Playwright
-- **Backend**: XUnit test project structure created at `tests/Back.Tests/`
-- **Database**: Drizzle Kit for contextual schema management and migrations
-- **Contextual Tests**: Verify no orphaned files, contextual integrity
+### Database & Schema
+- `Front/src/lib/server/db/index.ts` - Database connection (has issues)
+- `Front/src/lib/server/db/schema.ts` - Table definitions (correct)
+- `Front/.env` - Database URL config
 
-## Special Considerations (Contextual Architecture)
+### Services (Problematic)
+- `Front/src/lib/services/courseService.ts` - Course API calls (fail)
+- `Front/src/lib/services/authService.js` - Auth service (buggy)
 
-### Contextual Multimedia Principles
-- **NEVER Independent**: All multimedia MUST belong to specific content
-- **Content Types**: 'course', 'workitem', 'blog', 'event' only
-- **Media Types**: 'image', 'video', 'pdf', 'audio' only
-- **Integrity**: Foreign key constraints prevent orphaned files
-- **Cleanup**: Automatic deletion when parent content is removed
+### APIs (Need Debugging)
+- `Front/src/routes/api/courses/+server.ts` - Main course API
+- `Front/src/routes/api/auth/` - Authentication endpoints
 
-### Resource Optimization
-- **Critical Priority**: Minimize CPU/processing usage (not storage)
-- **NGINX Integration**: Direct contextual file serving by content type
-- **SQLite**: Lightweight database with contextual schema
-- **Directory Structure**: Organized by content context for efficiency
+### Frontend Pages
+- `Front/src/routes/courses/+page.svelte` - Course listing (visual works, data fails)
+- `Front/src/routes/+page.svelte` - Homepage (works visually)
 
-### Mesh Networking Design (Contextual)
-- **Offline-First**: Application designed for mesh network deployment
-- **Distributed**: Each node maintains independent contextual SQLite database
-- **Minimal Resources**: Contextual cleanup prevents storage bloat
-- **Content Sync**: Hierarchical structure enables efficient synchronization
+## Testing & Debugging Notes
 
-### Educational Content Structure
-- **Subjects**: Matemáticas, Física, Sociales, Economía
-- **Hierarchy**: Course → Module → WorkItem (with contextual media)
-- **WorkItems**: Title, Description, LongText, ImagePath, VideoPath
-- **Contextual Media**: Each work item has specific educational content
+- **Database**: Use `npm run db:studio` to inspect SQLite data
+- **Dev Server**: `npm run dev` starts at http://localhost:5173
+- **Logs**: Check browser console + terminal for errors
+- **Database File**: Located at `D:/ccpvj/Data/ccpvj.db` (278KB)
 
-### Security Features (Contextual)
-- **Session Authentication**: Cookie-based secure authentication
-- **Contextual Validation**: Upload must specify valid ContentType + ContentId
-- **User Authorization**: Only authenticated users can upload content
-- **Integrity Checks**: Database constraints prevent invalid relationships
-- **Cleanup Automation**: Background services for contextual cleanup
+## Important Context for Development
+
+- **No Independent Media**: All files must belong to specific content (courses, blog posts, etc.)
+- **Offline-First**: Designed for local network use (mesh networking)
+- **Spanish/English**: Bilingual interface planned
+- **Community Focus**: Built for cultural center in Bogotá
+
+## 🚨 **CRITICAL DATABASE WARNINGS**
+
+### **⚠️ DO NOT CREATE DUPLICATE TABLES/COLUMNS**
+
+**BEFORE creating ANY table or column, ALWAYS:**
+
+1. **Check existing tables**: Use `sqlite3 ccpvj.db ".tables"` to see all tables
+2. **Check table structure**: Use `PRAGMA table_info(table_name)` to see columns
+3. **Check BOTH naming conventions**: Look for both `table_name` AND `TableName`
+4. **Evaluate existing tables**: Can an existing table serve the purpose?
+
+### **Known Coexisting Tables (DO NOT DUPLICATE)**
+- `course` (Drizzle) & `Course` (legacy) - USE `course`
+- `module` (Drizzle) & `Module` (.NET) - USE `module`
+- `work_item` (Drizzle) & `WorkItem` (.NET) - USE `work_item`
+- `MediaFile` & `MediaEntity` - USE `MediaFile`
+
+### **Role Validation Rules**
+- **Database roles**: `asistente`, `colaborador`, `administrador` (lowercase ONLY)
+- **Code validation**: NEVER use `Colaborador` or `Administrador` (uppercase)
+- **User role field**: Always use `user.role` not `user.nombreRol`
+
+### **Schema Priority**
+- **Primary**: Drizzle schema (lowercase, snake_case)
+- **Secondary**: .NET schema (PascalCase) - legacy compatibility only
+
+**⚠️ Current Status**: Core functionality is now working after fixing schema conflicts and role inconsistencies.

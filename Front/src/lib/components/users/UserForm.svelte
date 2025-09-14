@@ -321,21 +321,34 @@
 					<!-- Nueva contraseña -->
 					<div>
 						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-							{isEdit ? 'Nueva Contraseña' : 'Contraseña'} 
-							{!isEdit ? <span class="text-red-500">*</span> : ''}
+							{isEdit ? 'Nueva Contraseña' : 'Contraseña'}
+							{#if !isEdit}<span class="text-red-500">*</span>{/if}
 						</label>
 						<div class="relative">
-							<input
-								id="password"
-								type="password"
-								bind:value={isEdit ? formData.newPassword : formData.password}
-								placeholder="Mínimo 6 caracteres"
-								class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-									{(isEdit ? errors.newPassword : errors.password) ? 'border-red-500' : ''}"
-								required={!isEdit}
-								disabled={isSubmitting}
-								minlength="6"
-							/>
+							{#if isEdit}
+								<input
+									id="password"
+									type="password"
+									bind:value={formData.newPassword}
+									placeholder="Mínimo 6 caracteres"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
+										{errors.newPassword ? 'border-red-500' : ''}"
+									disabled={isSubmitting}
+									minlength="6"
+								/>
+							{:else}
+								<input
+									id="password"
+									type="password"
+									bind:value={formData.password}
+									placeholder="Mínimo 6 caracteres"
+									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
+										{errors.password ? 'border-red-500' : ''}"
+									required
+									disabled={isSubmitting}
+									minlength="6"
+								/>
+							{/if}
 							<button
 								type="button"
 								on:click={generateRandomPassword}
@@ -347,8 +360,10 @@
 								</svg>
 							</button>
 						</div>
-						{#if (isEdit ? errors.newPassword : errors.password)}
-							<p class="mt-1 text-sm text-red-600">{isEdit ? errors.newPassword : errors.password}</p>
+						{#if isEdit && errors.newPassword}
+							<p class="mt-1 text-sm text-red-600">{errors.newPassword}</p>
+						{:else if !isEdit && errors.password}
+							<p class="mt-1 text-sm text-red-600">{errors.password}</p>
 						{/if}
 					</div>
 
@@ -356,7 +371,7 @@
 					<div>
 						<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
 							Confirmar Contraseña
-							{!isEdit ? <span class="text-red-500">*</span> : ''}
+							{#if !isEdit}<span class="text-red-500">*</span>{/if}
 						</label>
 						<input
 							id="confirmPassword"

@@ -139,7 +139,7 @@ namespace CentroCultural.Application.Services
             }
 
             var updaterUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == updatedByUserId);
-            if (updaterUser == null || !CanManageUsers(updaterUser.Rol))
+            if (updaterUser == null || !CanManageUsers(updaterUser.Rol.NombreRol))
             {
                 throw new UnauthorizedAccessException("No tienes permisos para actualizar usuarios");
             }
@@ -227,7 +227,7 @@ namespace CentroCultural.Application.Services
             if (user == null) return false;
 
             var modifierUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == modifiedByUserId);
-            if (modifierUser == null || !CanManageUsers(modifierUser.Rol))
+            if (modifierUser == null || !CanManageUsers(modifierUser.Rol.NombreRol))
             {
                 return false;
             }
@@ -342,7 +342,7 @@ namespace CentroCultural.Application.Services
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
             var resetterUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == resetByUserId);
             
-            if (user == null || resetterUser == null || !CanManageUsers(resetterUser.Rol))
+            if (user == null || resetterUser == null || !CanManageUsers(resetterUser.Rol.NombreRol))
                 return false;
 
             user.Contrasena = BCrypt.Net.BCrypt.HashPassword(newPassword);
@@ -357,7 +357,7 @@ namespace CentroCultural.Application.Services
             var user = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
             var forcerUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == forcedByUserId);
             
-            if (user == null || forcerUser == null || !CanManageUsers(forcerUser.Rol))
+            if (user == null || forcerUser == null || !CanManageUsers(forcerUser.Rol.NombreRol))
                 return false;
 
             // Implementar lógica para forzar cambio de contraseña en el próximo login

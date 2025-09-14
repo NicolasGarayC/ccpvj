@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type Module } from '$lib/services/course/courseService';
+	import { courseService, type Module } from '$lib/services/courseService';
 	import ModuleCard from './ModuleCard.svelte';
 
 	export let courseId: string;

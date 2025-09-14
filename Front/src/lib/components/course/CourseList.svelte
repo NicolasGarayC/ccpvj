@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { courseService, type Course, type CourseSearchParams, type CoursePagedResult } from '$lib/services/course/courseService';
+	import { courseService, type Course, type CourseSearchParams, type CoursePagedResult } from '$lib/services/courseService';
 	import CourseCard from './CourseCard.svelte';
 	import SearchFilters from './SearchFilters.svelte';
 	import Pagination from '../common/Pagination.svelte';

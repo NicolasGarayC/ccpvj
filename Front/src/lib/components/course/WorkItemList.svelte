@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { workItemService, type WorkItem } from '$lib/services/course/workItemService';
+	import { courseService, type WorkItem } from '$lib/services/courseService';
 	import WorkItemCard from './WorkItemCard.svelte';
 
 	export let moduleId: string;
@@ -22,7 +22,7 @@
 		try {
 			loading = true;
 			error = '';
-			workItems = await workItemService.getWorkItemsByModule(moduleId);
+			workItems = await courseService.getModuleWorkItems(moduleId);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error cargando contenidos';
 			console.error('Error loading work items:', err);
@@ -76,7 +76,7 @@
 		event.preventDefault();
 
 		try {
-			await workItemService.reorderWorkItem(draggedWorkItem.id, targetWorkItem.orderNumber);
+			await courseService.reorderWorkItem(draggedWorkItem.id, targetWorkItem.orderNumber);
 			await loadWorkItems(); // Reload to get updated order
 			dispatch('workItemReordered', {
 				workItemId: draggedWorkItem.id,

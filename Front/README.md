@@ -136,9 +136,7 @@ src/
 │   │       └── Pagination.svelte     # Paginación reutilizable
 │   │
 │   ├── 🌐 services/               # Servicios API
-│   │   ├── 🎓 course/            # API cursos
-│   │   │   ├── courseService.ts      # CRUD cursos/módulos
-│   │   │   └── workItemService.ts    # Gestión WorkItems
+│   │   ├── 🎓 courseService.ts      # CRUD cursos/módulos/contenidos (unificado)
 │   │   ├── 📝 blog/               # API blog
 │   │   │   └── blogService.ts        # Gestión posts
 │   │   ├── 👥 users/              # API gestión usuarios  

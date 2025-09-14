@@ -1,23 +1,51 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { Course } from '$lib/services/course/courseService';
+	import type { Course } from '$lib/services/courseService';
+	import { courseService } from '$lib/services/courseService';
 	import { createEventDispatcher } from 'svelte';
-	
+	import ConfirmationModal from '../common/ConfirmationModal.svelte';
+
 	export let course: Course;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
+
+	// Modal state
+	let showDeleteModal = false;
+	let isDeleting = false;
+	let deleteError = '';
 
 	function handleViewCourse() {
 		goto(`/courses/${course.id}`);
 	}
 
 	function handleEditCourse() {
-		dispatch('edit', course.id);
+		goto(`/courses/${course.id}/edit`);
 	}
 
 	function handleDeleteCourse() {
-		dispatch('delete', course.id);
+		showDeleteModal = true;
+		deleteError = '';
+	}
+
+	async function confirmDeleteCourse() {
+		isDeleting = true;
+		deleteError = '';
+
+		try {
+			await courseService.deleteCourse(course.id);
+			showDeleteModal = false;
+			dispatch('deleted', course.id);
+		} catch (error) {
+			deleteError = error instanceof Error ? error.message : 'Error eliminando el curso';
+		} finally {
+			isDeleting = false;
+		}
+	}
+
+	function cancelDelete() {
+		showDeleteModal = false;
+		deleteError = '';
 	}
 
 	function formatDate(dateString: string): string {
@@ -123,6 +151,35 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Modal -->
+<ConfirmationModal
+	bind:isOpen={showDeleteModal}
+	title="🗑️ Eliminar Curso"
+	message="¿Estás seguro de que deseas eliminar el curso '{course.title}'? Esta acción no se puede deshacer y se eliminarán todos los módulos y contenidos asociados."
+	confirmText="Sí, eliminar curso"
+	cancelText="Cancelar"
+	type="danger"
+	loading={isDeleting}
+	on:confirm={confirmDeleteCourse}
+	on:cancel={cancelDelete}
+/>
+
+{#if deleteError}
+	<div class="error-notification">
+		<div class="error-content">
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="12" cy="12" r="10"></circle>
+				<line x1="15" y1="9" x2="9" y2="15"></line>
+				<line x1="9" y1="9" x2="15" y2="15"></line>
+			</svg>
+			<span>{deleteError}</span>
+			<button class="error-close" on:click={() => deleteError = ''}>
+				×
+			</button>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.course-card {
@@ -286,6 +343,84 @@
 		font-size: 1.1rem;
 	}
 
+	.error-notification {
+		position: fixed;
+		top: 1rem;
+		right: 1rem;
+		z-index: 1001;
+		max-width: 400px;
+		animation: slideInRight 0.3s ease-out;
+	}
+
+	.error-content {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: var(--color-error);
+		color: white;
+		padding: 1rem 1.25rem;
+		border-radius: 12px;
+		box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.error-close {
+		margin-left: auto;
+		background: none;
+		border: none;
+		color: white;
+		font-size: 1.5rem;
+		cursor: pointer;
+		padding: 0;
+		width: 1.5rem;
+		height: 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: background-color 0.2s ease;
+	}
+
+	.error-close:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.admin-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.admin-actions .btn {
+		transition: all 0.2s ease;
+	}
+
+	.admin-actions .btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.btn-danger {
+		background: var(--color-error);
+		color: white;
+		border-color: var(--color-error);
+	}
+
+	.btn-danger:hover {
+		background: #dc2626;
+		border-color: #dc2626;
+	}
+
+	@keyframes slideInRight {
+		from {
+			opacity: 0;
+			transform: translateX(100%);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
 	@media (max-width: 768px) {
 		.course-header {
 			flex-direction: column;
@@ -308,6 +443,13 @@
 		.admin-actions {
 			justify-content: center;
 			width: 100%;
+		}
+
+		.error-notification {
+			left: 1rem;
+			right: 1rem;
+			top: 1rem;
+			max-width: none;
 		}
 	}
 </style>

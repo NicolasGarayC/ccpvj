@@ -15,7 +15,7 @@
 
 	function handleCreatePost() {
 		if (!canCreate) {
-			alert('No tienes permisos para crear posts. Necesitas ser Colaborador o Administrador.');
+			alert('No tienes permisos para crear posts. Necesitas ser colaborador o administrador.');
 			return;
 		}
 		// Navigate to create post page
@@ -52,10 +52,10 @@
 		if (!currentUser) return false;
 		
 		// Admins can edit any post
-		if (currentUser.role === 'Administrador') return true;
+		if (currentUser.role === 'administrador') return true;
 		
 		// Colaboradores can edit their own posts
-		if (currentUser.role === 'Colaborador' && post.authorId === currentUser.id) return true;
+		if (currentUser.role === 'colaborador' && post.authorId === currentUser.id) return true;
 		
 		return false;
 	}
@@ -65,10 +65,10 @@
 		if (!currentUser) return false;
 		
 		// Admins can delete any post
-		if (currentUser.role === 'Administrador') return true;
+		if (currentUser.role === 'administrador') return true;
 		
 		// Colaboradores can delete their own posts
-		if (currentUser.role === 'Colaborador' && post.authorId === currentUser.id) return true;
+		if (currentUser.role === 'colaborador' && post.authorId === currentUser.id) return true;
 		
 		return false;
 	}

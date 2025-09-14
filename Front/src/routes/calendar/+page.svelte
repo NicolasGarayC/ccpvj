@@ -116,63 +116,69 @@
 
 <div class="min-h-screen bg-gray-50 py-8">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-		<!-- Header -->
+		<!-- Header juvenil mejorado -->
 		<div class="mb-8">
-			<div class="flex items-center justify-between">
-				<div>
-					<h1 class="text-3xl font-bold text-gray-900">Calendario de Eventos</h1>
-					<p class="mt-2 text-gray-600">
-						Descubre todas las actividades, clases y eventos del centro cultural
-					</p>
-				</div>
+			<div class="relative bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-50 rounded-3xl p-8 border-2 border-blue-100 overflow-hidden">
+				<!-- Elementos decorativos -->
+				<div class="absolute top-4 right-6 text-6xl opacity-20">📅</div>
+				<div class="absolute -top-4 -left-4 w-16 h-16 bg-blue-200/30 rounded-full animate-pulse"></div>
+				<div class="absolute bottom-6 right-12 w-12 h-12 bg-purple-200/30 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
 
-				<div class="flex items-center space-x-4">
-					<!-- Selector de vista -->
-					<div class="flex bg-white border border-gray-300 rounded-lg p-1">
-						<button
-							on:click={() => setView('calendar')}
-							class="px-4 py-2 text-sm font-medium rounded-md transition-colors
-								{currentView === 'calendar' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:text-gray-900'}"
-						>
-							<svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
-							</svg>
-							Calendario
-						</button>
-						<button
-							on:click={() => setView('list')}
-							class="px-4 py-2 text-sm font-medium rounded-md transition-colors
-								{currentView === 'list' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:text-gray-900'}"
-						>
-							<svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-							</svg>
-							Lista
-						</button>
+				<div class="relative z-10 flex items-center justify-between">
+					<div class="flex-1">
+						<h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-4">
+							<span class="text-4xl mr-3">🎪</span>
+							<span class="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 bg-clip-text text-transparent">
+								Calendario de Eventos
+							</span>
+						</h1>
+						<p class="text-lg md:text-xl text-gray-700 max-w-2xl leading-relaxed font-medium">
+							✨ Descubre todas las actividades, clases y eventos increíbles que tenemos preparados para ti en nuestro centro cultural
+						</p>
 					</div>
 
-					<!-- ✅ Botón crear evento solo para usuarios autorizados -->
-					{#if canCreateEvents}
-						<button
-							on:click={navigateToCreateEvent}
-							class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-							</svg>
-							<span>Crear Evento</span>
-						</button>
-					{:else if !isAuthenticated}
-						<a
-							href="/auth/login?redirect=/calendar"
-							class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-						>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-							</svg>
-							<span>Iniciar Sesión</span>
-						</a>
-					{/if}
+					<div class="flex items-center space-x-6 ml-8">
+						<!-- Selector de vista mejorado -->
+						<div class="flex bg-white/70 backdrop-blur-sm border-2 border-blue-200 rounded-2xl p-1.5 shadow-lg">
+							<button
+								on:click={() => setView('calendar')}
+								class="group px-6 py-3 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2
+									{currentView === 'calendar'
+										? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+										: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'}"
+							>
+								<svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
+								</svg>
+								📅 Calendario
+							</button>
+							<button
+								on:click={() => setView('list')}
+								class="group px-6 py-3 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2
+									{currentView === 'list'
+										? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
+										: 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'}"
+							>
+								<svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+								</svg>
+								📋 Lista
+							</button>
+						</div>
+
+						<!-- Botón crear evento mejorado -->
+						{#if canCreateEvents}
+							<button
+								on:click={navigateToCreateEvent}
+								class="group bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-8 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg flex items-center space-x-3 border-2 border-green-400"
+							>
+								<svg class="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
+								</svg>
+								<span class="text-lg">✨ Crear Evento</span>
+							</button>
+						{/if}
+					</div>
 				</div>
 			</div>
 

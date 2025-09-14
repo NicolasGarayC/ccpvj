@@ -1,48 +1,16 @@
 import { goto } from '$app/navigation';
-
-export interface Course {
-	id: string;
-	title: string;
-	description: string;
-	subject: string;
-	isActive: boolean;
-	isFeatured: boolean;
-	createdAt: string;
-	updatedAt?: string;
-	educatorId: number;
-	educatorName: string;
-	imagePath?: string;
-	moduleCount: number;
-	workItemCount: number;
-}
+import type { Course, Module, WorkItem, InsertCourse, InsertModule, InsertWorkItem } from '$lib/server/db/schema';
 
 export interface CourseDetail extends Course {
-	modules: Module[];
-}
-
-export interface Module {
-	id: string;
-	title: string;
-	description: string;
-	orderNumber: number;
-	isActive: boolean;
+	modules: ModuleDetail[];
+	moduleCount: number;
 	workItemCount: number;
+	educatorName: string;
 }
 
 export interface ModuleDetail extends Module {
 	workItems: WorkItem[];
-}
-
-export interface WorkItem {
-	id: string;
-	title: string;
-	description?: string;
-	longText?: string;
-	imagePath?: string;
-	videoPath?: string;
-	orderNumber: number;
-	isActive: boolean;
-	createdAt: string;
+	workItemCount: number;
 }
 
 export interface CreateCourseDto {
@@ -104,7 +72,7 @@ export interface CourseSearchParams {
 }
 
 export interface CoursePagedResult {
-	courses: Course[];
+	courses: CourseDetail[];
 	totalCount: number;
 	page: number;
 	pageSize: number;
@@ -114,8 +82,9 @@ export interface CoursePagedResult {
 }
 
 class CourseService {
-	private apiUrl = '/api/course';
+	private apiUrl = '/api/courses';
 
+	// Course methods
 	async getCourses(params?: CourseSearchParams): Promise<CoursePagedResult> {
 		const urlParams = new URLSearchParams();
 		if (params?.page) urlParams.set('page', params.page.toString());
@@ -141,7 +110,7 @@ class CourseService {
 		return await response.json();
 	}
 
-	async getAllCourses(): Promise<Course[]> {
+	async getAllCourses(): Promise<CourseDetail[]> {
 		const response = await fetch(`${this.apiUrl}/all`, {
 			method: 'GET',
 			credentials: 'include',
@@ -157,7 +126,7 @@ class CourseService {
 		return await response.json();
 	}
 
-	async getFeaturedCourses(count: number = 6): Promise<Course[]> {
+	async getFeaturedCourses(count: number = 6): Promise<CourseDetail[]> {
 		const response = await fetch(`${this.apiUrl}/featured?count=${count}`, {
 			method: 'GET',
 			credentials: 'include',
@@ -193,20 +162,9 @@ class CourseService {
 		return await response.json();
 	}
 
-	async getCourseModules(courseId: string): Promise<Module[]> {
-		const response = await fetch(`${this.apiUrl}/${courseId}/modules`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting course modules: ${response.statusText}`);
-		}
-
-		return await response.json();
+	// Alias for consistency
+	async getCourse(id: string): Promise<CourseDetail | null> {
+		return this.getCourseById(id);
 	}
 
 	async createCourse(courseData: CreateCourseDto): Promise<Course> {
@@ -293,7 +251,7 @@ class CourseService {
 		}
 	}
 
-	async getMyCourses(): Promise<Course[]> {
+	async getMyCourses(): Promise<CourseDetail[]> {
 		const response = await fetch(`${this.apiUrl}/my-courses`, {
 			method: 'GET',
 			credentials: 'include',
@@ -330,7 +288,7 @@ class CourseService {
 		return await response.json();
 	}
 
-	// Module management
+	// Module methods
 	async getModule(id: string): Promise<ModuleDetail | null> {
 		const response = await fetch(`${this.apiUrl}/modules/${id}`, {
 			method: 'GET',
@@ -346,6 +304,22 @@ class CourseService {
 
 		if (!response.ok) {
 			throw new Error(`Error getting module: ${response.statusText}`);
+		}
+
+		return await response.json();
+	}
+
+	async getCourseModules(courseId: string): Promise<ModuleDetail[]> {
+		const response = await fetch(`${this.apiUrl}/${courseId}/modules`, {
+			method: 'GET',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error(`Error getting course modules: ${response.statusText}`);
 		}
 
 		return await response.json();
@@ -461,6 +435,156 @@ class CourseService {
 		if (!response.ok) {
 			const errorText = await response.text();
 			throw new Error(`Error reordering module: ${errorText}`);
+		}
+	}
+
+	// WorkItem methods
+	async getWorkItem(id: string): Promise<WorkItem | null> {
+		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
+			method: 'GET',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (response.status === 404) {
+			return null;
+		}
+
+		if (!response.ok) {
+			throw new Error(`Error getting work item: ${response.statusText}`);
+		}
+
+		return await response.json();
+	}
+
+	async getModuleWorkItems(moduleId: string): Promise<WorkItem[]> {
+		const response = await fetch(`${this.apiUrl}/modules/${moduleId}/workitems`, {
+			method: 'GET',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error(`Error getting module work items: ${response.statusText}`);
+		}
+
+		return await response.json();
+	}
+
+	async createWorkItem(workItemData: CreateWorkItemDto): Promise<WorkItem> {
+		const response = await fetch(`${this.apiUrl}/workitems`, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(workItemData)
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para crear elementos de trabajo en este módulo');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error creating work item: ${errorText}`);
+		}
+
+		return await response.json();
+	}
+
+	async updateWorkItem(id: string, workItemData: UpdateWorkItemDto): Promise<void> {
+		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
+			method: 'PUT',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(workItemData)
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para editar este elemento de trabajo');
+		}
+
+		if (response.status === 404) {
+			throw new Error('Elemento de trabajo no encontrado');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error updating work item: ${errorText}`);
+		}
+	}
+
+	async deleteWorkItem(id: string): Promise<void> {
+		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
+			method: 'DELETE',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para eliminar este elemento de trabajo');
+		}
+
+		if (response.status === 404) {
+			throw new Error('Elemento de trabajo no encontrado');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error deleting work item: ${errorText}`);
+		}
+	}
+
+	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
+		const response = await fetch(`${this.apiUrl}/workitems/${id}/reorder`, {
+			method: 'PATCH',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ newOrderNumber })
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para reordenar elementos de trabajo en este módulo');
+		}
+
+		if (response.status === 404) {
+			throw new Error('Elemento de trabajo no encontrado');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error reordering work item: ${errorText}`);
 		}
 	}
 }

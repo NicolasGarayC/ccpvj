@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type CreateCourseDto, type UpdateCourseDto, type Course } from '$lib/services/course/courseService';
+	import { courseService, type CreateCourseDto, type UpdateCourseDto, type Course } from '$lib/services/courseService';
 	import MediaUploader from '../blog/MediaUploader.svelte';
 
 	export let course: Course | null = null; // null for create, Course for edit

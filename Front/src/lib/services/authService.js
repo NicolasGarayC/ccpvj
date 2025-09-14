@@ -15,8 +15,8 @@ class AuthService {
 
       if (response.ok && data.success) {
         // Almacenar datos del usuario para uso inmediato
-        this.storeUser(data.user);
-        return { success: true, data: data.user };
+        this.storeUser(data.data.user);
+        return { success: true, data: data.data.user };
       } else {
         return { success: false, error: data.error || 'Error al iniciar sesión' };
       }
@@ -36,8 +36,8 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        this.storeUser(data.user);
-        return { success: true, data: data.user };
+        this.storeUser(data.data.user);
+        return { success: true, data: data.data.user };
       } else {
         return { success: false, error: data.error || 'Error al registrarse' };
       }
@@ -69,29 +69,58 @@ class AuthService {
   storeUser(userData) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(userData));
-      // También almacenar en cookies para compatibilidad con SSR
-      document.cookie = `demo-user=${JSON.stringify(userData)}; path=/; max-age=${60 * 60 * 24 * 30}`;
     }
   }
 
   clearUser() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
-      // Limpiar cookie de demo
-      document.cookie = 'demo-user=; path=/; max-age=0';
+    }
+  }
+
+  async checkSession() {
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'include'  // Incluir cookies
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.user) {
+          this.storeUser(data.data.user);
+          return data.data.user;
+        }
+      }
+      
+      // Si no hay sesión válida, limpiar datos locales
+      this.clearUser();
+      return null;
+    } catch (error) {
+      this.clearUser();
+      return null;
     }
   }
 
   isAuthenticated() {
     if (typeof window === 'undefined') return false;
     const user = localStorage.getItem('user');
-    return !!user;
+    return !!(user && user !== 'undefined' && user !== 'null');
   }
 
   getUser() {
     if (typeof window === 'undefined') return null;
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user || user === 'undefined' || user === 'null') {
+      return null;
+    }
+    try {
+      return JSON.parse(user);
+    } catch (error) {
+      // Limpiar datos corruptos
+      localStorage.removeItem('user');
+      return null;
+    }
   }
 }
 

@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Configuración por capas
+// Configuraciï¿½n por capas
 builder.Services.AddInfrastructureServices(
     builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
 builder.Services.AddApplicationServices();
@@ -35,16 +35,20 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configuración JWT
+// Configuraciï¿½n JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-// Servicios JWT específicos (no están en las capas)
+// Servicios JWT especï¿½ficos (no estï¿½n en las capas)
 builder.Services.AddScoped<IJwtService, JwtService>();
+
+// Servicios de biblioteca
+builder.Services.AddScoped<CentroCultural.Application.Services.ILibraryService, CentroCultural.Application.Services.LibraryService>();
+builder.Services.AddScoped<CentroCultural.Application.Services.IFileStorageService, CentroCultural.Infrastructure.Services.FileStorageService>();
 
 // Servicio de limpieza en background
 builder.Services.AddHostedService<TokenCleanupService>();
 
-// Configuración JWT Authentication
+// Configuraciï¿½n JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
 if (jwtSettings == null)
@@ -70,7 +74,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configuración de archivos grandes
+// Configuraciï¿½n de archivos grandes
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options => 
 { 
     options.MultipartBodyLengthLimit = 500_000_000; 
@@ -85,14 +89,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Ensure database is created
+// Ensure database is created and configure foreign keys
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.EnsureCreated();
+    
+    // Enable foreign key constraints for SQLite
+    context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON");
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // Para servir archivos estÃ¡ticos
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseMiddleware<TokenBlacklistMiddleware>();
@@ -101,5 +109,5 @@ app.MapControllers();
 
 app.Run();
 
-// Necesario para pruebas de integración
+// Necesario para pruebas de integraciï¿½n
 public partial class Program { }

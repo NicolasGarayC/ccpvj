@@ -89,136 +89,181 @@
   }
 </script>
 
-<div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 h-full flex flex-col">
-  <!-- Media Content (Image or Video) -->
+<div class="group bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-transparent hover:border-blue-200 h-full flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 relative">
+  <!-- Badge decorativo -->
+  <div class="absolute top-3 right-3 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    📰 NOTICIA
+  </div>
+
+  <!-- Media Content (Image or Video) con mejores estilos -->
   {#if post.featuredMedia}
-    <div class="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+    <div class="aspect-video bg-gradient-to-br from-slate-100 to-gray-100 flex items-center justify-center overflow-hidden relative">
       {#if isVideo(post.featuredMedia)}
-        <video 
-          class="w-full h-full object-cover" 
-          controls
-          preload="metadata"
-          poster={post.videoPoster ? getMediaUrl(post.videoPoster) : ''}
-        >
-          <source src={getMediaUrl(post.featuredMedia)} type="video/mp4">
-          <p class="text-gray-500">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
-        </video>
+        <div class="w-full h-full relative">
+          <video
+            class="w-full h-full object-cover rounded-t-2xl"
+            controls
+            preload="metadata"
+            poster={post.videoPoster ? getMediaUrl(post.videoPoster) : ''}
+          >
+            <source src={getMediaUrl(post.featuredMedia)} type="video/mp4">
+            <p class="absolute inset-0 flex items-center justify-center text-gray-600 bg-gray-100">
+              {t('videoNotSupported') || 'Tu navegador no soporta video.'}
+            </p>
+          </video>
+          <!-- Play icon overlay -->
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
+            <div class="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+              <i class="fas fa-play text-blue-600 text-xl ml-1"></i>
+            </div>
+          </div>
+        </div>
       {:else if isImage(post.featuredMedia)}
-        <img 
-          src={getMediaUrl(post.featuredMedia)} 
-          alt={post.title}
-          class="w-full h-full object-cover"
-          loading="lazy"
-        />
+        <div class="w-full h-full relative overflow-hidden">
+          <img
+            src={getMediaUrl(post.featuredMedia)}
+            alt={post.title}
+            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+          <!-- Overlay sutil en hover -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
       {:else}
         <!-- Fallback para tipos de media no reconocidos -->
-        <div class="flex items-center justify-center w-full h-full bg-indigo-100">
-          <i class="fas fa-file text-indigo-500 text-3xl"></i>
+        <div class="flex items-center justify-center w-full h-full bg-gradient-to-br from-slate-100 to-gray-100">
+          <div class="text-center">
+            <i class="fas fa-file text-gray-400 text-4xl mb-2"></i>
+            <p class="text-gray-500 text-sm">Archivo multimedia</p>
+          </div>
         </div>
       {/if}
     </div>
   {:else}
-    <!-- Placeholder cuando no hay media -->
-    <div class="aspect-video bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-      <div class="text-center">
-        <i class="fas fa-newspaper text-indigo-400 text-4xl mb-2"></i>
-        <p class="text-indigo-600 text-sm font-medium">{t('newsPost') || 'Noticia'}</p>
+    <!-- Placeholder cuando no hay media - más neutro y legible -->
+    <div class="aspect-video bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center relative">
+      <!-- Elementos decorativos sutiles -->
+      <div class="absolute top-4 left-4 w-3 h-3 bg-blue-200 rounded-full opacity-60"></div>
+      <div class="absolute top-6 right-6 w-2 h-2 bg-purple-200 rounded-full opacity-40"></div>
+      <div class="absolute bottom-4 left-6 w-4 h-4 bg-green-200 rounded-full opacity-30"></div>
+
+      <div class="text-center relative z-10">
+        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-3 mx-auto">
+          <i class="fas fa-newspaper text-gray-400 text-2xl"></i>
+        </div>
+        <p class="text-gray-600 text-sm font-medium">{t('newsPost') || 'Artículo'}</p>
       </div>
     </div>
   {/if}
   
-  <!-- Content -->
+  <!-- Content con mejor legibilidad -->
   <div class="p-6 flex-1 flex flex-col">
-    <!-- Metadata -->
-    <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
-      <time datetime={post.publishDate}>
-        {new Date(post.publishDate).toLocaleDateString('es-ES', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })}
-      </time>
-      {#if post.authorName}
-        <span class="flex items-center">
-          <i class="fas fa-user mr-1"></i>
-          {post.authorName}
-        </span>
-      {/if}
+    <!-- Metadata mejorada -->
+    <div class="flex items-center justify-between text-sm mb-4">
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+          <i class="fas fa-calendar-alt mr-1.5 text-xs"></i>
+          <time datetime={post.publishDate} class="font-medium">
+            {new Date(post.publishDate).toLocaleDateString('es-ES', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            })}
+          </time>
+        </div>
+        {#if post.authorName}
+          <div class="flex items-center text-gray-600 bg-gray-50 px-2 py-1 rounded-full">
+            <i class="fas fa-user mr-1.5 text-xs"></i>
+            <span class="font-medium">{post.authorName}</span>
+          </div>
+        {/if}
+      </div>
     </div>
 
-    <!-- Title -->
-    <h3 class="text-xl font-bold mb-3 line-clamp-2">{post.title}</h3>
+    <!-- Title con mejor tipografía -->
+    <h3 class="text-xl font-bold mb-4 line-clamp-2 text-gray-900 leading-tight group-hover:text-blue-800 transition-colors duration-300">
+      {post.title}
+    </h3>
+
+    <!-- Excerpt con mejor contraste -->
+    <p class="text-gray-700 mb-6 flex-1 line-clamp-3 leading-relaxed text-sm">
+      {post.excerpt}
+    </p>
     
-    <!-- Excerpt -->
-    <p class="text-gray-600 mb-4 flex-1 line-clamp-3">{post.excerpt}</p>
-    
-    <!-- Actions -->
+    <!-- Actions mejoradas -->
     <div class="mt-auto">
       <div class="flex justify-between items-center">
-        <button 
+        <!-- Botón principal más atractivo pero legible -->
+        <button
           on:click={handleView}
-          class="inline-flex items-center text-indigo-600 font-medium hover:text-indigo-800 transition-colors group"
+          class="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold px-4 py-2 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg hover:scale-105 group"
         >
+          <span class="mr-2">📖</span>
           {t('readMore') || 'Leer más'}
-          <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+          <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform text-sm"></i>
         </button>
 
+        <!-- Botones de acción con mejor contraste -->
         {#if showActions}
           <div class="flex gap-2">
             {#if canEdit}
-              <button 
+              <button
                 on:click={handleEdit}
-                class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                class="p-2 text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 hover:text-blue-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                 title="Editar post"
               >
-                <i class="fas fa-edit"></i>
+                <i class="fas fa-edit text-sm"></i>
               </button>
             {/if}
-            
+
             {#if canDelete}
-              <button 
+              <button
                 on:click={handleDelete}
-                class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                class="p-2 text-red-600 bg-red-50 rounded-full hover:bg-red-100 hover:text-red-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                 title="Eliminar post"
               >
-                <i class="fas fa-trash"></i>
+                <i class="fas fa-trash text-sm"></i>
               </button>
             {/if}
           </div>
         {/if}
       </div>
 
-      <!-- Eventos relacionados -->
+      <!-- Eventos relacionados con mejor legibilidad -->
       {#if showRelatedEvents && (relatedEvents.length > 0 || loadingEvents)}
-        <div class="mt-4 pt-4 border-t border-gray-200">
-          <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-            <svg class="w-4 h-4 mr-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
-            </svg>
-            Eventos relacionados
+        <div class="mt-6 pt-4 border-t border-gray-100">
+          <h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center">
+            <div class="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+              <i class="fas fa-calendar-alt text-blue-600 text-xs"></i>
+            </div>
+            📅 Eventos relacionados
           </h4>
-          
+
           {#if loadingEvents}
-            <div class="flex items-center text-sm text-gray-500">
-              <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
-              Cargando eventos...
+            <div class="flex items-center justify-center text-sm text-gray-600 py-4">
+              <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-3"></div>
+              <span class="font-medium">Cargando eventos...</span>
             </div>
           {:else if relatedEvents.length > 0}
-            <div class="space-y-2">
+            <div class="space-y-3">
               {#each relatedEvents.slice(0, 3) as event}
-                <div 
-                  class="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded text-sm cursor-pointer hover:bg-blue-100 transition-colors"
+                <div
+                  class="group/event flex items-start justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
                   on:click={() => window.open(`/calendar/event/${event.id}`, '_blank')}
                   role="button"
                   tabindex="0"
                   on:keydown={(e) => e.key === 'Enter' && window.open(`/calendar/event/${event.id}`, '_blank')}
                 >
                   <div class="flex-1 min-w-0">
-                    <p class="font-medium text-blue-900 truncate">{event.title}</p>
-                    <div class="flex items-center space-x-2 text-xs text-blue-700">
-                      <span>{event.eventType}</span>
-                      <span>•</span>
-                      <span>
+                    <p class="font-semibold text-gray-900 truncate mb-1 group-hover/event:text-blue-800">
+                      {event.title}
+                    </p>
+                    <div class="flex items-center space-x-2 text-xs text-gray-600">
+                      <span class="bg-white px-2 py-1 rounded-full font-medium">
+                        {event.eventType}
+                      </span>
+                      <span class="text-gray-400">•</span>
+                      <span class="font-medium">
                         {new Intl.DateTimeFormat('es-ES', {
                           month: 'short',
                           day: 'numeric',
@@ -228,19 +273,20 @@
                       </span>
                     </div>
                   </div>
-                  <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                  </svg>
+                  <div class="ml-3 text-gray-400 group-hover/event:text-blue-500 transition-colors">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </div>
                 </div>
               {/each}
-              
+
               {#if relatedEvents.length > 3}
-                <div class="text-center">
+                <div class="text-center pt-2">
                   <a
                     href={`/calendar?relatedBlogPost=${post.id}`}
-                    class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-semibold hover:bg-blue-50 px-3 py-2 rounded-full transition-all duration-200"
                   >
-                    Ver todos ({relatedEvents.length})
+                    <span>Ver todos ({relatedEvents.length})</span>
+                    <i class="fas fa-arrow-right ml-1.5 text-xs"></i>
                   </a>
                 </div>
               {/if}

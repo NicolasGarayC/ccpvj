@@ -1,0 +1,587 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { libraryService } from '$lib/services/library/libraryService';
+	import { authService } from '$lib/services/authService';
+	import LibraryResourceCard from '$lib/components/library/LibraryResourceCard.svelte';
+	import LibraryFilters from '$lib/components/library/LibraryFilters.svelte';
+	import type { LibraryResource, LibrarySearchFilters, LibraryStats } from '$lib/data/models/library';
+	import { MEDIA_TYPE_LABELS, CATEGORY_LABELS } from '$lib/data/models/library';
+	
+	// Estado de la aplicación
+	let resources: LibraryResource[] = [];
+	let filteredResources: LibraryResource[] = [];
+	let stats: LibraryStats | null = null;
+	let isLoading = true;
+	let error: string | null = null;
+	
+	// Permisos de usuario
+	let isAuthenticated = false;
+	let canManage = false;
+	
+	// Filtros activos
+	let currentFilters: LibrarySearchFilters = {};
+	let viewMode: 'grid' | 'list' = 'grid';
+	let sortBy: 'name' | 'uploadedAt' | 'downloadCount' | 'publishYear' = 'uploadedAt';
+	let sortOrder: 'asc' | 'desc' = 'desc';
+	
+	// Variables para búsqueda y paginación
+	let searchTerm = '';
+	let currentPage = 1;
+	let itemsPerPage = 12;
+	
+	// Calcular recursos filtrados y paginados
+	$: {
+		filteredResources = filterResources(resources, currentFilters, searchTerm);
+		filteredResources = sortResources(filteredResources, sortBy, sortOrder);
+	}
+	
+	$: paginatedResources = paginateResources(filteredResources, currentPage, itemsPerPage);
+	$: totalPages = Math.ceil(filteredResources.length / itemsPerPage);
+	
+	onMount(async () => {
+		// Verificar permisos de usuario
+		isAuthenticated = authService.isAuthenticated();
+		if (isAuthenticated) {
+			const user = authService.getUser();
+			canManage = user?.role === 'colaborador' || user?.role === 'administrador';
+		}
+		
+		// Cargar datos
+		await loadResources();
+		await loadStats();
+	});
+	
+	async function loadResources() {
+		try {
+			isLoading = true;
+			error = null;
+			resources = await libraryService.getAllResources();
+		} catch (e) {
+			error = 'Error al cargar recursos de la biblioteca';
+			console.error(error, e);
+		} finally {
+			isLoading = false;
+		}
+	}
+	
+	async function loadStats() {
+		try {
+			stats = await libraryService.getStats();
+		} catch (e) {
+			console.error('Error loading stats:', e);
+		}
+	}
+	
+	function filterResources(resources: LibraryResource[], filters: LibrarySearchFilters, search: string): LibraryResource[] {
+		return resources.filter(resource => {
+			// Filtro por búsqueda de texto
+			if (search) {
+				const searchLower = search.toLowerCase();
+				const matchesName = resource.name.toLowerCase().includes(searchLower);
+				const matchesAuthors = resource.authors.some(author => author.toLowerCase().includes(searchLower));
+				const matchesTags = resource.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
+				const matchesDescription = resource.description?.toLowerCase().includes(searchLower) || false;
+				
+				if (!matchesName && !matchesAuthors && !matchesTags && !matchesDescription) {
+					return false;
+				}
+			}
+			
+			// Filtros específicos
+			if (filters.category && resource.category !== filters.category) return false;
+			if (filters.mediaType && resource.mediaType !== filters.mediaType) return false;
+			if (filters.language && resource.language !== filters.language) return false;
+			if (filters.publishYear && resource.publishYear !== filters.publishYear) return false;
+			if (filters.downloadable !== undefined && resource.downloadable !== filters.downloadable) return false;
+			if (filters.isFeatured !== undefined && resource.isFeatured !== filters.isFeatured) return false;
+			
+			// Filtro por autor específico
+			if (filters.authors) {
+				const authorSearch = filters.authors.toLowerCase();
+				if (!resource.authors.some(author => author.toLowerCase().includes(authorSearch))) {
+					return false;
+				}
+			}
+			
+			// Filtro por tags
+			if (filters.tags && filters.tags.length > 0) {
+				if (!resource.tags || !filters.tags.some(tag => resource.tags!.includes(tag))) {
+					return false;
+				}
+			}
+			
+			return true;
+		});
+	}
+	
+	function sortResources(resources: LibraryResource[], sortBy: string, order: 'asc' | 'desc'): LibraryResource[] {
+		return [...resources].sort((a, b) => {
+			let comparison = 0;
+			
+			switch (sortBy) {
+				case 'name':
+					comparison = a.name.localeCompare(b.name);
+					break;
+				case 'uploadedAt':
+					comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+					break;
+				case 'downloadCount':
+					comparison = a.downloadCount - b.downloadCount;
+					break;
+				case 'publishYear':
+					comparison = (a.publishYear || 0) - (b.publishYear || 0);
+					break;
+			}
+			
+			return order === 'asc' ? comparison : -comparison;
+		});
+	}
+	
+	function paginateResources(resources: LibraryResource[], page: number, perPage: number): LibraryResource[] {
+		const start = (page - 1) * perPage;
+		return resources.slice(start, start + perPage);
+	}
+	
+	function handleFiltersChange(filters: LibrarySearchFilters) {
+		currentFilters = filters;
+		currentPage = 1; // Reset a primera página cuando cambian los filtros
+	}
+	
+	function handleSearch() {
+		currentPage = 1; // Reset a primera página cuando se busca
+	}
+	
+	async function handleDownload(resource: LibraryResource) {
+		try {
+			await libraryService.downloadResource(resource.id);
+			// Actualizar contador de descargas localmente
+			resource.downloadCount++;
+		} catch (e) {
+			error = 'Error al descargar el archivo';
+		}
+	}
+	
+	async function handleDelete(resourceId: string) {
+		if (!confirm('¿Estás seguro de que quieres eliminar este recurso?')) return;
+		
+		try {
+			const success = await libraryService.deleteResource(resourceId);
+			if (success) {
+				resources = resources.filter(r => r.id !== resourceId);
+				await loadStats(); // Actualizar estadísticas
+			}
+		} catch (e) {
+			error = 'Error al eliminar el recurso';
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>Biblioteca - Centro Cultural</title>
+</svelte:head>
+
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+	<div class="container mx-auto px-4 py-8 max-w-7xl">
+		<!-- Header Juvenil Super Mejorado -->
+		<div class="relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-12 mb-12 border-2 border-indigo-100 overflow-hidden">
+			<!-- Elementos decorativos animados -->
+			<div class="absolute top-6 right-8 text-7xl opacity-20 animate-pulse">📚</div>
+			<div class="absolute -top-6 -left-6 w-24 h-24 bg-indigo-200/30 rounded-full animate-bounce" style="animation-duration: 3s;"></div>
+			<div class="absolute bottom-8 right-16 w-16 h-16 bg-purple-200/30 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+			<div class="absolute top-16 left-1/3 w-8 h-8 bg-pink-200/30 rounded-full animate-pulse" style="animation-delay: 2s;"></div>
+
+			<div class="relative z-10 text-center">
+				<h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
+					<span class="text-4xl mr-3">📖</span>
+					<span class="bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-800 bg-clip-text text-transparent">
+						Biblioteca Digital
+					</span>
+				</h1>
+				<p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-medium mb-8">
+					🌟 ¡Explora un mundo de conocimiento increíble! Encuentra libros, videos, audios y recursos súper geniales para aprender y crear cosas asombrosas
+				</p>
+
+				{#if canManage}
+					<div class="mt-8">
+						<a
+							href="/library/create"
+							class="group inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-10 py-5 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold border-2 border-green-400"
+						>
+							<span class="text-2xl group-hover:rotate-90 transition-transform duration-500">✨</span>
+							Agregar Recurso Genial
+							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+						</a>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Estadísticas Super Juveniles -->
+		{#if stats}
+			<div class="text-center mb-8">
+				<h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
+					<span class="text-3xl">📊</span>
+					¡Datos Súper Geniales!
+				</h2>
+				<p class="text-gray-600 font-medium">Mira todo lo increíble que tenemos en nuestra biblioteca</p>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
+				<div class="group relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl shadow-lg border-2 border-blue-200 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:scale-105 overflow-hidden">
+					<!-- Elemento decorativo -->
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-blue-300/20 rounded-full animate-pulse"></div>
+
+					<div class="relative z-10 text-center">
+						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
+							<span class="text-2xl">📁</span>
+						</div>
+						<p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Total Recursos</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.totalResources}</p>
+						<p class="text-xs text-blue-600 font-semibold">¡Recursos geniales! 🚀</p>
+					</div>
+				</div>
+
+				<div class="group relative bg-gradient-to-br from-red-50 to-pink-100 rounded-3xl shadow-lg border-2 border-red-200 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:scale-105 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-red-300/20 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
+
+					<div class="relative z-10 text-center">
+						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
+							<span class="text-2xl">📄</span>
+						</div>
+						<p class="text-sm font-bold text-red-700 mb-2 uppercase tracking-wide">PDFs</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">{stats.resourcesByType.pdf || 0}</p>
+						<p class="text-xs text-red-600 font-semibold">¡Documentos épicos! 📚</p>
+					</div>
+				</div>
+
+				<div class="group relative bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl shadow-lg border-2 border-purple-200 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:scale-105 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-purple-300/20 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+
+					<div class="relative z-10 text-center">
+						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
+							<span class="text-2xl">🎬</span>
+						</div>
+						<p class="text-sm font-bold text-purple-700 mb-2 uppercase tracking-wide">Videos</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.resourcesByType.video || 0}</p>
+						<p class="text-xs text-purple-600 font-semibold">¡Videos increíbles! 🎥</p>
+					</div>
+				</div>
+
+				<div class="group relative bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl shadow-lg border-2 border-green-200 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:scale-105 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-green-300/20 rounded-full animate-pulse" style="animation-delay: 1.5s;"></div>
+
+					<div class="relative z-10 text-center">
+						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
+							<span class="text-2xl">⬇️</span>
+						</div>
+						<p class="text-sm font-bold text-green-700 mb-2 uppercase tracking-wide">Descargas</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">{stats.totalDownloads}</p>
+						<p class="text-xs text-green-600 font-semibold">¡Súper populares! ⭐</p>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+	<!-- Componente de filtros -->
+	<LibraryFilters 
+		on:filtersChange={(e) => handleFiltersChange(e.detail)}
+		{currentFilters}
+	/>
+
+		<!-- Barra de búsqueda súper juvenil -->
+		<div class="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-indigo-100 p-8 mb-8 overflow-hidden">
+			<!-- Elementos decorativos -->
+			<div class="absolute -top-4 -right-4 w-20 h-20 bg-indigo-200/20 rounded-full animate-bounce" style="animation-duration: 4s;"></div>
+			<div class="absolute bottom-4 left-8 w-12 h-12 bg-purple-200/20 rounded-full animate-pulse" style="animation-delay: 2s;"></div>
+
+			<div class="relative z-10">
+				<!-- Título de búsqueda -->
+				<div class="text-center mb-8">
+					<h2 class="text-2xl font-black text-gray-800 mb-2 flex items-center justify-center gap-3">
+						<span class="text-2xl">🔍</span>
+						¡Encuentra lo que Buscas!
+					</h2>
+					<p class="text-gray-600 font-medium">Explora entre todos nuestros recursos increíbles</p>
+				</div>
+
+				<div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
+					<!-- Búsqueda principal mejorada -->
+					<div class="flex-1 max-w-2xl">
+						<div class="relative group">
+							<input
+								type="text"
+								placeholder="🚀 Busca recursos, autores, tags súper geniales..."
+								bind:value={searchTerm}
+								on:input={handleSearch}
+								class="w-full pl-16 pr-8 py-5 text-lg border-3 border-indigo-200 rounded-2xl focus:ring-6 focus:ring-indigo-300/30 focus:border-indigo-400 transition-all duration-300 bg-white/80 focus:bg-white shadow-lg font-medium placeholder:text-gray-400"
+							>
+							<div class="absolute left-5 top-1/2 transform -translate-y-1/2 text-indigo-400 group-focus-within:text-indigo-600 transition-colors duration-300">
+								<span class="text-2xl">🔎</span>
+							</div>
+							{#if searchTerm}
+								<button
+									on:click={() => { searchTerm = ''; handleSearch(); }}
+									class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
+								>
+									<i class="fas fa-times text-lg"></i>
+								</button>
+							{/if}
+						</div>
+					</div>
+
+					<!-- Controles juveniles -->
+					<div class="flex items-center gap-4">
+						<!-- Vista con emojis -->
+						<div class="flex bg-white/70 backdrop-blur-sm border-2 border-indigo-200 rounded-2xl p-1.5 shadow-lg">
+							<button
+								class="group px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 font-bold {viewMode === 'grid' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'}"
+								on:click={() => viewMode = 'grid'}
+							>
+								<span class="text-lg group-hover:rotate-12 transition-transform duration-300">🧩</span>
+								<span class="hidden sm:inline">Grid</span>
+							</button>
+							<button
+								class="group px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 font-bold {viewMode === 'list' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'}"
+								on:click={() => viewMode = 'list'}
+							>
+								<span class="text-lg group-hover:scale-110 transition-transform duration-300">📋</span>
+								<span class="hidden sm:inline">Lista</span>
+							</button>
+						</div>
+
+						<!-- Ordenamiento mejorado -->
+						<div class="relative">
+							<select bind:value={sortBy} class="appearance-none px-6 py-3 pr-10 border-2 border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
+								<option value="uploadedAt">✨ Más recientes</option>
+								<option value="name">🔤 Nombre A-Z</option>
+								<option value="downloadCount">🔥 Más populares</option>
+								<option value="publishYear">📅 Por año</option>
+							</select>
+							<div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-indigo-400 pointer-events-none">
+								<i class="fas fa-chevron-down"></i>
+							</div>
+						</div>
+
+						<button
+							on:click={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
+							class="group p-3 border-2 border-indigo-200 bg-white/80 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+							title={sortOrder === 'asc' ? '⬆️ Orden ascendente' : '⬇️ Orden descendente'}
+						>
+							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">
+								{sortOrder === 'asc' ? '⬆️' : '⬇️'}
+							</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Resultados info juvenil -->
+				<div class="mt-8 pt-6 border-t-2 border-indigo-100">
+					<div class="text-center">
+						{#if filteredResources.length === 0}
+							<p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
+								<span class="text-2xl">😔</span>
+								No encontramos nada súper genial
+							</p>
+						{:else}
+							<div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl px-6 py-3">
+								<span class="text-xl">🎯</span>
+								<p class="font-bold text-gray-700">
+									Mostrando <span class="text-indigo-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredResources.length)}</span>
+									de <span class="text-purple-600 font-black">{filteredResources.length}</span> recursos súper geniales
+									{#if searchTerm || Object.keys(currentFilters).length > 0}
+										<span class="text-gray-500">(de {resources.length} totales)</span>
+									{/if}
+								</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+
+	<!-- Mostrar error si existe -->
+	{#if error}
+		<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+			<div class="flex items-center">
+				<i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+				<span class="text-red-700">{error}</span>
+				<button 
+					on:click={() => error = null}
+					class="ml-auto text-red-500 hover:text-red-700"
+				>
+					<i class="fas fa-times"></i>
+				</button>
+			</div>
+		</div>
+	{/if}
+
+		<!-- Loading state súper juvenil -->
+		{#if isLoading}
+			<div class="relative bg-gradient-to-br from-white/90 to-indigo-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-indigo-200 p-16 overflow-hidden">
+				<!-- Elementos decorativos animados -->
+				<div class="absolute top-8 right-8 text-6xl opacity-20 animate-bounce">⏳</div>
+				<div class="absolute -top-4 -left-4 w-16 h-16 bg-indigo-300/20 rounded-full animate-pulse"></div>
+				<div class="absolute bottom-4 right-4 w-12 h-12 bg-purple-300/20 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+
+				<div class="relative z-10 text-center">
+					<div class="relative inline-block mb-8">
+						<!-- Spinner principal -->
+						<div class="w-20 h-20 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin"></div>
+						<!-- Spinner secundario -->
+						<div class="absolute inset-0 w-20 h-20 border-4 border-transparent border-l-purple-500 rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+						<!-- Emoji central -->
+						<div class="absolute inset-0 flex items-center justify-center">
+							<span class="text-2xl animate-pulse">📚</span>
+						</div>
+					</div>
+					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
+						<span class="text-3xl">🚀</span>
+						¡Cargando Recursos Increíbles!
+					</h3>
+					<p class="text-lg text-gray-600 mb-4 font-medium">Preparando la mejor experiencia de aprendizaje para ti</p>
+					<div class="flex items-center justify-center gap-2 text-indigo-600 font-bold">
+						<span class="animate-pulse">✨</span>
+						<span>Buscando contenido súper genial</span>
+						<span class="animate-pulse">✨</span>
+					</div>
+				</div>
+			</div>
+		{:else if paginatedResources.length === 0}
+			<!-- Estado vacío súper juvenil -->
+			<div class="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-gray-200 p-16 overflow-hidden">
+				<!-- Elementos decorativos -->
+				<div class="absolute top-6 right-6 text-6xl opacity-20">🔍</div>
+				<div class="absolute -top-4 -left-4 w-16 h-16 bg-gray-300/20 rounded-full animate-pulse"></div>
+				<div class="absolute bottom-6 right-12 w-12 h-12 bg-blue-300/20 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+
+				<div class="relative z-10 text-center">
+					<div class="mb-8">
+						<div class="relative inline-block">
+							<div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto shadow-lg mb-4">
+								<span class="text-6xl">
+									{#if filteredResources.length === 0 && resources.length > 0}
+										😅
+									{:else}
+										📚
+									{/if}
+								</span>
+							</div>
+							<!-- Elementos decorativos alrededor -->
+							<div class="absolute -top-2 -right-2 w-8 h-8 bg-blue-200 rounded-full animate-pulse"></div>
+							<div class="absolute -bottom-2 -left-2 w-6 h-6 bg-purple-200 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+							<div class="absolute top-4 -left-4 w-4 h-4 bg-green-200 rounded-full animate-pulse" style="animation-delay: 2s;"></div>
+						</div>
+					</div>
+
+					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
+						{#if filteredResources.length === 0 && resources.length > 0}
+							🤔 ¡Oops! No encontramos nada súper genial
+						{:else}
+							📖 Biblioteca esperando contenido increíble
+						{/if}
+					</h3>
+
+					<p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
+						{#if filteredResources.length === 0 && resources.length > 0}
+							🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar algo súper genial.
+						{:else if canManage}
+							🌟 ¡Sé el primero en compartir conocimiento increíble! Agrega el primer recurso y dale vida a esta biblioteca.
+						{:else}
+							⏰ Pronto tendremos recursos súper geniales para que explores y aprendas cosas increíbles.
+						{/if}
+					</p>
+
+					{#if filteredResources.length === 0 && resources.length > 0}
+						<button
+							on:click={() => { currentFilters = {}; searchTerm = ''; }}
+							class="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
+						>
+							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
+							Limpiar filtros y empezar de nuevo
+							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+						</button>
+					{:else if canManage}
+						<a
+							href="/library/create"
+							class="group inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
+						>
+							<span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
+							Agregar el primer recurso genial
+							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+						</a>
+					{/if}
+				</div>
+			</div>
+		{:else}
+			<!-- Lista/Grid de recursos mejorada -->
+			<div class="mb-8">
+				<div class="{viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8' : 'space-y-6'}">
+					{#each paginatedResources as resource (resource.id)}
+						<LibraryResourceCard 
+							{resource}
+							{viewMode}
+							{canManage}
+							on:download={() => handleDownload(resource)}
+							on:delete={() => handleDelete(resource.id)}
+							on:edit={() => window.location.href = `/library/edit/${resource.id}`}
+						/>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Paginación mejorada -->
+			{#if totalPages > 1}
+				<div class="flex items-center justify-center space-x-3 mt-12">
+					<button 
+						on:click={() => currentPage = 1}
+						disabled={currentPage === 1}
+						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+					>
+						<i class="fas fa-angle-double-left text-lg group-hover:text-indigo-600 transition-colors"></i>
+					</button>
+					
+					<button 
+						on:click={() => currentPage = Math.max(1, currentPage - 1)}
+						disabled={currentPage === 1}
+						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+					>
+						<i class="fas fa-angle-left text-lg group-hover:text-indigo-600 transition-colors"></i>
+					</button>
+
+					{#each Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+						const start = Math.max(1, currentPage - 2);
+						const end = Math.min(totalPages, start + 4);
+						return start + i;
+					}).filter(page => page <= totalPages) as page}
+						<button 
+							on:click={() => currentPage = page}
+							class="px-4 py-3 border-2 rounded-xl transition-all duration-300 font-semibold text-lg min-w-[3rem] {
+								currentPage === page 
+									? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-lg' 
+									: 'bg-white border-gray-200 hover:bg-gray-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-600'
+							}"
+						>
+							{page}
+						</button>
+					{/each}
+
+					<button 
+						on:click={() => currentPage = Math.min(totalPages, currentPage + 1)}
+						disabled={currentPage === totalPages}
+						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+					>
+						<i class="fas fa-angle-right text-lg group-hover:text-indigo-600 transition-colors"></i>
+					</button>
+					
+					<button 
+						on:click={() => currentPage = totalPages}
+						disabled={currentPage === totalPages}
+						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+					>
+						<i class="fas fa-angle-double-right text-lg group-hover:text-indigo-600 transition-colors"></i>
+					</button>
+				</div>
+			{/if}
+		{/if}
+	</div>
+</div>

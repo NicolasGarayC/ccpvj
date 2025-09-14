@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"./sqlite3.exe\" ccpvj.db \"PRAGMA foreign_keys;\")",
+      "Bash(\"./sqlite3.exe\" ccpvj.db \"PRAGMA foreign_keys = ON; PRAGMA foreign_keys;\")",
+      "Bash(sqlite3:*)",
+      "Bash(./sqlite3.exe Data/ccpvj.db \".tables\")",
+      "Bash(./sqlite3.exe ccpvj.db \".tables\")",
+      "Bash(./sqlite3.exe:*)",
+      "Bash(npm run:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
