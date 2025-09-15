@@ -29,21 +29,21 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 };
 
-export const PUT: RequestHandler = async ({ params, request, cookies }) => {
+export const PUT: RequestHandler = async ({ params, request, locals }) => {
   try {
-    const token = cookies.get('session');
-    if (!token) {
-      return json({ error: 'Unauthorized' }, { status: 401 });
+    const session = locals.session;
+    if (!session?.userId) {
+      return json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const { id } = params;
     const postData = await request.json();
-    
+
     const response = await fetch(`${BACKEND_URL}/api/blog/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
+        // No Authorization header needed for session-based auth
       },
       body: JSON.stringify(postData)
     });
@@ -67,19 +67,20 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
   }
 };
 
-export const DELETE: RequestHandler = async ({ params, cookies }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
   try {
-    const token = cookies.get('session');
-    if (!token) {
-      return json({ error: 'Unauthorized' }, { status: 401 });
+    const session = locals.session;
+    if (!session?.userId) {
+      return json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const { id } = params;
-    
+
     const response = await fetch(`${BACKEND_URL}/api/blog/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
+        // No Authorization header needed for session-based auth
       }
     });
 

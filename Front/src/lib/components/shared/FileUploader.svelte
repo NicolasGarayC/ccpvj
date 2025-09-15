@@ -114,7 +114,9 @@
 		if (type.startsWith('video/')) return 'fas fa-play-circle text-purple-500';
 		if (type.startsWith('audio/')) return 'fas fa-volume-up text-green-500';
 		if (type === 'application/pdf') return 'fas fa-file-pdf text-red-500';
-		if (type.includes('document') || type.includes('word')) return 'fas fa-file-alt text-blue-500';
+		if (type.includes('document') || type.includes('word')) return 'fas fa-file-word text-blue-500';
+		if (type.includes('excel') || type.includes('sheet')) return 'fas fa-file-excel text-green-500';
+		if (type.includes('powerpoint') || type.includes('presentation')) return 'fas fa-file-powerpoint text-orange-500';
 		return 'fas fa-file text-gray-500';
 	}
 </script>

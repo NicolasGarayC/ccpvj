@@ -27,20 +27,20 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
   }
 };
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
   try {
-    const token = cookies.get('session');
-    if (!token) {
-      return json({ error: 'Unauthorized' }, { status: 401 });
+    const session = locals.session;
+    if (!session?.userId) {
+      return json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const postData = await request.json();
-    
+
     const response = await fetch(`${BACKEND_URL}/api/blog`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
+        // No need for Authorization header - using session-based auth
       },
       body: JSON.stringify(postData)
     });

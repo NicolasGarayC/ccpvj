@@ -108,12 +108,43 @@
 		dispatch('cancel');
 	}
 
-	function handleImageUpload(event: CustomEvent<string>) {
-		formData.imagePath = event.detail;
+	function handleImageUpload(mediaUrl: string) {
+		formData.imagePath = mediaUrl;
+		// Auto-save when image is uploaded or removed
+		if (isEditing && course) {
+			autoSaveImagePath(mediaUrl);
+		}
 	}
 
 	function handleImageRemove() {
 		formData.imagePath = '';
+		// For course image removal, the MediaUploader will handle the server-side deletion
+		// and then reload the page to reflect the changes
+		if (isEditing && course) {
+			// Reload the page to show updated course data
+			setTimeout(() => {
+				window.location.reload();
+			}, 500); // Small delay to allow the deletion to complete
+		}
+	}
+
+	async function autoSaveImagePath(imagePath: string) {
+		try {
+			const updateData: UpdateCourseDto = {
+				title: formData.title.trim(),
+				description: formData.description.trim(),
+				subject: formData.subject,
+				isFeatured: formData.isFeatured,
+				imagePath: imagePath || undefined
+			};
+
+			await courseService.updateCourse(course!.id, updateData);
+			// Optionally dispatch a silent update event
+			dispatch('success', { type: 'update', id: course!.id, silent: true });
+		} catch (error) {
+			console.error('Error auto-saving image path:', error);
+			// Don't show error to user for auto-save, just log it
+		}
 	}
 </script>
 
@@ -189,10 +220,10 @@
 			<MediaUploader
 				contentType="course"
 				contentId={course?.id}
-				mediaType="images"
-				currentPath={formData.imagePath}
-				on:upload={handleImageUpload}
-				on:remove={handleImageRemove}
+				mediaType="image"
+				currentMedia={formData.imagePath}
+				onUploadComplete={handleImageUpload}
+				onRemoveComplete={handleImageRemove}
 				disabled={submitting || loading}
 			/>
 		</div>

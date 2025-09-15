@@ -170,70 +170,26 @@ class LibraryService {
 
   // Datos mock para desarrollo
   private getMockResources(): LibraryResource[] {
-    return [
-      {
-        id: '1',
-        name: 'Historia del Centro Cultural Víctor Jara',
-        description: 'Documento histórico sobre la fundación y evolución del centro cultural',
-        authors: ['María González', 'Carlos Pérez'],
-        publishYear: 2020,
-        category: 'historia',
-        mediaType: 'pdf',
-        fileName: 'historia_centro_cultural.pdf',
-        filePath: '/media/library/pdf/historia_centro_cultural.pdf',
-        fileSize: 2457600, // 2.4 MB
-        mimeType: 'application/pdf',
-        downloadable: true,
-        downloadCount: 45,
-        tags: ['historia', 'fundacion', 'cultura'],
-        language: 'es',
-        uploadedBy: 'admin',
-        uploadedAt: new Date('2024-01-15'),
-        isActive: true,
-        isFeatured: true
-      },
-      {
-        id: '2',
-        name: 'Tutorial de Guitarra Básica',
-        description: 'Video tutorial para aprender los acordes básicos de guitarra',
-        authors: ['Juan Martínez'],
-        publishYear: 2023,
-        category: 'educacion',
-        mediaType: 'video',
-        fileName: 'tutorial_guitarra_basica.mp4',
-        filePath: '/media/library/video/tutorial_guitarra_basica.mp4',
-        fileSize: 124428800, // 118.6 MB
-        mimeType: 'video/mp4',
-        duration: 1800, // 30 minutos
-        downloadable: true,
-        downloadCount: 128,
-        tags: ['musica', 'guitarra', 'tutorial'],
-        language: 'es',
-        uploadedBy: 'admin',
-        uploadedAt: new Date('2024-02-01'),
-        isActive: true,
-        isFeatured: false
-      }
-    ];
+    return [];
   }
 
   private getMockStats(): LibraryStats {
     return {
-      totalResources: 15,
-      totalDownloads: 342,
+      totalResources: 0,
+      totalDownloads: 0,
       resourcesByType: {
-        pdf: 8,
-        video: 4,
-        image: 2,
-        audio: 1,
+        pdf: 0,
+        video: 0,
+        image: 0,
+        audio: 0,
         document: 0
       },
       resourcesByCategory: {
-        educacion: 6,
-        cultura: 4,
-        historia: 3,
-        arte: 1,
-        literatura: 1,
+        educacion: 0,
+        cultura: 0,
+        historia: 0,
+        arte: 0,
+        literatura: 0,
         ciencias: 0,
         otros: 0
       },

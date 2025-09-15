@@ -3,24 +3,24 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { course, module } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { validateSession } from '$lib/server/auth';
+import { validateSessionToken } from '$lib/server/auth';
 import { nanoid } from 'nanoid';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		// Validate session
-		const sessionCookie = cookies.get('session');
-		if (!sessionCookie) {
+		const sessionToken = cookies.get('auth-session');
+		if (!sessionToken) {
 			return error(401, 'Authentication required');
 		}
 
-		const sessionResult = await validateSession(sessionCookie);
-		if (!sessionResult.session || !sessionResult.user) {
+		const { session: userSession, user } = await validateSessionToken(sessionToken);
+		if (!userSession || !user) {
 			return error(401, 'Invalid session');
 		}
 
 		// Check if user can create modules (colaborador or administrador)
-		if (!['colaborador', 'administrador'].includes(sessionResult.user.role)) {
+		if (!['colaborador', 'administrador'].includes(user.role)) {
 			return error(403, 'No tienes permisos para crear módulos');
 		}
 
@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		// Check permissions: user must be the educator or admin
-		if (existingCourse[0].educatorId !== sessionResult.user.id && sessionResult.user.role !== 'administrador') {
+		if (existingCourse[0].educatorId !== user.id && user.role !== 'administrador') {
 			return error(403, 'No tienes permisos para crear módulos en este curso');
 		}
 
@@ -53,6 +53,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			title,
 			description,
 			orderNumber,
+			isActive: true,
 			courseId,
 			createdAt: new Date(),
 			updatedAt: new Date()

@@ -69,11 +69,7 @@ export interface UserStats {
 class UserManagementService {
   private baseURL = 'https://localhost:5251/api';
 
-  // Método obsoleto - ahora usamos authService.authenticatedFetch
-  private getAuthHeaders() {
-    const token = localStorage.getItem('accessToken');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  }
+  // Already using authService.authenticatedFetch for cookie-based auth
 
   private adaptBackendToFrontend(backendUser: any): User {
     return {

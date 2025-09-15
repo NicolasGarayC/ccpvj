@@ -27,6 +27,9 @@
 	let userName = '';
 	let userRole = '';
 
+	// Estado del menú móvil
+	let mobileMenuOpen = false;
+
 	// Calcular si es educador
 	$: isEducator =
 		isLoggedIn && (user?.nombreRol === 'Educador' || user?.nombreRol === 'Administrador');
@@ -132,45 +135,65 @@
 				</a>
 
 				<!-- Navegación principal moderna -->
-				<nav class="hidden lg:flex items-center bg-white/20 backdrop-blur-lg rounded-2xl px-6 py-2 shadow-lg">
-					<div class="flex items-center gap-1">
+				<nav class="hidden lg:flex items-center bg-white/20 backdrop-blur-lg rounded-2xl px-3 lg:px-6 py-2 shadow-lg">
+					<div class="flex items-center gap-2">
 						<!-- Inicio -->
-						<a href="/" class="nav-item group relative px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+						<a
+							href="/"
+							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
+							title="{t('home') || 'Inicio'}"
+						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-home text-lg group-hover:bounce"></i>
-								<span class="hidden xl:inline">{t('home') || 'Inicio'}</span>
+								<span class="hidden lg:inline">{t('home') || 'Inicio'}</span>
 							</span>
 						</a>
-						
+
 						<!-- Blog -->
-						<a href="/blog" class="nav-item group relative px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+						<a
+							href="/blog"
+							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
+							title="{t('blog') || 'Blog'}"
+						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-blog text-lg group-hover:wiggle"></i>
-								<span class="hidden xl:inline">{t('blog') || 'Blog'}</span>
+								<span class="hidden lg:inline">{t('blog') || 'Blog'}</span>
 							</span>
 						</a>
-						
+
 						<!-- Calendario -->
-						<a href="/calendar" class="nav-item group relative px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+						<a
+							href="/calendar"
+							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
+							title="{t('calendar') || 'Calendario'}"
+						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-calendar-alt text-lg group-hover:pulse"></i>
-								<span class="hidden xl:inline">{t('calendar') || 'Calendario'}</span>
+								<span class="hidden lg:inline">{t('calendar') || 'Calendario'}</span>
 							</span>
 						</a>
-						
+
 						<!-- Biblioteca -->
-						<a href="/library" class="nav-item group relative px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+						<a
+							href="/library"
+							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
+							title="{t('library') || 'Biblioteca'}"
+						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-book text-lg group-hover:swing"></i>
-								<span class="hidden xl:inline">{t('library') || 'Biblioteca'}</span>
+								<span class="hidden lg:inline">{t('library') || 'Biblioteca'}</span>
 							</span>
 						</a>
-						
+
 						<!-- Cursos -->
-						<a href="/courses" class="nav-item group relative px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+						<a
+							href="/courses"
+							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
+							title="{t('courses') || 'Cursos'}"
+						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden xl:inline">{t('courses') || 'Cursos'}</span>
+								<span class="hidden lg:inline">{t('courses') || 'Cursos'}</span>
 							</span>
 						</a>
 					</div>
@@ -182,7 +205,7 @@
 						<!-- Dashboard admin -->
 						{#if canManageUsers}
 							<a href="/dashboard/users" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
-								<i class="fas fa-users-cog"></i>
+								<i class="fas fa-users-cog text-lg"></i>
 								<span class="hidden lg:inline">Panel</span>
 							</a>
 						{/if}
@@ -204,7 +227,7 @@
 								type="submit"
 								class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 							>
-								<i class="fas fa-sign-out-alt"></i>
+								<i class="fas fa-sign-out-alt text-lg"></i>
 								<span class="hidden lg:inline">Salir</span>
 							</button>
 						</form>
@@ -214,7 +237,7 @@
 							href="/auth/login"
 							class="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 						>
-							<i class="fas fa-sign-in-alt"></i>
+							<i class="fas fa-sign-in-alt text-lg"></i>
 							<span>{t('login') || 'Entrar'}</span>
 						</a>
 					{/if}
@@ -231,15 +254,118 @@
 				</div>
 
 				<!-- Menú móvil -->
-				<button class="lg:hidden flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-lg text-white rounded-xl">
-					<i class="fas fa-bars text-lg"></i>
+				<button
+					class="lg:hidden flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-lg text-white rounded-xl"
+					on:click={() => mobileMenuOpen = !mobileMenuOpen}
+				>
+					<i class="fas {mobileMenuOpen ? 'fa-times' : 'fa-bars'} text-lg"></i>
 				</button>
 			</div>
 		</div>
 	</header>
 
+	<!-- Mobile menu dropdown -->
+	{#if mobileMenuOpen}
+		<div class="lg:hidden bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 border-t border-white/20">
+			<div class="container mx-auto px-4 py-4">
+				<nav class="space-y-2">
+					<!-- Inicio -->
+					<a href="/" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+						<span class="flex items-center gap-3">
+							<i class="fas fa-home text-lg"></i>
+							<span>{t('home') || 'Inicio'}</span>
+						</span>
+					</a>
+
+					<!-- Blog -->
+					<a href="/blog" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+						<span class="flex items-center gap-3">
+							<i class="fas fa-blog text-lg"></i>
+							<span>{t('blog') || 'Blog'}</span>
+						</span>
+					</a>
+
+					<!-- Calendario -->
+					<a href="/calendar" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+						<span class="flex items-center gap-3">
+							<i class="fas fa-calendar-alt text-lg"></i>
+							<span>{t('calendar') || 'Calendario'}</span>
+						</span>
+					</a>
+
+					<!-- Biblioteca -->
+					<a href="/library" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+						<span class="flex items-center gap-3">
+							<i class="fas fa-book text-lg"></i>
+							<span>{t('library') || 'Biblioteca'}</span>
+						</span>
+					</a>
+
+					<!-- Cursos -->
+					<a href="/courses" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+						<span class="flex items-center gap-3">
+							<i class="fas fa-graduation-cap text-lg"></i>
+							<span>{t('courses') || 'Cursos'}</span>
+						</span>
+					</a>
+
+					{#if isLoggedIn}
+						<!-- Dashboard admin (mobile) -->
+						{#if canManageUsers}
+							<a href="/dashboard/users" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+								<span class="flex items-center gap-3">
+									<i class="fas fa-users-cog text-lg"></i>
+									<span>Panel Admin</span>
+								</span>
+							</a>
+						{/if}
+
+						<!-- User info (mobile) -->
+						<div class="px-4 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
+							<div class="flex items-center gap-3">
+								<div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+									{userName.charAt(0).toUpperCase()}
+								</div>
+								<div>
+									<p class="text-white font-semibold text-sm">{userName}</p>
+									<p class="text-white/70 text-xs">{userRole}</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Logout (mobile) -->
+						<form on:submit|preventDefault={handleLogout}>
+							<button
+								type="submit"
+								class="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all duration-300"
+								on:click={() => mobileMenuOpen = false}
+							>
+								<span class="flex items-center gap-3 justify-center">
+									<i class="fas fa-sign-out-alt text-lg"></i>
+									<span>Cerrar Sesión</span>
+								</span>
+							</button>
+						</form>
+					{:else}
+						<!-- Login (mobile) -->
+						<a
+							href="/auth/login"
+							class="block px-4 py-3 bg-white text-purple-600 font-bold rounded-xl hover:bg-gray-100 transition-all duration-300 text-center"
+							on:click={() => mobileMenuOpen = false}
+						>
+							<span class="flex items-center gap-3 justify-center">
+								<i class="fas fa-sign-in-alt text-lg"></i>
+								<span>{t('login') || 'Entrar'}</span>
+							</span>
+						</a>
+					{/if}
+				</nav>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Contenido principal -->
-	<main class="flex-grow">
+	<main class="flex-grow" on:click={() => mobileMenuOpen = false}>
 		<slot />
 	</main>
 

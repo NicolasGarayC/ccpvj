@@ -102,9 +102,18 @@ export const CATEGORY_LABELS: Record<ResourceCategory, string> = {
 export const SUPPORTED_MEDIA_TYPES = {
   pdf: ['application/pdf'],
   video: ['video/mp4', 'video/webm', 'video/mov', 'video/avi'],
-  image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
   audio: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
-  document: ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+  document: [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain'
+  ]
 };
 
 export const MAX_FILE_SIZES = {
@@ -112,5 +121,5 @@ export const MAX_FILE_SIZES = {
   video: 500 * 1024 * 1024, // 500MB
   image: 20 * 1024 * 1024, // 20MB
   audio: 100 * 1024 * 1024, // 100MB
-  document: 25 * 1024 * 1024 // 25MB
+  document: 100 * 1024 * 1024 // 100MB (actualizado para coincidir con otros endpoints)
 };

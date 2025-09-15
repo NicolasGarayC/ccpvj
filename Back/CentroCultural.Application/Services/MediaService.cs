@@ -24,7 +24,7 @@ namespace CentroCultural.Application.Services
 
         public Task<ValidationResult> ValidateImageFile(string filePath, long sizeBytes)
         {
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
             if (!allowedExtensions.Contains(ext))
                 return Task.FromResult(new ValidationResult { IsValid = false, ErrorMessage = "Extensi�n no permitida" });
@@ -253,6 +253,8 @@ namespace CentroCultural.Application.Services
             {
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
                 ".mp4" => "video/mp4",
                 ".webm" => "video/webm",
                 ".mov" => "video/quicktime",

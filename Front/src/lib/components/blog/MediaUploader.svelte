@@ -1,11 +1,28 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { translate as paraglideT } from '$lib/paraglide/runtime';
+  // Función de traducción con fallback seguro
+  let paraglideT = (key: string) => key;
+
+  // Intentar cargar Paraglide de forma segura
+  onMount(() => {
+    try {
+      import('$lib/paraglide/runtime').then(module => {
+        if (module.translate) {
+          paraglideT = module.translate;
+        }
+      }).catch(() => {
+        console.log('Paraglide not available in MediaUploader, using fallback');
+      });
+    } catch (err) {
+      console.log('Paraglide module not found in MediaUploader');
+    }
+  });
 
   export let contentType: string; // 'blog', 'course', 'workitem', 'event'
   export let contentId: string;
   export let mediaType: string; // 'image', 'video', 'audio', 'pdf'
   export let onUploadComplete: ((mediaUrl: string) => void) | null = null;
+  export let onRemoveComplete: (() => void) | null = null;
   export let currentMedia = '';
   export let disabled = false;
 
@@ -30,6 +47,8 @@
         return 'audio/*';
       case 'pdf':
         return 'application/pdf';
+      case 'document':
+        return '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
       default:
         return '*/*';
     }
@@ -37,17 +56,27 @@
 
   function validateFile(file: File): string | null {
     const validTypes: Record<string, string[]> = {
-      image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-      video: ['video/mp4', 'video/webm', 'video/mov'],
-      audio: ['audio/mpeg', 'audio/wav', 'audio/ogg'],
-      pdf: ['application/pdf']
+      image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
+      video: ['video/mp4', 'video/webm', 'video/mov', 'video/avi', 'video/mkv'],
+      audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/wave'],
+      pdf: ['application/pdf'],
+      document: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ]
     };
 
     const maxSizes: Record<string, number> = {
       image: 20 * 1024 * 1024,    // 20MB
       video: 500 * 1024 * 1024,   // 500MB
       audio: 100 * 1024 * 1024,   // 100MB
-      pdf: 50 * 1024 * 1024       // 50MB
+      pdf: 50 * 1024 * 1024,      // 50MB
+      document: 100 * 1024 * 1024 // 100MB
     };
 
     if (!validTypes[mediaType]?.includes(file.type)) {
@@ -87,24 +116,37 @@
     uploadProgress = 0;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
-
       // Create temporary file first (simulate file creation)
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use contextual upload endpoint
-      const endpoint = `/api/upload/${contentType}/${contentId}/${mediaType}s`;
-      
+      // Use appropriate upload endpoint based on content type
+      let endpoint: string;
+      const headers: Record<string, string> = {};
+
+      if (contentType === 'course' && mediaType === 'image') {
+        endpoint = `/api/upload/course-images`;
+        if (contentId) {
+          headers['X-Course-ID'] = contentId;
+        }
+      } else if (mediaType === 'document') {
+        // Handle documents with their own endpoint
+        endpoint = `/api/upload/documents`;
+        if (contentId) {
+          headers['X-Element-ID'] = contentId;
+        }
+      } else {
+        // Default to existing endpoints for other content types
+        endpoint = `/api/upload/${mediaType}s`;
+        if (contentId) {
+          headers['X-Element-ID'] = contentId;
+        }
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-File-Path': URL.createObjectURL(file) // Temporary - backend should handle this differently
-        },
+        credentials: 'include', // Include cookies for session-based auth
+        headers,
         body: formData
       });
 
@@ -131,13 +173,55 @@
     }
   }
 
-  function handleRemove() {
-    previewUrl = '';
-    if (onUploadComplete) {
-      onUploadComplete('');
-    }
-    if (fileInput) {
-      fileInput.value = '';
+  async function handleRemove() {
+    // Si es un curso y tiene un ID, eliminar desde el servidor
+    if (contentType === 'course' && contentId && mediaType === 'image' && previewUrl) {
+      try {
+        const response = await fetch(`/api/courses/${contentId}/remove-image`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al eliminar la imagen');
+        }
+
+        const result = await response.json();
+        console.log('✅ Imagen eliminada del servidor:', result.message);
+
+        // Limpiar la UI
+        previewUrl = '';
+        if (onUploadComplete) {
+          onUploadComplete('');
+        }
+        if (fileInput) {
+          fileInput.value = '';
+        }
+
+        // Llamar callback de eliminación para recargar página o actualizar datos
+        if (onRemoveComplete) {
+          onRemoveComplete();
+        }
+
+      } catch (err: any) {
+        console.error('Error al eliminar imagen:', err);
+        error = err.message || 'Error al eliminar la imagen';
+        return; // No limpiar UI si hay error
+      }
+    } else {
+      // Comportamiento original para otros tipos de contenido
+      previewUrl = '';
+      if (onUploadComplete) {
+        onUploadComplete('');
+      }
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      if (onRemoveComplete) {
+        onRemoveComplete();
+      }
     }
   }
 
@@ -151,25 +235,39 @@
         return 'fas fa-music';
       case 'pdf':
         return 'fas fa-file-pdf';
+      case 'document':
+        return 'fas fa-file-alt';
       default:
         return 'fas fa-file';
     }
   }
 
   function isImage(url: string) {
-    return mediaType === 'image' || url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    return mediaType === 'image' || url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
   }
 
   function isVideo(url: string) {
-    return mediaType === 'video' || url.match(/\.(mp4|webm|mov)$/i);
+    return mediaType === 'video' || url.match(/\.(mp4|webm|mov|avi|mkv)$/i);
   }
 
   function isAudio(url: string) {
-    return mediaType === 'audio' || url.match(/\.(mp3|wav|ogg)$/i);
+    return mediaType === 'audio' || url.match(/\.(mp3|wav|ogg|flac|aac)$/i);
   }
 
   function isPdf(url: string) {
     return mediaType === 'pdf' || url.match(/\.pdf$/i);
+  }
+
+  function isDocument(url: string) {
+    return mediaType === 'document' || url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+  }
+
+  function getDocumentIcon(url: string) {
+    if (url.match(/\.pdf$/i)) return 'fas fa-file-pdf text-red-500';
+    if (url.match(/\.(doc|docx)$/i)) return 'fas fa-file-word text-blue-500';
+    if (url.match(/\.(xls|xlsx)$/i)) return 'fas fa-file-excel text-green-500';
+    if (url.match(/\.(ppt|pptx)$/i)) return 'fas fa-file-powerpoint text-orange-500';
+    return 'fas fa-file-alt text-gray-500';
   }
 </script>
 
@@ -205,6 +303,26 @@
           <p class="text-sm text-gray-600">Documento PDF</p>
           <a href={previewUrl} target="_blank" class="text-blue-600 hover:underline text-sm">
             Ver documento
+          </a>
+        </div>
+      {:else if isDocument(previewUrl)}
+        <div class="text-center p-4 bg-gray-50 rounded">
+          <i class="{getDocumentIcon(previewUrl)} text-4xl mb-2"></i>
+          <p class="text-sm text-gray-600">
+            {#if previewUrl.match(/\.pdf$/i)}
+              Documento PDF
+            {:else if previewUrl.match(/\.(doc|docx)$/i)}
+              Documento Word
+            {:else if previewUrl.match(/\.(xls|xlsx)$/i)}
+              Hoja de Excel
+            {:else if previewUrl.match(/\.(ppt|pptx)$/i)}
+              Presentación PowerPoint
+            {:else}
+              Documento
+            {/if}
+          </p>
+          <a href={previewUrl} target="_blank" class="text-blue-600 hover:underline text-sm">
+            Descargar archivo
           </a>
         </div>
       {:else}
@@ -252,13 +370,15 @@
       </p>
       <p class="text-xs text-gray-500 mb-4">
         {#if mediaType === 'image'}
-          Formatos: JPG, PNG, GIF, WebP (máx. 20MB)
+          Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (máx. 20MB)
         {:else if mediaType === 'video'}
-          Formatos: MP4, WebM, MOV (máx. 500MB)
+          Formatos: MP4, WebM, MOV, AVI, MKV (máx. 500MB)
         {:else if mediaType === 'audio'}
-          Formatos: MP3, WAV, OGG (máx. 100MB)
+          Formatos: MP3, WAV, OGG, FLAC, AAC (máx. 100MB)
         {:else if mediaType === 'pdf'}
           Formato: PDF (máx. 50MB)
+        {:else if mediaType === 'document'}
+          Formatos: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX) (máx. 100MB)
         {/if}
       </p>
       <button

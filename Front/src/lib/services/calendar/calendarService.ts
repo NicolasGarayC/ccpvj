@@ -121,9 +121,16 @@ class CalendarService {
     }
   }
 
-  private getAuthHeaders() {
-    const token = sessionStorage.getItem('accessToken');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  // Using cookie-based authentication - no headers needed
+  private getRequestOptions(options: RequestInit = {}): RequestInit {
+    return {
+      credentials: 'include', // Include cookies for authentication
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    };
   }
 
   private adaptBackendToFrontend(backendEvent: any): EventSummary {
@@ -210,7 +217,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/${id}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) return null;
@@ -274,7 +281,7 @@ class CalendarService {
       });
 
       const response = await fetch(`${this.baseURL}/calendar?${queryParams}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos');
@@ -307,7 +314,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/calendar-view?viewDate=${viewDate.toISOString()}&viewType=${viewType}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener vista de calendario');
@@ -331,9 +338,8 @@ class CalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/calendar`, {
+      const response = await fetch(`${this.baseURL}/calendar`, this.getRequestOptions({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
         body: JSON.stringify({
           ...eventData,
           startDateTime: eventData.startDateTime.toISOString(),
@@ -341,7 +347,7 @@ class CalendarService {
           registrationDeadline: eventData.registrationDeadline?.toISOString(),
           recurrenceEndDate: eventData.recurrenceEndDate?.toISOString()
         })
-      });
+      }));
 
       if (!response.ok) throw new Error('Error al crear evento');
 
@@ -366,11 +372,10 @@ class CalendarService {
       if (eventData.registrationDeadline) body.registrationDeadline = eventData.registrationDeadline.toISOString() as any;
       if (eventData.recurrenceEndDate) body.recurrenceEndDate = eventData.recurrenceEndDate.toISOString() as any;
 
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, {
+      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions({
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
         body: JSON.stringify(body)
-      });
+      }));
 
       if (!response.ok) throw new Error('Error al actualizar evento');
 
@@ -389,10 +394,9 @@ class CalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, {
-        method: 'DELETE',
-        headers: { ...this.getAuthHeaders() }
-      });
+      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions({
+        method: 'DELETE'
+      }));
 
       return response.ok;
     } catch (error) {
@@ -412,7 +416,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=${limit}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos próximos');
@@ -435,7 +439,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/featured?limit=${limit}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos destacados');
@@ -460,7 +464,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/types`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener tipos de eventos');
@@ -480,7 +484,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/course/${courseId}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos del curso');
@@ -501,7 +505,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/blog/${blogPostId}`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos del blog post');
@@ -521,10 +525,9 @@ class CalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${eventId}/register`, {
-        method: 'POST',
-        headers: { ...this.getAuthHeaders() }
-      });
+      const response = await fetch(`${this.baseURL}/calendar/${eventId}/register`, this.getRequestOptions({
+        method: 'POST'
+      }));
 
       return response.ok;
     } catch (error) {
@@ -540,10 +543,9 @@ class CalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${eventId}/unregister`, {
-        method: 'POST',
-        headers: { ...this.getAuthHeaders() }
-      });
+      const response = await fetch(`${this.baseURL}/calendar/${eventId}/unregister`, this.getRequestOptions({
+        method: 'POST'
+      }));
 
       return response.ok;
     } catch (error) {
@@ -560,7 +562,7 @@ class CalendarService {
 
     try {
       const response = await fetch(`${this.baseURL}/calendar/my-registrations`, {
-        headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() }
+        ...this.getRequestOptions()
       });
 
       if (!response.ok) throw new Error('Error al obtener eventos registrados');

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import type { Module } from '$lib/services/courseService';
+	import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
 	export let module: Module;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
+	let showDeleteModal = false;
 
 	function handleView() {
 		dispatch('view', module.id);
@@ -16,9 +18,16 @@
 	}
 
 	function handleDelete() {
-		if (confirm(`¿Estás seguro de que deseas eliminar el módulo "${module.title}"?`)) {
-			dispatch('delete', module.id);
-		}
+		showDeleteModal = true;
+	}
+
+	function confirmDelete() {
+		dispatch('delete', module.id);
+		showDeleteModal = false;
+	}
+
+	function cancelDelete() {
+		showDeleteModal = false;
 	}
 </script>
 
@@ -92,6 +101,17 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Confirmation Modal for Delete -->
+<ConfirmationModal
+	visible={showDeleteModal}
+	title="Eliminar Módulo"
+	message={`¿Estás seguro de que deseas eliminar el módulo "${module.title}"? Esta acción no se puede deshacer y se eliminarán todos los contenidos asociados.`}
+	confirmText="Eliminar"
+	confirmButtonClass="btn-danger"
+	on:confirm={confirmDelete}
+	on:cancel={cancelDelete}
+/>
 
 <style>
 	.module-card {

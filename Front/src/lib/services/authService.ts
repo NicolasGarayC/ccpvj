@@ -1,87 +1,36 @@
-// Servicio de autenticación integrado con backend .NET
+// Servicio de autenticación basado en cookies/sesiones
 interface LoginRequest {
-  NombreUsuario: string;
-  Contrasena: string;
+  username: string;
+  password: string;
 }
 
 interface AuthUser {
-  idUsuario: number;
-  nombreUsuario: string;
+  id: string;
+  username: string;
   nombre: string;
   apellido: string;
-  telefono?: string;
-  nombreRol: string;
-}
-
-interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  usuario: AuthUser;
+  role: string;
 }
 
 interface LoginResponse {
   success: boolean;
   error?: string;
-  data?: AuthResponse;
-}
-
-interface RefreshTokenRequest {
-  RefreshToken: string;
+  user?: AuthUser;
 }
 
 class AuthService {
-  private baseURL = '/api/auth'; // Usar APIs proxy del frontend
+  private baseURL = '/api/auth';
   private user: AuthUser | null = null;
 
   constructor() {
     this.checkAuthStatus();
   }
 
-  private getAuthHeaders() {
-    const token = this.getAccessToken();
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  }
-
-  private getAccessToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
-
-  private getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
-  }
-
-  private storeTokens(authResponse: AuthResponse) {
-    localStorage.setItem('accessToken', authResponse.accessToken);
-    localStorage.setItem('refreshToken', authResponse.refreshToken);
-    localStorage.setItem('tokenExpiresAt', authResponse.expiresAt);
-    this.storeUser(authResponse.usuario);
-  }
-
-  private storeUser(user: AuthUser) {
-    this.user = user;
-    localStorage.setItem('userData', JSON.stringify(user));
-  }
-
-  private clearTokens() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('tokenExpiresAt');
-    localStorage.removeItem('userData');
-    this.user = null;
-  }
-
-  private isTokenExpired(): boolean {
-    const expiresAt = localStorage.getItem('tokenExpiresAt');
-    if (!expiresAt) return true;
-    
-    return new Date() >= new Date(expiresAt);
-  }
-
   async login(username: string, password: string): Promise<LoginResponse> {
     try {
       const response = await fetch(`${this.baseURL}/login`, {
         method: 'POST',
+        credentials: 'include', // Important for cookie-based auth
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
@@ -92,38 +41,11 @@ class AuthService {
         return { success: false, error: result.error || 'Error al iniciar sesión' };
       }
 
-      const authResponse: AuthResponse = result.data;
-      this.storeTokens(authResponse);
-      
-      return { success: true, data: authResponse };
+      this.user = result.user;
+      return { success: true, user: result.user };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Error de conexión con el servidor' };
-    }
-  }
-
-  async refreshToken(): Promise<boolean> {
-    try {
-      const refreshToken = this.getRefreshToken();
-      if (!refreshToken) return false;
-
-      const response = await fetch(`${this.baseURL}/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ RefreshToken: refreshToken })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) return false;
-
-      const authResponse: AuthResponse = result.data;
-      this.storeTokens(authResponse);
-      
-      return true;
-    } catch (error) {
-      console.error('Refresh token error:', error);
-      return false;
     }
   }
 
@@ -131,59 +53,49 @@ class AuthService {
     try {
       await fetch(`${this.baseURL}/logout`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      this.clearTokens();
+      this.user = null;
     }
   }
 
-  async logoutAllDevices(): Promise<void> {
+  async checkAuthStatus(): Promise<void> {
     try {
-      await fetch(`${this.baseURL}/logout-all`, {
-        method: 'POST',
-        headers: this.getAuthHeaders()
+      const response = await fetch(`${this.baseURL}/me`, {
+        method: 'GET',
+        credentials: 'include'
       });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data?.user) {
+          this.user = result.data.user;
+        } else {
+          this.user = null;
+        }
+      } else {
+        this.user = null;
+      }
     } catch (error) {
-      console.error('Logout all devices error:', error);
-    } finally {
-      this.clearTokens();
+      console.error('Auth status check error:', error);
+      this.user = null;
     }
   }
 
   isAuthenticated(): boolean {
-    const token = this.getAccessToken();
-    if (!token) return false;
-    
-    if (this.isTokenExpired()) {
-      // Intentar renovar token automáticamente
-      this.refreshToken().catch(() => this.clearTokens());
-      return false;
-    }
-    
-    return true;
+    return this.user !== null;
   }
 
   getUser(): AuthUser | null {
-    if (!this.user) {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          this.user = JSON.parse(userData);
-        } catch {
-          this.clearTokens();
-          return null;
-        }
-      }
-    }
     return this.user;
   }
 
   getUserRole(): string | null {
-    const user = this.getUser();
-    return user?.nombreRol || null;
+    return this.user?.role || null;
   }
 
   hasRole(role: string): boolean {
@@ -196,55 +108,36 @@ class AuthService {
   }
 
   canManageUsers(): boolean {
-    return this.hasAnyRole(['Administrador', 'Colaborador']);
+    return this.hasAnyRole(['administrador', 'colaborador']);
   }
 
   canManageContent(): boolean {
-    return this.hasAnyRole(['Administrador', 'Educador', 'Colaborador']);
+    return this.hasAnyRole(['administrador', 'colaborador']);
   }
 
-  private checkAuthStatus() {
-    // Verificar si hay tokens válidos al inicializar
-    if (this.getAccessToken() && !this.isTokenExpired()) {
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        try {
-          this.user = JSON.parse(userData);
-        } catch {
-          this.clearTokens();
-        }
-      }
-    } else {
-      this.clearTokens();
-    }
-  }
-
-  // Método para hacer peticiones autenticadas
+  // Método para hacer peticiones autenticadas con cookies
   async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...this.getAuthHeaders(),
-      ...(options.headers || {})
+    const defaultOptions: RequestInit = {
+      credentials: 'include', // Always include cookies
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      }
     };
 
-    let response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...defaultOptions, ...options });
 
-    // Si el token expiró, intentar renovarlo
-    if (response.status === 401 && this.getRefreshToken()) {
-      const refreshSuccess = await this.refreshToken();
-      if (refreshSuccess) {
-        // Reintentar la petición original con el nuevo token
-        const newHeaders = {
-          ...headers,
-          ...this.getAuthHeaders()
-        };
-        response = await fetch(url, { ...options, headers: newHeaders });
-      } else {
-        this.clearTokens();
-      }
+    // If we get 401, user is no longer authenticated
+    if (response.status === 401) {
+      this.user = null;
     }
 
     return response;
+  }
+
+  // Helper method to get authentication headers (returns empty object since we use cookies)
+  getAuthHeaders(): Record<string, string> {
+    return {}; // No headers needed for cookie-based auth
   }
 }
 
@@ -252,4 +145,4 @@ class AuthService {
 export const authService = new AuthService();
 
 // Tipos exportados para uso en componentes
-export type { AuthUser, AuthResponse, LoginResponse };
+export type { AuthUser, LoginResponse };

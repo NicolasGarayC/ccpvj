@@ -1,33 +1,29 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 using CentroCultural.Infrastructure.Configuration;
-using CentroCultural.Infrastructure.Middleware;
-using CentroCultural.Infrastructure.Services;
 using CentroCultural.Infrastructure.Data;
 using CentroCultural.Application.Interfaces;
 using CentroCultural.Application.Configuration;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Configuraci�n por capas
+// Configuración por capas
 builder.Services.AddInfrastructureServices(
     builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
 builder.Services.AddApplicationServices();
 
-// CORS
+// CORS - Update to allow SvelteKit
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", policy =>
+    options.AddPolicy("AllowSvelteKit", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins("http://localhost:5173") // SvelteKit dev server
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowCredentials(); // Important for cookies
     });
 });
 
@@ -35,49 +31,40 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configuraci�n JWT
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+// Cookie Authentication (replacing JWT)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/api/auth/login";
+        options.LogoutPath = "/api/auth/logout";
+        options.Cookie.Name = "auth-session";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
 
-// Servicios JWT espec�ficos (no est�n en las capas)
-builder.Services.AddScoped<IJwtService, JwtService>();
+        // Return 401 instead of redirect for API calls
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = 401;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = 403;
+            return Task.CompletedTask;
+        };
+    });
 
 // Servicios de biblioteca
 builder.Services.AddScoped<CentroCultural.Application.Services.ILibraryService, CentroCultural.Application.Services.LibraryService>();
 builder.Services.AddScoped<CentroCultural.Application.Services.IFileStorageService, CentroCultural.Infrastructure.Services.FileStorageService>();
 
-// Servicio de limpieza en background
-builder.Services.AddHostedService<TokenCleanupService>();
-
-// Configuraci�n JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
-
-if (jwtSettings == null)
-    throw new InvalidOperationException("JwtSettings configuration is missing");
-
-builder.Services.AddAuthentication(options =>
+// Configuración de archivos grandes
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-        ClockSkew = TimeSpan.Zero
-    };
-});
-
-// Configuraci�n de archivos grandes
-builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options => 
-{ 
-    options.MultipartBodyLengthLimit = 500_000_000; 
+    options.MultipartBodyLengthLimit = 500_000_000;
 });
 
 var app = builder.Build();
@@ -94,20 +81,19 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.EnsureCreated();
-    
+
     // Enable foreign key constraints for SQLite
     context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON");
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // Para servir archivos estáticos
-app.UseCors("AllowAngular");
-app.UseAuthentication();
-app.UseMiddleware<TokenBlacklistMiddleware>();
+app.UseCors("AllowSvelteKit");
+app.UseAuthentication(); // Cookie authentication
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
 
-// Necesario para pruebas de integraci�n
+// Necesario para pruebas de integración
 public partial class Program { }

@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import { courseService, type CreateModuleDto, type UpdateModuleDto, type Module } from '$lib/services/courseService';
 
 	export let module: Module | null = null; // null for create, Module for edit
 	export let courseId: string;
 	export let loading = false;
+	export let visible = false;
 
 	const dispatch = createEventDispatcher();
 	const isEditing = !!module;
@@ -17,6 +18,26 @@
 
 	let formErrors: Record<string, string> = {};
 	let submitting = false;
+	let existingModules: Module[] = [];
+
+	onMount(async () => {
+		if (visible) {
+			await loadExistingModules();
+		}
+	});
+
+	$: if (visible && !isEditing) {
+		// For new modules, set next order number
+		formData.orderNumber = existingModules.length + 1;
+	}
+
+	async function loadExistingModules() {
+		try {
+			existingModules = await courseService.getCourseModules(courseId);
+		} catch (err) {
+			console.error('Error loading existing modules:', err);
+		}
+	}
 
 	function validateForm(): boolean {
 		formErrors = {};
@@ -33,22 +54,13 @@
 			isValid = false;
 		}
 
-		if (!formData.description.trim()) {
-			formErrors.description = 'La descripción es requerida';
-			isValid = false;
-		} else if (formData.description.length < 10) {
-			formErrors.description = 'La descripción debe tener al menos 10 caracteres';
-			isValid = false;
-		} else if (formData.description.length > 500) {
+		if (formData.description && formData.description.length > 500) {
 			formErrors.description = 'La descripción no puede exceder 500 caracteres';
 			isValid = false;
 		}
 
 		if (formData.orderNumber < 1) {
-			formErrors.orderNumber = 'El número de orden debe ser mayor a 0';
-			isValid = false;
-		} else if (formData.orderNumber > 999) {
-			formErrors.orderNumber = 'El número de orden no puede ser mayor a 999';
+			formErrors.orderNumber = 'El orden debe ser mayor a 0';
 			isValid = false;
 		}
 
@@ -66,20 +78,20 @@
 			if (isEditing && module) {
 				const updateData: UpdateModuleDto = {
 					title: formData.title.trim(),
-					description: formData.description.trim(),
+					description: formData.description.trim() || undefined,
 					orderNumber: formData.orderNumber
 				};
-				
+
 				await courseService.updateModule(module.id, updateData);
-				dispatch('success', { type: 'update', id: module.id });
+				dispatch('success', { type: 'update', id: module.id, data: updateData });
 			} else {
 				const createData: CreateModuleDto = {
 					title: formData.title.trim(),
-					description: formData.description.trim(),
+					description: formData.description.trim() || undefined,
 					orderNumber: formData.orderNumber,
 					courseId: courseId
 				};
-				
+
 				const newModule = await courseService.createModule(createData);
 				dispatch('success', { type: 'create', module: newModule });
 			}
@@ -92,132 +104,244 @@
 	}
 
 	function handleCancel() {
+		// Reset form
+		formData = {
+			title: module?.title || '',
+			description: module?.description || '',
+			orderNumber: module?.orderNumber || existingModules.length + 1
+		};
+		formErrors = {};
 		dispatch('cancel');
+	}
+
+	function handleBackdropClick(event: MouseEvent) {
+		if (event.target === event.currentTarget) {
+			handleCancel();
+		}
 	}
 </script>
 
-<div class="module-form">
-	<div class="form-header">
-		<h3>{isEditing ? 'Editar Módulo' : 'Crear Nuevo Módulo'}</h3>
+{#if visible}
+	<!-- Modal Backdrop -->
+	<div
+		class="modal-backdrop"
+		on:click={handleBackdropClick}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="module-form-title"
+	>
+		<div class="modal-content" on:click|stopPropagation>
+			<!-- Modal Header -->
+			<div class="modal-header">
+				<h2 id="module-form-title" class="modal-title">
+					{#if isEditing}
+						<span class="icon">✏️</span>
+						Editar Módulo
+					{:else}
+						<span class="icon">➕</span>
+						Crear Nuevo Módulo
+					{/if}
+				</h2>
+				<button
+					class="close-button"
+					on:click={handleCancel}
+					disabled={submitting}
+					aria-label="Cerrar"
+				>
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="18" y1="6" x2="6" y2="18"></line>
+						<line x1="6" y1="6" x2="18" y2="18"></line>
+					</svg>
+				</button>
+			</div>
+
+			<!-- Modal Body -->
+			<div class="modal-body">
+				<form on:submit|preventDefault={handleSubmit}>
+					<div class="form-group">
+						<label for="title">
+							Título del módulo <span class="required">*</span>
+						</label>
+						<input
+							id="title"
+							type="text"
+							bind:value={formData.title}
+							class="input"
+							class:error={formErrors.title}
+							placeholder="Ej: Introducción a los conceptos básicos"
+							maxlength="200"
+							disabled={submitting || loading}
+							required
+						/>
+						{#if formErrors.title}
+							<span class="error-message">{formErrors.title}</span>
+						{/if}
+						<div class="character-count">
+							{formData.title.length}/200 caracteres
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="description">
+							Descripción <span class="optional">(opcional)</span>
+						</label>
+						<textarea
+							id="description"
+							bind:value={formData.description}
+							class="textarea"
+							class:error={formErrors.description}
+							placeholder="Describe brevemente el contenido y objetivos de este módulo"
+							rows="4"
+							maxlength="500"
+							disabled={submitting || loading}
+						></textarea>
+						{#if formErrors.description}
+							<span class="error-message">{formErrors.description}</span>
+						{/if}
+						<div class="character-count">
+							{formData.description.length}/500 caracteres
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="orderNumber">
+							Posición en el curso <span class="required">*</span>
+						</label>
+						<div class="order-input-container">
+							<input
+								id="orderNumber"
+								type="number"
+								bind:value={formData.orderNumber}
+								class="input order-input"
+								class:error={formErrors.orderNumber}
+								min="1"
+								max="{existingModules.length + 1}"
+								disabled={submitting || loading}
+								required
+							/>
+							<div class="order-info">
+								<span class="info-text">
+									{#if isEditing}
+										Posición actual: {module?.orderNumber}
+									{:else}
+										Siguiente posición disponible: {existingModules.length + 1}
+									{/if}
+								</span>
+							</div>
+						</div>
+						{#if formErrors.orderNumber}
+							<span class="error-message">{formErrors.orderNumber}</span>
+						{/if}
+						<div class="help-text">
+							Los módulos se muestran en orden numérico. Puedes cambiar el orden más tarde.
+						</div>
+					</div>
+
+					<!-- Form Actions -->
+					<div class="form-actions">
+						<button
+							type="button"
+							class="btn btn-outline"
+							on:click={handleCancel}
+							disabled={submitting || loading}
+						>
+							Cancelar
+						</button>
+
+						<button
+							type="submit"
+							class="btn btn-primary"
+							disabled={submitting || loading}
+						>
+							{#if submitting}
+								<span class="loading-spinner"></span>
+								{isEditing ? 'Actualizando...' : 'Creando...'}
+							{:else}
+								{isEditing ? 'Actualizar Módulo' : 'Crear Módulo'}
+							{/if}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
 	</div>
-
-	<form on:submit|preventDefault={handleSubmit}>
-		<div class="form-group">
-			<label for="title">
-				Título del módulo <span class="required">*</span>
-			</label>
-			<input
-				id="title"
-				type="text"
-				bind:value={formData.title}
-				class="input"
-				class:error={formErrors.title}
-				placeholder="Ingresa el título del módulo"
-				maxlength="200"
-				disabled={submitting || loading}
-			/>
-			{#if formErrors.title}
-				<span class="error-message">{formErrors.title}</span>
-			{/if}
-			<div class="character-count">
-				{formData.title.length}/200 caracteres
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="description">
-				Descripción <span class="required">*</span>
-			</label>
-			<textarea
-				id="description"
-				bind:value={formData.description}
-				class="textarea"
-				class:error={formErrors.description}
-				placeholder="Describe el contenido y objetivos del módulo"
-				rows="4"
-				maxlength="500"
-				disabled={submitting || loading}
-			></textarea>
-			{#if formErrors.description}
-				<span class="error-message">{formErrors.description}</span>
-			{/if}
-			<div class="character-count">
-				{formData.description.length}/500 caracteres
-			</div>
-		</div>
-
-		<div class="form-group">
-			<label for="orderNumber">
-				Número de orden <span class="required">*</span>
-			</label>
-			<input
-				id="orderNumber"
-				type="number"
-				bind:value={formData.orderNumber}
-				class="input"
-				class:error={formErrors.orderNumber}
-				min="1"
-				max="999"
-				disabled={submitting || loading}
-			/>
-			{#if formErrors.orderNumber}
-				<span class="error-message">{formErrors.orderNumber}</span>
-			{/if}
-			<p class="help-text">
-				Define el orden en que aparecerá este módulo en el curso. Los módulos se ordenan de menor a mayor.
-			</p>
-		</div>
-
-		<div class="form-actions">
-			<button
-				type="button"
-				class="btn btn-outline"
-				on:click={handleCancel}
-				disabled={submitting || loading}
-			>
-				Cancelar
-			</button>
-			
-			<button
-				type="submit"
-				class="btn btn-primary"
-				disabled={submitting || loading}
-			>
-				{#if submitting}
-					<span class="loading-spinner"></span>
-					{isEditing ? 'Actualizando...' : 'Creando...'}
-				{:else}
-					{isEditing ? 'Actualizar Módulo' : 'Crear Módulo'}
-				{/if}
-			</button>
-		</div>
-	</form>
-</div>
+{/if}
 
 <style>
-	.module-form {
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1rem;
+	}
+
+	.modal-content {
 		background: white;
-		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		max-width: 500px;
-		margin: 0 auto;
+		border-radius: 16px;
+		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+		width: 100%;
+		max-width: 600px;
+		max-height: 90vh;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
 	}
 
-	.form-header {
-		padding: 1.5rem 2rem 0;
+	.modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1.5rem 2rem;
 		border-bottom: 1px solid var(--color-border);
-		margin-bottom: 1.5rem;
+		background: var(--color-background-alt);
 	}
 
-	.form-header h3 {
-		margin: 0 0 1.5rem 0;
+	.modal-title {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
 		color: var(--color-text-primary);
-		font-size: 1.25rem;
-		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
-	form {
-		padding: 0 2rem 2rem;
+	.icon {
+		font-size: 1.75rem;
+	}
+
+	.close-button {
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.5rem;
+		border-radius: 8px;
+		color: var(--color-text-muted);
+		transition: all 0.2s ease;
+	}
+
+	.close-button:hover {
+		background: var(--color-background);
+		color: var(--color-text-primary);
+	}
+
+	.close-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.modal-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: 2rem;
 	}
 
 	.form-group {
@@ -227,29 +351,36 @@
 	label {
 		display: block;
 		margin-bottom: 0.5rem;
-		font-weight: 500;
+		font-weight: 600;
 		color: var(--color-text-primary);
+		font-size: 0.95rem;
 	}
 
 	.required {
 		color: var(--color-error);
 	}
 
+	.optional {
+		color: var(--color-text-muted);
+		font-weight: 400;
+	}
+
 	.input,
 	.textarea {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid var(--color-border);
-		border-radius: 6px;
+		border: 2px solid var(--color-border);
+		border-radius: 8px;
 		font-size: 1rem;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		background: white;
 	}
 
 	.input:focus,
 	.textarea:focus {
 		outline: none;
 		border-color: var(--color-primary);
-		box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+		box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
 	}
 
 	.input.error,
@@ -260,6 +391,27 @@
 	.textarea {
 		resize: vertical;
 		min-height: 100px;
+		font-family: inherit;
+	}
+
+	.order-input-container {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.order-input {
+		max-width: 100px;
+		flex-shrink: 0;
+	}
+
+	.order-info {
+		flex: 1;
+	}
+
+	.info-text {
+		color: var(--color-text-muted);
+		font-size: 0.9rem;
 	}
 
 	.character-count {
@@ -310,20 +462,38 @@
 	}
 
 	@media (max-width: 768px) {
-		.module-form {
-			margin: 1rem;
+		.modal-backdrop {
+			padding: 0.5rem;
 		}
 
-		.form-header {
-			padding: 1.25rem 1.5rem 0;
+		.modal-content {
+			max-height: 95vh;
 		}
 
-		form {
-			padding: 0 1.5rem 1.5rem;
+		.modal-header {
+			padding: 1rem 1.5rem;
+		}
+
+		.modal-title {
+			font-size: 1.25rem;
+		}
+
+		.modal-body {
+			padding: 1.5rem;
 		}
 
 		.form-actions {
 			flex-direction: column-reverse;
+		}
+
+		.order-input-container {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.5rem;
+		}
+
+		.order-input {
+			max-width: none;
 		}
 	}
 </style>

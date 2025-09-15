@@ -2,9 +2,11 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { courseService, type CourseDetail } from '$lib/services/courseService';
+	import { courseService, type CourseDetail, type UpdateCourseDto, type Module } from '$lib/services/courseService';
 	import { authService } from '$lib/services/authService';
 	import ModuleList from '$lib/components/course/ModuleList.svelte';
+	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
+	import ModuleForm from '$lib/components/course/ModuleForm.svelte';
 
 	let course: CourseDetail | null = null;
 	let loading = true;
@@ -12,6 +14,28 @@
 	let isAuthenticated = false;
 	let canManage = false;
 	let user = null;
+
+	// Edit mode state
+	let editMode = false;
+	let saving = false;
+	let availableSubjects: string[] = ['Matemáticas', 'Física', 'Sociales', 'Economía'];
+
+	// Form data for editing
+	let editForm = {
+		title: '',
+		description: '',
+		subject: '',
+		isFeatured: false,
+		imagePath: ''
+	};
+
+	// Form errors
+	let formErrors: Record<string, string> = {};
+
+	// Module management state
+	let showModuleForm = false;
+	let editingModule: Module | null = null;
+	let moduleFormLoading = false;
 
 	const courseId = $page.params.id;
 
@@ -25,6 +49,13 @@
 
 		// Load course details
 		await loadCourse();
+
+		// Load available subjects
+		try {
+			availableSubjects = await courseService.getAvailableSubjects();
+		} catch (err) {
+			console.error('Error loading subjects:', err);
+		}
 	});
 
 	async function loadCourse() {
@@ -48,12 +79,165 @@
 		});
 	}
 
-	function handleEditCourse() {
-		goto(`/courses/${courseId}/edit`);
-	}
 
 	function handleBackToCourses() {
 		goto('/courses');
+	}
+
+	function enableEditMode() {
+		if (!course) return;
+
+		editForm = {
+			title: course.title,
+			description: course.description,
+			subject: course.subject,
+			isFeatured: course.isFeatured || false,
+			imagePath: course.imagePath || ''
+		};
+
+		formErrors = {};
+		editMode = true;
+	}
+
+	function cancelEdit() {
+		editMode = false;
+		formErrors = {};
+		error = '';
+	}
+
+	function validateForm(): boolean {
+		formErrors = {};
+		let isValid = true;
+
+		if (!editForm.title.trim()) {
+			formErrors.title = 'El título es requerido';
+			isValid = false;
+		} else if (editForm.title.length < 3) {
+			formErrors.title = 'El título debe tener al menos 3 caracteres';
+			isValid = false;
+		} else if (editForm.title.length > 200) {
+			formErrors.title = 'El título no puede exceder 200 caracteres';
+			isValid = false;
+		}
+
+		if (!editForm.description.trim()) {
+			formErrors.description = 'La descripción es requerida';
+			isValid = false;
+		} else if (editForm.description.length < 10) {
+			formErrors.description = 'La descripción debe tener al menos 10 caracteres';
+			isValid = false;
+		} else if (editForm.description.length > 1000) {
+			formErrors.description = 'La descripción no puede exceder 1000 caracteres';
+			isValid = false;
+		}
+
+		if (!editForm.subject.trim()) {
+			formErrors.subject = 'La materia es requerida';
+			isValid = false;
+		}
+
+		return isValid;
+	}
+
+	async function saveChanges() {
+		if (!course || !validateForm()) {
+			return;
+		}
+
+		saving = true;
+		error = '';
+
+		try {
+			const updateData: UpdateCourseDto = {
+				title: editForm.title.trim(),
+				description: editForm.description.trim(),
+				subject: editForm.subject,
+				isFeatured: editForm.isFeatured,
+				imagePath: editForm.imagePath || undefined
+			};
+
+			await courseService.updateCourse(course.id, updateData);
+
+			// Reload course data
+			await loadCourse();
+
+			// Exit edit mode
+			editMode = false;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error al guardar cambios';
+			console.error('Error saving course:', err);
+		} finally {
+			saving = false;
+		}
+	}
+
+	function handleImageUpload(event: CustomEvent<string>) {
+		editForm.imagePath = event.detail;
+	}
+
+	function handleImageRemove() {
+		editForm.imagePath = '';
+	}
+
+	// Module management functions
+	function handleCreateModule() {
+		editingModule = null;
+		showModuleForm = true;
+	}
+
+	function handleEditModule(event: CustomEvent<string>) {
+		const moduleId = event.detail;
+		if (course?.modules) {
+			editingModule = course.modules.find(m => m.id === moduleId) || null;
+			showModuleForm = true;
+		}
+	}
+
+	async function handleDeleteModule(event: CustomEvent<string>) {
+		const moduleId = event.detail;
+		if (!course) return;
+
+		try {
+			moduleFormLoading = true;
+			error = '';
+
+			await courseService.deleteModule(moduleId);
+
+			// Reload course data to get updated modules
+			await loadCourse();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error al eliminar el módulo';
+			console.error('Error deleting module:', err);
+		} finally {
+			moduleFormLoading = false;
+		}
+	}
+
+	function handleViewModule(event: CustomEvent<string>) {
+		const moduleId = event.detail;
+		goto(`/modules/${moduleId}`);
+	}
+
+	function handleModuleFormSuccess(event: CustomEvent<{type: string, module?: Module, id?: string, data?: any}>) {
+		const { type } = event.detail;
+
+		showModuleForm = false;
+		editingModule = null;
+
+		// Reload course data to show updated modules
+		loadCourse();
+	}
+
+	function handleModuleFormError(event: CustomEvent<string>) {
+		error = event.detail;
+		setTimeout(() => {
+			error = '';
+		}, 5000);
+	}
+
+	function handleModuleFormCancel() {
+		showModuleForm = false;
+		editingModule = null;
 	}
 </script>
 
@@ -184,13 +368,46 @@
 					<!-- Course Title and Info Overlay -->
 					<div class="absolute bottom-0 left-0 right-0 p-8 text-white">
 						<div class="mb-4">
-							<h1 class="text-4xl md:text-5xl font-black mb-4 leading-tight drop-shadow-lg">
-								{course.title}
-							</h1>
+							{#if editMode}
+								<div class="mb-4">
+									<input
+										bind:value={editForm.title}
+										class="text-4xl md:text-5xl font-black leading-tight bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-2xl p-4 w-full text-white placeholder-white/70 focus:outline-none focus:border-white/60"
+										class:border-red-300={formErrors.title}
+										placeholder="Título del curso"
+										maxlength="200"
+										disabled={saving}
+									/>
+									{#if formErrors.title}
+										<div class="text-red-300 text-sm mt-2 bg-red-900/30 backdrop-blur-sm rounded-lg p-2">{formErrors.title}</div>
+									{/if}
+								</div>
+							{:else}
+								<h1 class="text-4xl md:text-5xl font-black mb-4 leading-tight drop-shadow-lg">
+									{course.title}
+								</h1>
+							{/if}
 							<div class="flex flex-wrap gap-3 mb-4">
-								<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
-									📖 {course.subject}
-								</span>
+								{#if editMode}
+									<select
+										bind:value={editForm.subject}
+										class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30 text-white focus:outline-none focus:border-white/60"
+										class:border-red-300={formErrors.subject}
+										disabled={saving}
+									>
+										<option value="">Seleccionar materia</option>
+										{#each availableSubjects as subject}
+											<option value={subject} class="text-black">{subject}</option>
+										{/each}
+									</select>
+									{#if formErrors.subject}
+										<div class="text-red-300 text-sm bg-red-900/30 backdrop-blur-sm rounded-lg p-2 w-full">{formErrors.subject}</div>
+									{/if}
+								{:else}
+									<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
+										📖 {course.subject}
+									</span>
+								{/if}
 								<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
 									👨‍🏫 {course.educatorName || 'Instructor'}
 								</span>
@@ -214,9 +431,34 @@
 						<h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
 							<span class="text-3xl">📝</span>
 							Descripción del Curso
+							{#if editMode}
+								<span class="text-sm font-normal text-blue-600 ml-auto">✏️ Editando</span>
+							{/if}
 						</h2>
 						<div class="prose prose-lg max-w-none">
-							<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">{course.description}</p>
+							{#if editMode}
+								<div class="space-y-4">
+									<textarea
+										bind:value={editForm.description}
+										class="w-full p-4 border-2 border-emerald-200 rounded-2xl text-gray-700 leading-relaxed text-lg resize-vertical min-h-32 focus:outline-none focus:border-emerald-500"
+										class:border-red-300={formErrors.description}
+										placeholder="Descripción del curso"
+										maxlength="1000"
+										disabled={saving}
+										rows="6"
+									></textarea>
+									<div class="flex justify-between items-center">
+										{#if formErrors.description}
+											<div class="text-red-600 text-sm">{formErrors.description}</div>
+										{:else}
+											<div></div>
+										{/if}
+										<div class="text-gray-500 text-sm">{editForm.description.length}/1000 caracteres</div>
+									</div>
+								</div>
+							{:else}
+								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">{course.description}</p>
+							{/if}
 						</div>
 					</div>
 
@@ -233,10 +475,10 @@
 							<ModuleList
 								courseId={course.id}
 								showActions={canManage}
-								on:createModule={(e) => console.log('Create module:', e.detail)}
-								on:editModule={(e) => console.log('Edit module:', e.detail)}
-								on:deleteModule={(e) => console.log('Delete module:', e.detail)}
-								on:viewModule={(e) => console.log('View module:', e.detail)}
+								on:createModule={handleCreateModule}
+								on:editModule={handleEditModule}
+								on:deleteModule={handleDeleteModule}
+								on:viewModule={handleViewModule}
 							/>
 						</div>
 					</div>
@@ -244,6 +486,47 @@
 
 				<!-- Sidebar -->
 				<div class="space-y-6">
+
+					<!-- Image Upload Section (Edit Mode) -->
+					{#if editMode && canManage}
+						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
+							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+								<span class="text-2xl">🖼️</span>
+								Imagen del Curso
+							</h3>
+							<MediaUploader
+								contentType="course"
+								contentId={course.id}
+								mediaType="image"
+								currentPath={editForm.imagePath}
+								on:upload={handleImageUpload}
+								on:remove={handleImageRemove}
+								disabled={saving}
+							/>
+						</div>
+					{/if}
+
+					<!-- Featured Course Option (Edit Mode) -->
+					{#if editMode && canManage}
+						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
+							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+								<span class="text-2xl">⭐</span>
+								Destacado
+							</h3>
+							<label class="flex items-center gap-3 cursor-pointer">
+								<input
+									type="checkbox"
+									bind:checked={editForm.isFeatured}
+									class="w-5 h-5 text-emerald-600 border-2 border-emerald-300 rounded focus:ring-emerald-500"
+									disabled={saving}
+								/>
+								<span class="text-gray-700 font-medium">Marcar como curso destacado</span>
+							</label>
+							<p class="text-gray-500 text-sm mt-2">
+								Los cursos destacados aparecen en la sección principal.
+							</p>
+						</div>
+					{/if}
 
 					<!-- Course Actions -->
 					{#if canManage}
@@ -253,13 +536,38 @@
 								Gestión del Curso
 							</h3>
 							<div class="space-y-3">
-								<button
-									on:click={handleEditCourse}
-									class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
-								>
-									<span class="text-xl">✏️</span>
-									Editar Curso
-								</button>
+								{#if !editMode}
+									<button
+										on:click={enableEditMode}
+										class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
+									>
+										<span class="text-xl">✏️</span>
+										Editar Curso
+									</button>
+								{:else}
+									<button
+										on:click={saveChanges}
+										class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+										disabled={saving}
+									>
+										{#if saving}
+											<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+											Guardando...
+										{:else}
+											<span class="text-xl">💾</span>
+											Guardar Cambios
+										{/if}
+									</button>
+
+									<button
+										on:click={cancelEdit}
+										class="w-full bg-gray-500 text-white px-6 py-4 rounded-2xl hover:bg-gray-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
+										disabled={saving}
+									>
+										<span class="text-xl">✖️</span>
+										Cancelar
+									</button>
+								{/if}
 
 								<button
 									class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
@@ -307,6 +615,20 @@
 						</div>
 					</div>
 
+					<!-- Error Message -->
+					{#if error}
+						<div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+							<div class="flex items-center">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500 mr-3">
+									<circle cx="12" cy="12" r="10"></circle>
+									<line x1="15" y1="9" x2="9" y2="15"></line>
+									<line x1="9" y1="9" x2="15" y2="15"></line>
+								</svg>
+								<span class="text-red-700 font-medium">{error}</span>
+							</div>
+						</div>
+					{/if}
+
 					<!-- Quick Navigation -->
 					<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
 						<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -336,6 +658,17 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Module Form Modal -->
+<ModuleForm
+	module={editingModule}
+	{courseId}
+	loading={moduleFormLoading}
+	visible={showModuleForm}
+	on:success={handleModuleFormSuccess}
+	on:error={handleModuleFormError}
+	on:cancel={handleModuleFormCancel}
+/>
 
 <style>
 	.prose p {

@@ -1,0 +1,226 @@
+server {
+    listen 8080;
+    server_name localhost;
+
+    # ==============================================
+    # DEVELOPMENT CONFIGURATION
+    # Optimized for local testing
+    # ==============================================
+
+    # Rate limiting más permisivo para desarrollo
+    limit_req zone=api_limit burst=50 nodelay;
+
+    # ==============================================
+    # ARCHIVOS MULTIMEDIA - SERVICIO DIRECTO
+    # ==============================================
+    location ~* \.(jpg|jpeg|png|gif|webp|svg|avif|bmp|tiff)$ {
+        root ${PROJECT_ROOT}/ccpvj/Data/var/www/media;
+        try_files $uri =404;
+
+        # Optimización para imágenes
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+
+        # Cache headers para desarrollo (más corto)
+        expires 1h;
+        add_header Cache-Control "public, no-transform";
+        add_header Vary "Accept-Encoding";
+        etag on;
+
+        # CORS permisivo para desarrollo
+        add_header Access-Control-Allow-Origin "*";
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS";
+    }
+
+    # Videos - Configuración para desarrollo
+    location ~* \.(mp4|webm|avi|mov)$ {
+        root ${PROJECT_ROOT}/ccpvj/Data/var/www/media;
+        try_files $uri =404;
+
+        sendfile on;
+        tcp_nopush on;
+        add_header Accept-Ranges bytes;
+
+        # Cache más corto para desarrollo
+        expires 30m;
+        add_header Cache-Control "public, max-age=1800";
+        etag on;
+        add_header Access-Control-Allow-Origin "*";
+        add_header Access-Control-Allow-Headers "Range";
+
+        # Rate limiting relajado para desarrollo
+        limit_req zone=api_limit burst=20 nodelay;
+    }
+
+    # Audio
+    location ~* \.(mp3|ogg|wav|flac|aac)$ {
+        root ${PROJECT_ROOT}/ccpvj/Data/var/www/media;
+        try_files $uri =404;
+
+        sendfile on;
+        tcp_nopush on;
+        add_header Accept-Ranges bytes;
+
+        expires 30m;
+        add_header Cache-Control "public, max-age=1800";
+        etag on;
+        add_header Access-Control-Allow-Origin "*";
+    }
+
+    # Documents - PDF, Word, Excel, PowerPoint
+    location ~* \.(pdf|doc|docx|xls|xlsx|ppt|pptx)$ {
+        root ${PROJECT_ROOT}/ccpvj/Data/var/www/media;
+        try_files $uri =404;
+
+        sendfile on;
+        tcp_nopush on;
+        add_header Accept-Ranges bytes;
+
+        # Cache más largo para documentos (no cambian frecuentemente)
+        expires 1d;
+        add_header Cache-Control "public, max-age=86400";
+        etag on;
+        add_header Access-Control-Allow-Origin "*";
+
+        # Force download for certain types
+        location ~* \.(doc|docx|xls|xlsx|ppt|pptx)$ {
+            add_header Content-Disposition "attachment";
+        }
+    }
+
+    # ==============================================
+    # UPLOADS - DESARROLLO (directorio temporal)
+    # ==============================================
+    location /upload/images {
+        # Rate limiting relajado para desarrollo
+        limit_req zone=upload_limit burst=10 nodelay;
+
+        client_body_temp_path ${PROJECT_ROOT}/ccpvj/Data/var/www/media/temp/uploads/images;
+        client_max_body_size 50M;  # Mayor límite para desarrollo
+        client_body_timeout 120s;
+
+        client_body_in_file_only clean;
+        proxy_request_buffering off;
+
+        # Proxy a SvelteKit dev server
+        proxy_pass http://127.0.0.1:5173/api/upload/images;
+        proxy_set_header X-File-Path $request_body_file;
+        proxy_set_header X-Upload-Type "image";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /upload/videos {
+        limit_req zone=upload_limit burst=5 nodelay;
+
+        client_body_temp_path ${PROJECT_ROOT}/ccpvj/Data/var/www/media/temp/uploads/videos;
+        client_max_body_size 1000M;  # Límite mayor para desarrollo
+        client_body_timeout 600s;
+
+        client_body_in_file_only clean;
+        proxy_request_buffering off;
+
+        proxy_pass http://127.0.0.1:5173/api/upload/videos;
+        proxy_set_header X-File-Path $request_body_file;
+        proxy_set_header X-Upload-Type "video";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /upload/audio {
+        limit_req zone=upload_limit burst=8 nodelay;
+
+        client_body_temp_path ${PROJECT_ROOT}/ccpvj/Data/var/www/media/temp/uploads/audio;
+        client_max_body_size 200M;  # Mayor para desarrollo
+        client_body_timeout 300s;
+
+        client_body_in_file_only clean;
+        proxy_request_buffering off;
+
+        proxy_pass http://127.0.0.1:5173/api/upload/audio;
+        proxy_set_header X-File-Path $request_body_file;
+        proxy_set_header X-Upload-Type "audio";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # ==============================================
+    # API ROUTES - PROXY AL SVELTEKIT DEV SERVER
+    # ==============================================
+    location /api/ {
+        # Proxy a SvelteKit running en puerto 5173
+        proxy_pass http://127.0.0.1:5173;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Timeouts más largos para desarrollo y debugging
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 300s;  # Para debugging con breakpoints
+    }
+
+    # ==============================================
+    # FRONTEND SPA - PROXY AL DEV SERVER
+    # ==============================================
+    location / {
+        # Proxy todo a SvelteKit dev server para hot reloading
+        proxy_pass http://127.0.0.1:5173;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Sin cache para desarrollo
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+
+        # Soporte para WebSocket (hot reloading)
+        proxy_set_header Connection "upgrade";
+    }
+
+    # ==============================================
+    # HEALTH CHECK PARA DESARROLLO
+    # ==============================================
+    location /nginx-health {
+        access_log off;
+        return 200 "NGINX Development Server OK\n";
+        add_header Content-Type text/plain;
+    }
+}
+
+# ==============================================
+# BACKEND .NET (opcional, si usas el backend)
+# ==============================================
+server {
+    listen 8081;
+    server_name localhost;
+
+    location / {
+        proxy_pass http://127.0.0.1:5251;  # .NET Backend
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # CORS headers para desarrollo
+        add_header Access-Control-Allow-Origin "http://localhost:8080" always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+
+        if ($request_method = 'OPTIONS') {
+            return 204;
+        }
+    }
+}

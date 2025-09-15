@@ -117,9 +117,9 @@
 
       const response = await fetch(url, {
         method,
+        credentials: 'include', // Use cookies for authentication
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(postData)
       });

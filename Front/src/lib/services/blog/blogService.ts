@@ -40,9 +40,16 @@ class BlogService {
     }
   }
 
-  private getAuthHeaders() {
-    const token = sessionStorage.getItem('accessToken');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  // Using cookie-based authentication - no headers needed
+  private getRequestOptions(options: RequestInit = {}): RequestInit {
+    return {
+      credentials: 'include', // Include cookies for authentication
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    };
   }
 
   private adaptBackendToFrontend(backendArticle: any): BlogPost {
@@ -157,14 +164,10 @@ class BlogService {
     };
 
     try {
-      const response = await fetch(`${this.baseURL}/article`, {
+      const response = await fetch(`${this.baseURL}/article`, this.getRequestOptions({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders()
-        },
         body: JSON.stringify(articleData)
-      });
+      }));
 
       if (!response.ok) {
         const error = await response.json();
@@ -194,14 +197,10 @@ class BlogService {
     if (post.featuredMedia) updateData.featuredImagePath = post.featuredMedia;
 
     try {
-      const response = await fetch(`${this.baseURL}/article/${id}`, {
+      const response = await fetch(`${this.baseURL}/article/${id}`, this.getRequestOptions({
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.getAuthHeaders()
-        },
         body: JSON.stringify(updateData)
-      });
+      }));
 
       if (!response.ok) {
         const error = await response.json();
@@ -222,10 +221,9 @@ class BlogService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/article/${id}`, {
-        method: 'DELETE',
-        headers: this.getAuthHeaders()
-      });
+      const response = await fetch(`${this.baseURL}/article/${id}`, this.getRequestOptions({
+        method: 'DELETE'
+      }));
 
       if (!response.ok) {
         const error = await response.json();
@@ -243,10 +241,9 @@ class BlogService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/article/${id}/publish`, {
-        method: 'POST',
-        headers: this.getAuthHeaders()
-      });
+      const response = await fetch(`${this.baseURL}/article/${id}/publish`, this.getRequestOptions({
+        method: 'POST'
+      }));
 
       if (!response.ok) {
         const error = await response.json();
@@ -264,10 +261,9 @@ class BlogService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/article/${id}/unpublish`, {
-        method: 'POST',
-        headers: this.getAuthHeaders()
-      });
+      const response = await fetch(`${this.baseURL}/article/${id}/unpublish`, this.getRequestOptions({
+        method: 'POST'
+      }));
 
       if (!response.ok) {
         const error = await response.json();
@@ -285,9 +281,7 @@ class BlogService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/article/my-articles`, {
-        headers: this.getAuthHeaders()
-      });
+      const response = await fetch(`${this.baseURL}/article/my-articles`, this.getRequestOptions());
 
       if (response.ok) {
         const data = await response.json();

@@ -44,6 +44,41 @@ export const module = sqliteTable('module', {
 	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
+// Renaming workItem to modulePost for better clarity
+export const modulePost = sqliteTable('module_post', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	subtitle: text('subtitle'),
+	content: text('content'), // Main text content
+	imagePath: text('image_path'),
+	videoPath: text('video_path'),
+	audioPath: text('audio_path'),
+	orderNumber: integer('order_number').notNull(),
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+	moduleId: text('module_id').notNull().references(() => module.id, { onDelete: 'cascade' }),
+	authorId: text('author_id').notNull().references(() => user.id),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
+// Nueva tabla para elementos dinámicos de posts
+export const postElement = sqliteTable('post_element', {
+	id: text('id').primaryKey(),
+	postId: text('post_id').notNull().references(() => modulePost.id, { onDelete: 'cascade' }),
+	elementType: text('element_type').notNull(), // 'title', 'text', 'image', 'video', 'audio'
+	content: text('content'), // Para título y texto
+	filePath: text('file_path'), // Para archivos multimedia
+	fileName: text('file_name'), // Nombre original del archivo
+	fileSize: integer('file_size'), // Tamaño del archivo en bytes
+	mimeType: text('mime_type'), // Tipo MIME del archivo
+	orderNumber: integer('order_number').notNull(), // Orden dentro del post
+	metadata: text('metadata'), // JSON para datos adicionales
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
+// Keep workItem for backward compatibility, but mark as deprecated
 export const workItem = sqliteTable('work_item', {
 	id: text('id').primaryKey(),
 	title: text('title').notNull(),
@@ -119,6 +154,31 @@ export const eventRegistration = sqliteTable('event_registration', {
 	status: text('status').notNull().default('confirmed') // confirmed, cancelled, waitlist
 });
 
+export const libraryResource = sqliteTable('library_resource', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	description: text('description'),
+	authors: text('authors').notNull(), // JSON array of author names
+	publishYear: integer('publish_year'),
+	category: text('category').notNull(), // educacion, cultura, historia, arte, literatura, ciencias, otros
+	mediaType: text('media_type').notNull(), // pdf, video, image, audio, document
+	fileName: text('file_name').notNull(),
+	filePath: text('file_path').notNull(),
+	fileSize: integer('file_size').notNull(),
+	mimeType: text('mime_type').notNull(),
+	duration: integer('duration'), // For video/audio files (in seconds)
+	isbn: text('isbn'), // For books/documents
+	downloadable: integer('downloadable', { mode: 'boolean' }).notNull().default(true),
+	downloadCount: integer('download_count').notNull().default(0),
+	tags: text('tags'), // JSON array of tags
+	language: text('language').notNull().default('es'),
+	uploadedBy: text('uploaded_by').notNull().references(() => user.id),
+	uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }),
+	isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+	isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false)
+});
+
 export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
 export type InsertUser = typeof user.$inferInsert;
@@ -128,6 +188,9 @@ export type InsertCourse = typeof course.$inferInsert;
 
 export type Module = typeof module.$inferSelect;
 export type InsertModule = typeof module.$inferInsert;
+
+export type ModulePost = typeof modulePost.$inferSelect;
+export type InsertModulePost = typeof modulePost.$inferInsert;
 
 export type WorkItem = typeof workItem.$inferSelect;
 export type InsertWorkItem = typeof workItem.$inferInsert;
@@ -140,3 +203,9 @@ export type InsertEvent = typeof event.$inferInsert;
 
 export type EventRegistration = typeof eventRegistration.$inferSelect;
 export type InsertEventRegistration = typeof eventRegistration.$inferInsert;
+
+export type PostElement = typeof postElement.$inferSelect;
+export type InsertPostElement = typeof postElement.$inferInsert;
+
+export type LibraryResource = typeof libraryResource.$inferSelect;
+export type InsertLibraryResource = typeof libraryResource.$inferInsert;

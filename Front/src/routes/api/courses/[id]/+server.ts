@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { course, module, workItem, user } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { validateSession } from '$lib/server/auth';
+import { validateSessionToken } from '$lib/server/auth';
 
 export const GET: RequestHandler = async ({ params }) => {
 	try {
@@ -76,12 +76,12 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		const courseId = params.id;
 
 		// Validate session
-		const sessionCookie = cookies.get('session');
+		const sessionCookie = cookies.get('auth-session');
 		if (!sessionCookie) {
 			return error(401, 'Authentication required');
 		}
 
-		const sessionResult = await validateSession(sessionCookie);
+		const sessionResult = await validateSessionToken(sessionCookie);
 		if (!sessionResult.session || !sessionResult.user) {
 			return error(401, 'Invalid session');
 		}
@@ -141,12 +141,12 @@ export const DELETE: RequestHandler = async ({ params, cookies }) => {
 		const courseId = params.id;
 
 		// Validate session
-		const sessionCookie = cookies.get('session');
+		const sessionCookie = cookies.get('auth-session');
 		if (!sessionCookie) {
 			return error(401, 'Authentication required');
 		}
 
-		const sessionResult = await validateSession(sessionCookie);
+		const sessionResult = await validateSessionToken(sessionCookie);
 		if (!sessionResult.session || !sessionResult.user) {
 			return error(401, 'Invalid session');
 		}
