@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { translate as paraglideT } from '$lib/paraglide/runtime';
+  import { t, loadMessages } from '$lib/i18n';
   import { canCreateContent, canEditContent, requiresAuthentication, type UserRole } from '$lib/utils/roleUtils';
   import MediaUploader from './MediaUploader.svelte';
 
@@ -9,7 +9,7 @@
   export let onCancel: (() => void) | null = null;
   export let currentUser: { role?: UserRole; id?: string } | null = null;
 
-  let t = (key: string) => key;
+  // Translation function is available immediately
   let isLoading = false;
   let error: string | null = null;
   let success = false;
@@ -37,18 +37,18 @@
   // Check permissions on component load
   $: {
     if (!canUserEdit) {
-      error = `No tienes permisos para ${isEditing ? 'editar' : 'crear'} posts del blog. Necesitas ser Colaborador o Administrador.`;
+      error = isEditing ? t('auth.no_permissions_edit') : t('auth.no_permissions_create');
     } else if (needsAuth && !currentUser?.id) {
-      error = 'Debes iniciar sesión para realizar esta acción.';
+      error = t('auth.login_required');
     } else if (isEditing && post && currentUser?.role !== 'Administrador' && post.authorId !== currentUser?.id) {
-      error = 'Solo puedes editar tus propios posts o ser Administrador.';
+      error = t('auth.own_posts_only');
     } else {
       error = null;
     }
   }
 
   onMount(async () => {
-    t = paraglideT;
+    await loadMessages();
     
     // Load categories
     try {
@@ -126,7 +126,7 @@
 
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(errorData || 'Error al guardar el post');
+        throw new Error(errorData || t('error.saving_post'));
       }
 
       const result = await response.json();
@@ -142,7 +142,7 @@
         resetForm();
       }
     } catch (err: any) {
-      error = err.message || 'Error al guardar el post';
+      error = err.message || t('error.saving_post');
       console.error('Error saving post:', err);
     } finally {
       isLoading = false;
@@ -188,7 +188,7 @@
   <!-- Header -->
   <div class="flex items-center justify-between mb-6">
     <h2 class="text-2xl font-bold">
-      {post ? 'Editar Artículo' : 'Crear Nuevo Artículo'}
+      {post ? t('blog.edit_article') : t('blog.create_article')}
     </h2>
     <div class="flex gap-2">
       <button
@@ -208,7 +208,7 @@
         {#if isLoading}
           <i class="fas fa-spinner fa-spin mr-2"></i>
         {/if}
-        {post ? 'Actualizar' : 'Crear Artículo'}
+        {post ? t('action.update') : t('blog.create_post')}
       </button>
     </div>
   </div>

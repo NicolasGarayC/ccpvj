@@ -3,14 +3,20 @@
 	import { courseService } from '$lib/services/courseService';
 	import { authService } from '$lib/services/authService';
 	import CourseCard from '$lib/components/course/CourseCard.svelte';
+	import type { CourseDto } from '$lib/types/api/course.types';
+	import type { AuthUser } from '$lib/types/api/auth.types';
+	import { t, loadMessages } from '$lib/i18n';
 
-	let courses = [];
+	let courses: CourseDto[] = [];
 	let loading = true;
 	let error = '';
-	let user = null;
+	let user: AuthUser | null = null;
 	let isAuthenticated = false;
 
 	onMount(async () => {
+		// Load translations
+		await loadMessages();
+
 		// Check authentication
 		isAuthenticated = authService.isAuthenticated();
 		if (isAuthenticated) {
@@ -26,14 +32,14 @@
 			loading = true;
 			error = '';
 			courses = await courseService.getAllCourses();
-		} catch (err) {
+		} catch (err: unknown) {
 			error = err instanceof Error ? err.message : 'Error cargando cursos';
 		} finally {
 			loading = false;
 		}
 	}
 
-	function handleCourseDeleted(event) {
+	function handleCourseDeleted(event: CustomEvent<string>) {
 		const deletedId = event.detail;
 		courses = courses.filter(course => course.id !== deletedId);
 	}
@@ -52,7 +58,7 @@
 				<h2 class="text-lg font-semibold mb-2">Authentication Status:</h2>
 				{#if isAuthenticated}
 					<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-						✅ Authenticated as: {user?.firstName} {user?.lastName} ({user?.role})
+						✅ Authenticated as: {user?.nombre} {user?.apellido} ({user?.role})
 					</div>
 				{:else}
 					<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">

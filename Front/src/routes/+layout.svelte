@@ -4,22 +4,7 @@
 	import { onMount } from 'svelte';
 	import { authService, type AuthUser } from '$lib/services/authService';
 	import { browser } from '$app/environment';
-
-	// Simple fallback translation function
-	let t = (key: string) => {
-		const translations = {
-			'home': 'Inicio',
-			'blog': 'Blog',
-			'calendar': 'Calendario', 
-			'library': 'Biblioteca',
-			'courses': 'Cursos',
-			'logout': 'Cerrar Sesión',
-			'login': 'Iniciar Sesión',
-			'createArticle': 'Crear Artículo',
-			'footerText': 'Todos los derechos reservados'
-		};
-		return translations[key] || key;
-	};
+	import { t } from '$lib/i18n';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -32,11 +17,11 @@
 
 	// Calcular si es educador
 	$: isEducator =
-		isLoggedIn && (user?.nombreRol === 'Educador' || user?.nombreRol === 'Administrador');
+		isLoggedIn && (user?.role === 'Educador' || user?.role === 'Administrador');
 	
 	// Calcular si puede gestionar usuarios
 	$: canManageUsers =
-		isLoggedIn && (user?.nombreRol === 'Administrador' || user?.nombreRol === 'Colaborador');
+		isLoggedIn && (user?.role === 'Administrador' || user?.role === 'Colaborador');
 
 	// Variable reactiva simple para el idioma actual
 	let currentLocale = 'es';
@@ -57,26 +42,21 @@
 		}
 		
 		userName = isLoggedIn ? user?.nombre || '' : '';
-		userRole = isLoggedIn ? user?.nombreRol || '' : '';
+		userRole = isLoggedIn ? user?.role || '' : '';
 	}
 
-	// Selección automática de idioma base según navegador
+	// Inicialización del componente
 	onMount(() => {
-		// Try to load paraglide if available
-		try {
-			import('$lib/paraglide/runtime').then(module => {
-				if (module.translate) {
-					t = module.translate;
-				}
-			}).catch(err => {
-				console.log('Paraglide not available, using fallback translations');
-			});
-		} catch (err) {
-			console.log('Paraglide module not found, using fallback translations');
+		// Solo actualizar el estado de autenticación si NO estamos en la página de login
+		if ($page.route.id !== '/auth/login') {
+			updateAuthState();
+		} else {
+			// Si estamos en login, solo verificar estado local
+			isLoggedIn = authService.isAuthenticated();
+			user = authService.getUser();
+			userName = isLoggedIn ? user?.nombre || '' : '';
+			userRole = isLoggedIn ? user?.role || '' : '';
 		}
-
-		// Actualizar estado de autenticación inicial
-		updateAuthState();
 
 		// Solo ejecutar en el navegador
 		if (browser) {
@@ -87,7 +67,7 @@
 	});
 
 	// Reactividad para actualizar el estado cuando cambie la página
-	$: if ($page) {
+	$: if ($page && $page.route.id !== '/auth/login') {
 		updateAuthState();
 	}
 

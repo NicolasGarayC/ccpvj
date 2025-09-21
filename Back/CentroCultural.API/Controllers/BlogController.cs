@@ -87,7 +87,7 @@ namespace CentroCultural.API.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var post = await _blogService.CreateBlogPostAsync(createDto, userIdClaim);
+                var post = await _blogService.CreateBlogPostAsync(createDto, int.Parse(userIdClaim));
                 return CreatedAtAction(nameof(GetBlogPost), new { id = post.Id }, post);
             }
             catch (ArgumentException ex)
@@ -112,7 +112,7 @@ namespace CentroCultural.API.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var post = await _blogService.UpdateBlogPostAsync(id, updateDto, userIdClaim);
+                var post = await _blogService.UpdateBlogPostAsync(id, updateDto, int.Parse(userIdClaim));
                 if (post == null)
                     return NotFound($"Post con ID {id} no encontrado");
 
@@ -144,7 +144,7 @@ namespace CentroCultural.API.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var result = await _blogService.DeleteBlogPostAsync(id, userIdClaim);
+                var result = await _blogService.DeleteBlogPostAsync(id, int.Parse(userIdClaim));
                 if (!result)
                     return NotFound($"Post con ID {id} no encontrado");
 
@@ -172,7 +172,7 @@ namespace CentroCultural.API.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var result = await _blogService.PublishBlogPostAsync(id, userIdClaim);
+                var result = await _blogService.PublishBlogPostAsync(id, int.Parse(userIdClaim));
                 if (!result)
                     return NotFound($"Post con ID {id} no encontrado");
 
@@ -200,7 +200,7 @@ namespace CentroCultural.API.Controllers
                 if (string.IsNullOrEmpty(userIdClaim))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var result = await _blogService.UnpublishBlogPostAsync(id, userIdClaim);
+                var result = await _blogService.UnpublishBlogPostAsync(id, int.Parse(userIdClaim));
                 if (!result)
                     return NotFound($"Post con ID {id} no encontrado");
 

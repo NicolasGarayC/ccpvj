@@ -1,4 +1,30 @@
-import type { PostElement, InsertPostElement } from '$lib/server/db/schema';
+// Local type definitions to replace schema imports
+export interface PostElement {
+	id: string;
+	postId: string;
+	elementType: string;
+	content?: string;
+	filePath?: string;
+	fileName?: string;
+	fileSize?: number;
+	mimeType?: string;
+	orderNumber: number;
+	metadata?: string;
+	createdAt: Date;
+	updatedAt?: Date;
+}
+
+export interface InsertPostElement {
+	postId: string;
+	elementType: string;
+	content?: string;
+	filePath?: string;
+	fileName?: string;
+	fileSize?: number;
+	mimeType?: string;
+	orderNumber: number;
+	metadata?: string;
+}
 
 export type ElementType = 'title' | 'text' | 'image' | 'video' | 'audio';
 

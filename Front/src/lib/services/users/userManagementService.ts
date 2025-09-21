@@ -88,13 +88,13 @@ class UserManagementService {
   // Obtener usuario por ID
   async getUser(id: number): Promise<User | null> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`);
 
       if (!response.ok) return null;
 
       const data = await response.json();
       return this.adaptBackendToFrontend(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al obtener usuario:', error);
       return null;
     }
@@ -110,7 +110,7 @@ class UserManagementService {
         }
       });
 
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement?${queryParams}`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement?${queryParams}`);
 
       if (!response.ok) throw new Error('Error al obtener usuarios');
 
@@ -124,7 +124,7 @@ class UserManagementService {
         hasNextPage: data.hasNextPage,
         hasPreviousPage: data.hasPreviousPage
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al obtener usuarios:', error);
       throw error;
     }
@@ -133,7 +133,7 @@ class UserManagementService {
   // Crear nuevo usuario
   async createUser(userData: CreateUserData): Promise<User> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement`, {
         method: 'POST',
         body: JSON.stringify(userData)
       });
@@ -145,7 +145,7 @@ class UserManagementService {
 
       const data = await response.json();
       return this.adaptBackendToFrontend(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al crear usuario:', error);
       throw error;
     }
@@ -154,7 +154,7 @@ class UserManagementService {
   // Actualizar usuario
   async updateUser(id: number, userData: UpdateUserData): Promise<User> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`, {
         method: 'PUT',
         body: JSON.stringify(userData)
       });
@@ -166,7 +166,7 @@ class UserManagementService {
 
       const data = await response.json();
       return this.adaptBackendToFrontend(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al actualizar usuario:', error);
       throw error;
     }
@@ -175,12 +175,12 @@ class UserManagementService {
   // Eliminar (desactivar) usuario
   async deleteUser(id: number): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`, {
         method: 'DELETE'
       });
 
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al eliminar usuario:', error);
       throw error;
     }
@@ -189,13 +189,13 @@ class UserManagementService {
   // Cambiar estado de usuario (activar/desactivar)
   async toggleUserStatus(id: number, isActive: boolean): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}/status`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify(isActive)
       });
 
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al cambiar estado del usuario:', error);
       throw error;
     }
@@ -204,12 +204,12 @@ class UserManagementService {
   // Obtener roles disponibles
   async getAvailableRoles(): Promise<Role[]> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/roles`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/roles`);
 
       if (!response.ok) throw new Error('Error al obtener roles');
 
       return await response.json();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al obtener roles:', error);
       throw error;
     }
@@ -218,13 +218,13 @@ class UserManagementService {
   // Cambiar rol de usuario
   async changeUserRole(id: number, newRole: string): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}/role`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/role`, {
         method: 'PATCH',
         body: JSON.stringify(newRole)
       });
 
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al cambiar rol del usuario:', error);
       throw error;
     }
@@ -237,13 +237,13 @@ class UserManagementService {
         ? `${this.baseURL}/usermanagement/check-username/${username}?excludeUserId=${excludeUserId}`
         : `${this.baseURL}/usermanagement/check-username/${username}`;
 
-      const response = await authService.authenticatedFetch(url);
+      const response = await authService.authenticatedFetchResponse(url.replace(this.baseURL, ''));
 
       if (!response.ok) throw new Error('Error al verificar username');
 
       const data = await response.json();
       return data.isAvailable;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al verificar disponibilidad del username:', error);
       throw error;
     }
@@ -252,7 +252,7 @@ class UserManagementService {
   // Obtener estadísticas de usuarios (solo admin)
   async getUserStatistics(): Promise<UserStats> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/statistics`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/statistics`);
 
       if (!response.ok) throw new Error('Error al obtener estadísticas');
 
@@ -261,7 +261,7 @@ class UserManagementService {
         ...data,
         lastUserCreated: new Date(data.lastUserCreated)
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al obtener estadísticas:', error);
       throw error;
     }
@@ -270,13 +270,13 @@ class UserManagementService {
   // Restablecer contraseña
   async resetUserPassword(id: number, newPassword: string): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/${id}/reset-password`, {
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/reset-password`, {
         method: 'POST',
         body: JSON.stringify(newPassword)
       });
 
       return response.ok;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al restablecer contraseña:', error);
       throw error;
     }
@@ -285,13 +285,13 @@ class UserManagementService {
   // Obtener usuario actual
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/me`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/me`);
 
       if (!response.ok) return null;
 
       const data = await response.json();
       return this.adaptBackendToFrontend(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al obtener usuario actual:', error);
       return null;
     }
@@ -300,13 +300,13 @@ class UserManagementService {
   // Verificar si puede gestionar usuarios
   async canManageUsers(): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetch(`${this.baseURL}/usermanagement/can-manage`);
+      const response = await authService.authenticatedFetchResponse(`/usermanagement/can-manage`);
 
       if (!response.ok) return false;
 
       const data = await response.json();
       return data.canManage;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al verificar permisos:', error);
       return false;
     }

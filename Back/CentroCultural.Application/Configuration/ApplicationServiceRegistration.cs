@@ -8,15 +8,12 @@ namespace CentroCultural.Application.Configuration
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddScoped<IMediaService, MediaService>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IWorkItemService, WorkItemService>();
             services.AddScoped<IBlogService, BlogService>();
             services.AddScoped<ICourseService, CourseService>();
-            services.AddScoped<ICalendarService, CalendarService>();
-            services.AddScoped<IEventService, EventService>();
+            // services.AddScoped<ICalendarService, CalendarService>(); // Temporarily disabled - type conflicts
+            // services.AddScoped<IEventService, EventService>(); // Temporarily disabled - type conflicts
             services.AddScoped<IUserManagementService, UserManagementService>();
-            
+
             return services;
         }
     }

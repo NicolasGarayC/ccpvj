@@ -26,8 +26,6 @@ namespace CentroCultural.Domain.Entities
         [Required]
         public Guid ModuleId { get; set; }
         
-        // Navigation property
-        public Module Module { get; set; } = null!;
         
         // Contextual multimedia paths (stored in WorkItem directly)
         [MaxLength(500)]

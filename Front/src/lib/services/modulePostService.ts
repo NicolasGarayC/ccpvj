@@ -1,5 +1,33 @@
 import { goto } from '$app/navigation';
-import type { ModulePost, InsertModulePost } from '$lib/server/db/schema';
+
+// Local type definitions to replace schema imports
+export interface ModulePost {
+	id: string;
+	title: string;
+	subtitle?: string;
+	content?: string;
+	imagePath?: string;
+	videoPath?: string;
+	audioPath?: string;
+	orderNumber: number;
+	moduleId: string;
+	authorId: string;
+	createdAt: Date;
+	updatedAt?: Date;
+	isActive: boolean;
+}
+
+export interface InsertModulePost {
+	title: string;
+	subtitle?: string;
+	content?: string;
+	imagePath?: string;
+	videoPath?: string;
+	audioPath?: string;
+	orderNumber: number;
+	moduleId: string;
+	authorId: string;
+}
 
 export interface PostDetail extends ModulePost {
 	authorName: string;

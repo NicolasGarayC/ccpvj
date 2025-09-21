@@ -1,4 +1,40 @@
-import type { Event, EventRegistration } from '$lib/server/db/schema';
+// Local type definitions to replace schema imports
+export interface Event {
+	id: string;
+	title: string;
+	description?: string;
+	startDateTime: Date;
+	endDateTime?: Date;
+	isAllDay: boolean;
+	location?: string;
+	eventType: string;
+	isActive: boolean;
+	isFeatured: boolean;
+	maxAttendees?: number;
+	currentAttendees: number;
+	requiresRegistration: boolean;
+	registrationDeadline?: Date;
+	imagePath?: string;
+	pdfPath?: string;
+	isRecurring: boolean;
+	recurrencePattern?: string;
+	recurrenceInterval?: number;
+	recurrenceEndDate?: Date;
+	recurrenceDaysOfWeek?: string;
+	relatedCourseId?: string;
+	relatedBlogPostId?: string;
+	createdAt: Date;
+	updatedAt?: Date;
+	organizerId: string;
+}
+
+export interface EventRegistration {
+	id: string;
+	eventId: string;
+	userId: string;
+	registrationDate: Date;
+	status: string;
+}
 
 // Tipos TypeScript para el frontend
 export interface EventSummary {
@@ -12,29 +48,24 @@ export interface EventSummary {
   eventType: string;
   isFeatured: boolean;
   imagePath?: string;
-  isRecurring: boolean;
-  organizerName: string;
-  relatedCourseId?: string;
-  relatedCourseTitle?: string;
-  relatedBlogPostId?: string;
-  relatedBlogPostTitle?: string;
-  relatedBlogPostSlug?: string;
+  requiresRegistration: boolean;
+  maxAttendees?: number;
+  currentAttendees: number;
+  registrationDeadline?: Date;
 }
 
 export interface EventDetail extends EventSummary {
-  isActive: boolean;
-  maxAttendees?: number;
-  currentAttendees: number;
-  requiresRegistration: boolean;
-  registrationDeadline?: Date;
   pdfPath?: string;
+  isRecurring: boolean;
   recurrencePattern?: string;
   recurrenceInterval?: number;
   recurrenceEndDate?: Date;
   recurrenceDaysOfWeek?: string;
+  relatedCourseId?: string;
+  relatedBlogPostId?: string;
   createdAt: Date;
   updatedAt?: Date;
-  organizerId: number;
+  organizerId: string;
 }
 
 export interface CreateEventData {
@@ -60,37 +91,35 @@ export interface CreateEventData {
   relatedBlogPostId?: string;
 }
 
-export interface EventSearchParams {
-  page?: number;
-  pageSize?: number;
-  searchTerm?: string;
-  eventType?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive?: boolean;
+export interface UpdateEventData extends Partial<CreateEventData> {
+  id: string;
+}
+
+export interface MonthViewEvent {
+  id: string;
+  title: string;
+  startDateTime: Date;
+  isAllDay: boolean;
+  eventType: string;
+  isFeatured: boolean;
+}
+
+export interface CalendarFilters {
+  eventTypes: string[];
   isFeatured?: boolean;
   requiresRegistration?: boolean;
-  relatedCourseId?: string;
-  sortBy?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
-export interface EventPagedResult {
-  events: EventSummary[];
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+export interface EventStats {
+  totalEvents: number;
+  upcomingEvents: number;
+  featuredEvents: number;
+  eventsWithRegistration: number;
 }
 
-export interface CalendarView {
-  viewDate: Date;
-  viewType: string;
-  events: EventSummary[];
-}
-
-export interface EventType {
+export interface EventTypeStats {
   type: string;
   displayName: string;
   color: string;
@@ -99,27 +128,7 @@ export interface EventType {
 }
 
 class CalendarService {
-  private isOnline = false;
-  private baseURL = 'https://localhost:5251/api';
-  private offlineEvents: EventSummary[] = [];
-
-  constructor() {
-    this.checkConnection();
-    this.initializeOfflineData();
-  }
-
-  private async checkConnection() {
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=1`, { 
-        method: 'HEAD', 
-        signal: AbortSignal.timeout(2000) 
-      });
-      this.isOnline = response.ok;
-    } catch (error) {
-      this.isOnline = false;
-      console.log('Modo offline activado para calendario');
-    }
-  }
+  private baseURL = 'http://localhost:5251/api';
 
   // Using cookie-based authentication - no headers needed
   private getRequestOptions(options: RequestInit = {}): RequestInit {
@@ -145,432 +154,167 @@ class CalendarService {
       eventType: backendEvent.eventType,
       isFeatured: backendEvent.isFeatured,
       imagePath: backendEvent.imagePath,
-      isRecurring: backendEvent.isRecurring,
-      organizerName: backendEvent.organizerName,
-      relatedCourseId: backendEvent.relatedCourseId,
-      relatedCourseTitle: backendEvent.relatedCourseTitle,
-      relatedBlogPostId: backendEvent.relatedBlogPostId,
-      relatedBlogPostTitle: backendEvent.relatedBlogPostTitle,
-      relatedBlogPostSlug: backendEvent.relatedBlogPostSlug
-    };
-  }
-
-  private adaptBackendToDetail(backendEvent: any): EventDetail {
-    return {
-      ...this.adaptBackendToFrontend(backendEvent),
-      isActive: backendEvent.isActive,
-      maxAttendees: backendEvent.maxAttendees,
-      currentAttendees: backendEvent.currentAttendees,
       requiresRegistration: backendEvent.requiresRegistration,
-      registrationDeadline: backendEvent.registrationDeadline ? new Date(backendEvent.registrationDeadline) : undefined,
-      pdfPath: backendEvent.pdfPath,
-      recurrencePattern: backendEvent.recurrencePattern,
-      recurrenceInterval: backendEvent.recurrenceInterval,
-      recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
-      recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
-      createdAt: new Date(backendEvent.createdAt),
-      updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
-      organizerId: backendEvent.organizerId
+      maxAttendees: backendEvent.maxAttendees,
+      currentAttendees: backendEvent.currentAttendees || 0,
+      registrationDeadline: backendEvent.registrationDeadline ? new Date(backendEvent.registrationDeadline) : undefined
     };
   }
 
-  private initializeOfflineData() {
-    // Datos de ejemplo para modo offline
-    this.offlineEvents = [
-      {
-        id: '1',
-        title: 'Clase Preuniversitario - Matemáticas',
-        description: 'Clase de matemáticas del curso preuniversitario',
-        startDateTime: new Date(Date.now() + 86400000), // mañana
-        endDateTime: new Date(Date.now() + 86400000 + 7200000), // +2 horas
-        isAllDay: false,
-        location: 'Aula 1',
-        eventType: 'Clase',
-        isFeatured: true,
-        isRecurring: true,
-        organizerName: 'Prof. García',
-        relatedCourseId: 'course-1',
-        relatedCourseTitle: 'Preuniversitario'
-      },
-      {
-        id: '2',
-        title: 'Taller de Escritura Creativa',
-        description: 'Taller comunitario de escritura creativa',
-        startDateTime: new Date(Date.now() + 172800000), // pasado mañana
-        endDateTime: new Date(Date.now() + 172800000 + 10800000), // +3 horas
-        isAllDay: false,
-        location: 'Sala Principal',
-        eventType: 'Taller',
-        isFeatured: false,
-        isRecurring: false,
-        organizerName: 'Ana López'
-      }
-    ];
-  }
-
-  // Obtener evento por ID
-  async getEvent(id: string): Promise<EventDetail | null> {
-    if (!this.isOnline) {
-      const event = this.offlineEvents.find(e => e.id === id);
-      return event ? { ...event, isActive: true, currentAttendees: 0, requiresRegistration: false, createdAt: new Date(), organizerId: 1 } as EventDetail : null;
-    }
-
+  async getUpcomingEvents(limit: number = 10): Promise<EventSummary[]> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      return this.adaptBackendToDetail(data);
-    } catch (error) {
-      console.error('Error al obtener evento:', error);
-      return null;
-    }
-  }
-
-  // Obtener eventos con filtros y paginación
-  async getEvents(params: EventSearchParams = {}): Promise<EventPagedResult> {
-    if (!this.isOnline) {
-      let filteredEvents = [...this.offlineEvents];
-      
-      if (params.searchTerm) {
-        filteredEvents = filteredEvents.filter(event => 
-          event.title.toLowerCase().includes(params.searchTerm!.toLowerCase()) ||
-          (event.description && event.description.toLowerCase().includes(params.searchTerm!.toLowerCase()))
-        );
-      }
-
-      if (params.eventType) {
-        filteredEvents = filteredEvents.filter(event => event.eventType === params.eventType);
-      }
-
-      if (params.isFeatured !== undefined) {
-        filteredEvents = filteredEvents.filter(event => event.isFeatured === params.isFeatured);
-      }
-
-      const page = params.page || 1;
-      const pageSize = params.pageSize || 10;
-      const totalCount = filteredEvents.length;
-      const totalPages = Math.ceil(totalCount / pageSize);
-      const startIndex = (page - 1) * pageSize;
-      const paginatedEvents = filteredEvents.slice(startIndex, startIndex + pageSize);
-
-      return {
-        events: paginatedEvents,
-        totalCount,
-        page,
-        pageSize,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      };
-    }
-
-    try {
-      const queryParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (value instanceof Date) {
-            queryParams.append(key, value.toISOString());
-          } else {
-            queryParams.append(key, value.toString());
-          }
+      const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=${limit}`, this.getRequestOptions());
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          return data.map(this.adaptBackendToFrontend);
         }
-      });
-
-      const response = await fetch(`${this.baseURL}/calendar?${queryParams}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos');
-
-      const data = await response.json();
-      return {
-        events: data.events.map((event: any) => this.adaptBackendToFrontend(event)),
-        totalCount: data.totalCount,
-        page: data.page,
-        pageSize: data.pageSize,
-        totalPages: data.totalPages,
-        hasNextPage: data.hasNextPage,
-        hasPreviousPage: data.hasPreviousPage
-      };
+        return [];
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error) {
-      console.error('Error al obtener eventos:', error);
+      console.error('Error cargando eventos próximos:', error);
       throw error;
     }
   }
 
-  // Obtener vista de calendario
-  async getCalendarView(viewDate: Date, viewType: string = 'month'): Promise<CalendarView> {
-    if (!this.isOnline) {
-      return {
-        viewDate,
-        viewType,
-        events: this.offlineEvents
-      };
-    }
-
+  async getAllEvents(): Promise<EventSummary[]> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/calendar-view?viewDate=${viewDate.toISOString()}&viewType=${viewType}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener vista de calendario');
-
-      const data = await response.json();
-      return {
-        viewDate: new Date(data.viewDate),
-        viewType: data.viewType,
-        events: data.events.map((event: any) => this.adaptBackendToFrontend(event))
-      };
+      const response = await fetch(`${this.baseURL}/calendar`, this.getRequestOptions());
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          return data.map(this.adaptBackendToFrontend);
+        }
+        return [];
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error) {
-      console.error('Error al obtener vista de calendario:', error);
+      console.error('Error cargando todos los eventos:', error);
       throw error;
     }
   }
 
-  // Crear evento
-  async createEvent(eventData: CreateEventData): Promise<EventDetail> {
-    if (!this.isOnline) {
-      throw new Error('No se puede crear evento en modo offline');
+  async getEventById(id: string): Promise<EventDetail | null> {
+    try {
+      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions());
+      if (response.ok) {
+        const backendEvent = await response.json();
+        return {
+          ...this.adaptBackendToFrontend(backendEvent),
+          pdfPath: backendEvent.pdfPath,
+          isRecurring: backendEvent.isRecurring,
+          recurrencePattern: backendEvent.recurrencePattern,
+          recurrenceInterval: backendEvent.recurrenceInterval,
+          recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
+          recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
+          relatedCourseId: backendEvent.relatedCourseId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
+          createdAt: new Date(backendEvent.createdAt),
+          updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
+          organizerId: backendEvent.organizerId
+        };
+      }
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error cargando evento por ID:', error);
+      throw error;
     }
+  }
 
+  async getEventsByBlogPost(blogPostId: string): Promise<EventSummary[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/calendar/blog/${blogPostId}`, this.getRequestOptions());
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          return data.map(this.adaptBackendToFrontend);
+        }
+        return [];
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error cargando eventos por blog post:', error);
+      throw error;
+    }
+  }
+
+  async createEvent(data: CreateEventData): Promise<EventDetail> {
     try {
       const response = await fetch(`${this.baseURL}/calendar`, this.getRequestOptions({
         method: 'POST',
-        body: JSON.stringify({
-          ...eventData,
-          startDateTime: eventData.startDateTime.toISOString(),
-          endDateTime: eventData.endDateTime?.toISOString(),
-          registrationDeadline: eventData.registrationDeadline?.toISOString(),
-          recurrenceEndDate: eventData.recurrenceEndDate?.toISOString()
-        })
+        body: JSON.stringify(data)
       }));
 
-      if (!response.ok) throw new Error('Error al crear evento');
-
-      const data = await response.json();
-      return this.adaptBackendToDetail(data);
+      if (response.ok) {
+        const backendEvent = await response.json();
+        return {
+          ...this.adaptBackendToFrontend(backendEvent),
+          pdfPath: backendEvent.pdfPath,
+          isRecurring: backendEvent.isRecurring,
+          recurrencePattern: backendEvent.recurrencePattern,
+          recurrenceInterval: backendEvent.recurrenceInterval,
+          recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
+          recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
+          relatedCourseId: backendEvent.relatedCourseId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
+          createdAt: new Date(backendEvent.createdAt),
+          updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
+          organizerId: backendEvent.organizerId
+        };
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error) {
-      console.error('Error al crear evento:', error);
+      console.error('Error creando evento:', error);
       throw error;
     }
   }
 
-  // Actualizar evento
-  async updateEvent(id: string, eventData: Partial<CreateEventData>): Promise<EventDetail> {
-    if (!this.isOnline) {
-      throw new Error('No se puede actualizar evento en modo offline');
-    }
-
+  async updateEvent(data: UpdateEventData): Promise<EventDetail> {
     try {
-      const body = { ...eventData };
-      if (eventData.startDateTime) body.startDateTime = eventData.startDateTime.toISOString() as any;
-      if (eventData.endDateTime) body.endDateTime = eventData.endDateTime.toISOString() as any;
-      if (eventData.registrationDeadline) body.registrationDeadline = eventData.registrationDeadline.toISOString() as any;
-      if (eventData.recurrenceEndDate) body.recurrenceEndDate = eventData.recurrenceEndDate.toISOString() as any;
-
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions({
+      const response = await fetch(`${this.baseURL}/calendar/${data.id}`, this.getRequestOptions({
         method: 'PUT',
-        body: JSON.stringify(body)
+        body: JSON.stringify(data)
       }));
 
-      if (!response.ok) throw new Error('Error al actualizar evento');
-
-      const data = await response.json();
-      return this.adaptBackendToDetail(data);
+      if (response.ok) {
+        const backendEvent = await response.json();
+        return {
+          ...this.adaptBackendToFrontend(backendEvent),
+          pdfPath: backendEvent.pdfPath,
+          isRecurring: backendEvent.isRecurring,
+          recurrencePattern: backendEvent.recurrencePattern,
+          recurrenceInterval: backendEvent.recurrenceInterval,
+          recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
+          recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
+          relatedCourseId: backendEvent.relatedCourseId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
+          createdAt: new Date(backendEvent.createdAt),
+          updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
+          organizerId: backendEvent.organizerId
+        };
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error) {
-      console.error('Error al actualizar evento:', error);
+      console.error('Error actualizando evento:', error);
       throw error;
     }
   }
 
-  // Eliminar evento
-  async deleteEvent(id: string): Promise<boolean> {
-    if (!this.isOnline) {
-      throw new Error('No se puede eliminar evento en modo offline');
-    }
-
+  async deleteEvent(id: string): Promise<void> {
     try {
       const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions({
         method: 'DELETE'
       }));
 
-      return response.ok;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
     } catch (error) {
-      console.error('Error al eliminar evento:', error);
-      throw error;
-    }
-  }
-
-  // Obtener eventos próximos
-  async getUpcomingEvents(limit: number = 10): Promise<EventSummary[]> {
-    if (!this.isOnline) {
-      return this.offlineEvents
-        .filter(event => event.startDateTime > new Date())
-        .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
-        .slice(0, limit);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=${limit}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos próximos');
-
-      const data = await response.json();
-      return data.map((event: any) => this.adaptBackendToFrontend(event));
-    } catch (error) {
-      console.error('Error al obtener eventos próximos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener eventos destacados
-  async getFeaturedEvents(limit: number = 5): Promise<EventSummary[]> {
-    if (!this.isOnline) {
-      return this.offlineEvents
-        .filter(event => event.isFeatured)
-        .slice(0, limit);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/featured?limit=${limit}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos destacados');
-
-      const data = await response.json();
-      return data.map((event: any) => this.adaptBackendToFrontend(event));
-    } catch (error) {
-      console.error('Error al obtener eventos destacados:', error);
-      throw error;
-    }
-  }
-
-  // Obtener tipos de eventos
-  async getEventTypes(): Promise<EventType[]> {
-    if (!this.isOnline) {
-      return [
-        { type: 'Clase', displayName: 'Clase', color: '#3B82F6', icon: 'academic-cap', count: 1 },
-        { type: 'Taller', displayName: 'Taller', color: '#10B981', icon: 'wrench-screwdriver', count: 1 },
-        { type: 'Evento', displayName: 'Evento', color: '#F59E0B', icon: 'calendar-days', count: 0 }
-      ];
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/types`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener tipos de eventos');
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error al obtener tipos de eventos:', error);
-      throw error;
-    }
-  }
-
-  // Obtener eventos por curso
-  async getEventsByCourse(courseId: string): Promise<EventSummary[]> {
-    if (!this.isOnline) {
-      return this.offlineEvents.filter(event => event.relatedCourseId === courseId);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/course/${courseId}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos del curso');
-
-      const data = await response.json();
-      return data.map((event: any) => this.adaptBackendToFrontend(event));
-    } catch (error) {
-      console.error('Error al obtener eventos del curso:', error);
-      throw error;
-    }
-  }
-
-  // Obtener eventos por post de blog
-  async getEventsByBlogPost(blogPostId: string): Promise<EventSummary[]> {
-    if (!this.isOnline) {
-      return this.offlineEvents.filter(event => event.relatedBlogPostId === blogPostId);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/blog/${blogPostId}`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos del blog post');
-
-      const data = await response.json();
-      return data.map((event: any) => this.adaptBackendToFrontend(event));
-    } catch (error) {
-      console.error('Error al obtener eventos del blog post:', error);
-      throw error;
-    }
-  }
-
-  // Registrarse a un evento
-  async registerToEvent(eventId: string): Promise<boolean> {
-    if (!this.isOnline) {
-      throw new Error('No se puede registrar a evento en modo offline');
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/${eventId}/register`, this.getRequestOptions({
-        method: 'POST'
-      }));
-
-      return response.ok;
-    } catch (error) {
-      console.error('Error al registrarse al evento:', error);
-      throw error;
-    }
-  }
-
-  // Desregistrarse de un evento
-  async unregisterFromEvent(eventId: string): Promise<boolean> {
-    if (!this.isOnline) {
-      throw new Error('No se puede desregistrar de evento en modo offline');
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/${eventId}/unregister`, this.getRequestOptions({
-        method: 'POST'
-      }));
-
-      return response.ok;
-    } catch (error) {
-      console.error('Error al desregistrarse del evento:', error);
-      throw error;
-    }
-  }
-
-  // Obtener mis registraciones
-  async getMyRegisteredEvents(): Promise<EventSummary[]> {
-    if (!this.isOnline) {
-      return [];
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/calendar/my-registrations`, {
-        ...this.getRequestOptions()
-      });
-
-      if (!response.ok) throw new Error('Error al obtener eventos registrados');
-
-      const data = await response.json();
-      return data.map((event: any) => this.adaptBackendToFrontend(event));
-    } catch (error) {
-      console.error('Error al obtener eventos registrados:', error);
+      console.error('Error eliminando evento:', error);
       throw error;
     }
   }

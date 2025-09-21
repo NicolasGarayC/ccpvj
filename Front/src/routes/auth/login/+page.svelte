@@ -3,25 +3,7 @@
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/authService';
 
-  // Simple fallback translation function
-  let t = (key: string) => {
-    const translations = {
-      'login': 'Iniciar Sesión',
-      'username': 'Usuario',
-      'password': 'Contraseña',
-      'centroTitle': 'Centro Cultural Víctor Jara',
-      'loginSubtitle': 'Red Comunitaria de Aprendizaje',
-      'usernamePlaceholder': 'Ingresa tu usuario',
-      'passwordPlaceholder': 'Ingresa tu contraseña',
-      'loggingIn': 'Iniciando sesión...',
-      'redirecting': 'Redirigiendo...',
-      'loginSuccess': 'Inicio de sesión exitoso. Redirigiendo...',
-      'loginError': 'Error al iniciar sesión',
-      'connectionError': 'Error de conexión. Verifica que el servidor esté funcionando.',
-      'backToHome': 'Volver al inicio'
-    };
-    return translations[key] || key;
-  };
+  import { t } from '$lib/i18n';
 
   let nombreUsuario = '';
   let contrasena = '';
@@ -30,23 +12,15 @@
   let success = false;
 
   onMount(() => {
-    // Try to load paraglide if available
-    try {
-      import('$lib/paraglide/runtime').then(module => {
-        if (module.translate) {
-          t = module.translate;
-        }
-      }).catch(() => {
-        // Silently fallback to hardcoded translations
-      });
-    } catch (err) {
-      // Silently fallback to hardcoded translations
-    }
-    
+    // TEMPORALMENTE COMENTADO PARA EVITAR BUCLES DE REDIRECCIÓN
     // Redirigir si ya está autenticado
-    if (authService.isAuthenticated()) {
-      goto('/');
-    }
+    // if (authService.isAuthenticated()) {
+    //   goto('/');
+    // }
+    console.log('[DEBUG] Login component mounted, estado inicial:', {
+      isAuthenticated: authService.isAuthenticated(),
+      user: authService.getUser()
+    });
   });
 
   // Validación de formulario
@@ -54,27 +28,36 @@
   $: isButtonDisabled = loading || success || !isFormValid;
 
   async function handleLogin(e: Event) {
-    e.preventDefault();
-    
+    // Verificar que el formulario sea válido antes de proceder
+    if (!isFormValid) {
+      error = 'Por favor completa todos los campos';
+      return;
+    }
+
     // Resetear estados
     error = null;
     success = false;
     loading = true;
-    
+
     try {
+      console.log('[DEBUG] Iniciando login con:', { nombreUsuario: nombreUsuario.trim() });
       const result = await authService.login(nombreUsuario.trim(), contrasena.trim());
-      
+      console.log('[DEBUG] Resultado del login:', result);
+
       if (result.success) {
         success = true;
+        console.log('[DEBUG] Login exitoso, redirigiendo...');
         // Mostrar mensaje de éxito brevemente antes de redirigir
         setTimeout(() => {
           goto('/');
         }, 1000);
       } else {
+        console.log('[DEBUG] Login falló:', result.error);
         error = result.error || t('loginError') || 'Error al iniciar sesión';
       }
     } catch (err: any) {
-      error = t('connectionError') || 'Error de conexión. Verifica que el servidor esté funcionando.';
+      console.error('[DEBUG] Error en login:', err);
+      error = err.message || t('connectionError') || 'Error de conexión. Verifica que el servidor esté funcionando.';
     } finally {
       loading = false;
     }
@@ -99,7 +82,7 @@
     </div>
 
     <!-- Formulario de Login -->
-    <form class="bg-white rounded-2xl shadow-2xl p-8 border-0" on:submit={handleLogin}>
+    <form class="bg-white rounded-2xl shadow-2xl p-8 border-0" on:submit|preventDefault={handleLogin}>
       <div class="text-center mb-8">
         <h2 class="text-2xl font-semibold text-gray-800">
           {t('login') || 'Iniciar Sesión'}

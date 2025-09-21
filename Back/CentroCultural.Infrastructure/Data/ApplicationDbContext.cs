@@ -15,14 +15,11 @@ namespace CentroCultural.Infrastructure.Data
 
         public DbSet<Usuario> Usuario { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
-        public DbSet<Rol> Rol { get; set; }
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
         public DbSet<WorkItem> WorkItem { get; set; }
         public DbSet<MediaEntity> MediaEntity { get; set; }
         public DbSet<UploadStatus> UploadStatus { get; set; }
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
         
         // Blog system entities
         public DbSet<BlogPost> BlogPost { get; set; }
@@ -66,69 +63,54 @@ namespace CentroCultural.Infrastructure.Data
             // Configuraci�n de Usuario
             modelBuilder.Entity<Usuario>(entity =>
             {
+                entity.ToTable("user"); // Mapear a la tabla user existente
                 entity.HasKey(e => e.IdUsuario);
                 entity.Property(e => e.NombreUsuario).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Contrasena).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FechaRegistro).IsRequired();
+                // FechaRegistro es NotMapped, no configurar en EF
                 entity.Property(e => e.Nombre).HasMaxLength(100);
                 entity.Property(e => e.Apellido).HasMaxLength(100);
                 entity.Property(e => e.Telefono).HasMaxLength(20);
-                entity.Property(e => e.IdRol).IsRequired();
+                entity.Property(e => e.RoleString).IsRequired().HasMaxLength(50);
                 
-                // Propiedades adicionales para compatibilidad
-                entity.Property(e => e.EsActivo).HasDefaultValue(true);
-                entity.Property(e => e.FechaCreacion).HasDefaultValueSql("datetime('now')");
-                entity.Property(e => e.FechaActualizacion);
+                // Propiedades de fecha son NotMapped, no configurar en EF
 
                 // �ndice �nico para nombre de usuario
                 entity.HasIndex(e => e.NombreUsuario).IsUnique();
 
-                // Configuraci�n de la relaci�n con Rol
-                entity.HasOne(u => u.Rol)
-                      .WithMany(r => r.Usuarios)
-                      .HasForeignKey(u => u.IdRol)
-                      .OnDelete(DeleteBehavior.Restrict);
+                // Rol se maneja como string, no como relaci�n FK
             });
 
-            // Configuraci�n de Course
+            // Configuración de Course - explicit DbContext mapping
             modelBuilder.Entity<Course>(entity =>
             {
+                entity.ToTable("course");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
-                entity.Property(e => e.ImagePath).HasMaxLength(500);
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-
-                // Relaci�n con Usuario (Educador)
-                entity.HasOne(c => c.Educator)
-                      .WithMany()
-                      .HasForeignKey(c => c.EducatorId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // �ndice para b�squedas
-                entity.HasIndex(e => e.Title);
-                entity.HasIndex(e => e.IsActive);
-                entity.HasIndex(e => e.IsFeatured);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasColumnName("description").IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.Subject).HasColumnName("subject").HasMaxLength(100);
+                entity.Property(e => e.ImagePath).HasColumnName("image_path").HasMaxLength(500);
+                entity.Property(e => e.IsActive).HasColumnName("is_active");
+                entity.Property(e => e.IsFeatured).HasColumnName("is_featured");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.EducatorId).HasColumnName("educator_id").IsRequired();
             });
 
             // Configuraci�n de Module
             modelBuilder.Entity<Module>(entity =>
             {
+                entity.ToTable("module");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.Content).HasColumnType("TEXT");
-                entity.Property(e => e.OrderNumber).IsRequired();
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-
-                // Relaci�n con Course
-                entity.HasOne(m => m.Course)
-                      .WithMany(c => c.Modules)
-                      .HasForeignKey(m => m.CourseId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+                entity.Property(e => e.OrderNumber).HasColumnName("order_number").IsRequired();
+                entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.CourseId).HasColumnName("course_id").IsRequired();
 
                 // �ndices para b�squedas y ordenamiento
                 entity.HasIndex(e => new { e.CourseId, e.OrderNumber });
@@ -138,21 +120,19 @@ namespace CentroCultural.Infrastructure.Data
             // Configuración de WorkItem
             modelBuilder.Entity<WorkItem>(entity =>
             {
+                entity.ToTable("work_item");
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.LongText).HasColumnType("TEXT");
-                entity.Property(e => e.OrderNumber).IsRequired();
-                entity.Property(e => e.IsActive).HasDefaultValue(true);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(e => e.ImagePath).HasMaxLength(500);
-                entity.Property(e => e.VideoPath).HasMaxLength(500);
-
-                // Relación con Module
-                entity.HasOne(w => w.Module)
-                      .WithMany()
-                      .HasForeignKey(w => w.ModuleId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
+                entity.Property(e => e.LongText).HasColumnName("long_text").HasColumnType("TEXT");
+                entity.Property(e => e.OrderNumber).HasColumnName("order_number").IsRequired();
+                entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+                entity.Property(e => e.ModuleId).HasColumnName("module_id").IsRequired();
+                entity.Property(e => e.ImagePath).HasColumnName("image_path").HasMaxLength(500);
+                entity.Property(e => e.VideoPath).HasColumnName("video_path").HasMaxLength(500);
 
                 // Índices para búsquedas y ordenamiento
                 entity.HasIndex(e => new { e.ModuleId, e.OrderNumber });
@@ -262,41 +242,6 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.CreatedAt);
             });
 
-            // Configuraci�n de RefreshToken
-            modelBuilder.Entity<RefreshToken>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ExpiresAt).IsRequired();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(e => e.IsRevoked).HasDefaultValue(false);
-                
-                // Relaci�n con Usuario
-                entity.HasOne(rt => rt.Usuario)
-                      .WithMany()
-                      .HasForeignKey(rt => rt.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
-                
-                // �ndices
-                entity.HasIndex(e => e.Token).IsUnique();
-                entity.HasIndex(e => e.UserId);
-                entity.HasIndex(e => e.ExpiresAt);
-            });
-
-            // Configuraci�n de TokenBlacklist
-            modelBuilder.Entity<TokenBlacklist>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.TokenJti).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.ExpiresAt).IsRequired();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(e => e.UserId).IsRequired();
-                
-                // �ndices
-                entity.HasIndex(e => e.TokenJti).IsUnique();
-                entity.HasIndex(e => e.ExpiresAt);
-                entity.HasIndex(e => e.UserId);
-            });
 
             // Configuración de EventRegistration
             modelBuilder.Entity<EventRegistration>(entity =>
@@ -398,22 +343,10 @@ namespace CentroCultural.Infrastructure.Data
                 }
             );
 
-            // Datos semilla para Usuario
-            modelBuilder.Entity<Usuario>().HasData(
-                new Usuario
-                {
-                    IdUsuario = 1,
-                    NombreUsuario = "admin",
-                    Contrasena = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                    FechaRegistro = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Nombre = "Administrador",
-                    Apellido = "Sistema",
-                    IdRol = 3
-                }
-            );
+            // Datos semilla para Usuario - user already exists in database
 
-            // Datos semilla para Course
-            var courseId = new Guid("12345678-1234-5678-9abc-123456789012");
+            // Datos semilla para Course - DISABLED for now to fix compilation
+            /*var courseId = new Guid("12345678-1234-5678-9abc-123456789012");
             modelBuilder.Entity<Course>().HasData(
                 new Course
                 {
@@ -454,7 +387,7 @@ namespace CentroCultural.Infrastructure.Data
                     CreatedAt = DateTime.UtcNow,
                     CourseId = courseId
                 }
-            );
+            );*/
         }
     }
 }

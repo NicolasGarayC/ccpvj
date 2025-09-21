@@ -1,35 +1,58 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { deleteSessionTokenCookie, validateSessionToken } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { session } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
 
-export const POST: RequestHandler = async ({ cookies }) => {
+const BACKEND_URL = 'http://localhost:5251/api';
+
+export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
-		const sessionToken = cookies.get('auth-session');
+		// Forward the request to the backend using SimpleAuth
+		const response = await fetch(`${BACKEND_URL}/simple-auth/logout`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				// Forward any cookies from the frontend to the backend
+				'Cookie': request.headers.get('cookie') || ''
+			},
+			credentials: 'include'
+		});
 
-		if (sessionToken) {
-			// Validar y eliminar la sesión de la base de datos
-			try {
-				const { session: userSession } = await validateSessionToken(sessionToken);
-				if (userSession) {
-					await db.delete(session).where(eq(session.id, userSession.id));
-				}
-			} catch (error) {
-				console.error('Error deleting session from database:', error);
-			}
+		// Get the response from backend (safely handle empty responses)
+		let data;
+		try {
+			const text = await response.text();
+			data = text ? JSON.parse(text) : {};
+		} catch (parseError) {
+			console.log('Backend response is not JSON, treating as success');
+			data = {};
 		}
 
-		// Limpiar cookie de sesión
-		cookies.delete('auth-session', { path: '/' });
+		if (response.ok) {
+			// If backend logout succeeded, clear the frontend session cookie
+			cookies.delete('auth-session', { path: '/' });
 
-		return json({ success: true, message: 'Sesión cerrada correctamente' });
+			return json({
+				success: true,
+				message: data.message || 'Sesión cerrada correctamente'
+			});
+		} else {
+			// Even if backend fails, clear frontend cookie for consistency
+			cookies.delete('auth-session', { path: '/' });
+
+			return json({
+				success: true,
+				message: 'Sesión cerrada correctamente'
+			});
+		}
 
 	} catch (error) {
-		console.error('Logout error:', error);
-		// Limpiar cookie incluso si hay error
+		console.error('Logout proxy error:', error);
+
+		// Always clear the frontend cookie, even on errors
 		cookies.delete('auth-session', { path: '/' });
-		return json({ success: true, message: 'Sesión cerrada correctamente' });
+
+		return json({
+			success: true,
+			message: 'Sesión cerrada correctamente'
+		});
 	}
 };

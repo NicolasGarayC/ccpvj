@@ -5,45 +5,38 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    [Table("Module")]
+    [Table("module")]
     public class Module
     {
         [Key]
-        [Column("Id")]
-        public Guid Id { get; set; }
+        [Column("id")]
+        public string Id { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(200)]
-        [Column("Title")]
+        [Column("title")]
         public string Title { get; set; } = string.Empty;
 
         [MaxLength(500)]
-        [Column("Description")]
+        [Column("description")]
         public string Description { get; set; } = string.Empty;
 
-        [Column("Content")]
-        public string Content { get; set; } = string.Empty;
 
-        [Column("OrderNumber")]
+        [Column("order_number")]
         public int OrderNumber { get; set; }
 
-        [Column("IsActive")]
+        [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Column("created_at")]
+        public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-        [Column("UpdatedAt")]
-        public DateTime? UpdatedAt { get; set; }
+        [Column("updated_at")]
+        public long? UpdatedAt { get; set; }
 
         [Required]
-        [Column("CourseId")]
-        public Guid CourseId { get; set; }
+        [Column("course_id")]
+        public string CourseId { get; set; } = string.Empty;
 
-        // Navigation properties
-        [ForeignKey("CourseId")]
-        public virtual Course Course { get; set; } = null!;
-        
-        public virtual ICollection<WorkItem> WorkItems { get; set; } = new List<WorkItem>();
     }
 }

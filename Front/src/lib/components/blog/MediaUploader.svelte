@@ -1,22 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  // Función de traducción con fallback seguro
-  let paraglideT = (key: string) => key;
-
-  // Intentar cargar Paraglide de forma segura
-  onMount(() => {
-    try {
-      import('$lib/paraglide/runtime').then(module => {
-        if (module.translate) {
-          paraglideT = module.translate;
-        }
-      }).catch(() => {
-        console.log('Paraglide not available in MediaUploader, using fallback');
-      });
-    } catch (err) {
-      console.log('Paraglide module not found in MediaUploader');
-    }
-  });
+  import { t } from '$lib/i18n';
 
   export let contentType: string; // 'blog', 'course', 'workitem', 'event'
   export let contentId: string;
@@ -26,16 +9,12 @@
   export let currentMedia = '';
   export let disabled = false;
 
-  let t = (key: string) => key;
   let fileInput: HTMLInputElement;
   let isUploading = false;
   let uploadProgress = 0;
   let error: string | null = null;
   let previewUrl = currentMedia;
 
-  onMount(() => {
-    t = paraglideT;
-  });
 
   function getAcceptedTypes() {
     switch (mediaType) {

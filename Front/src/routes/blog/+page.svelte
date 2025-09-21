@@ -5,41 +5,8 @@
   import type { BlogPost } from '$lib/data/models/interfaces';
   import { authService } from '$lib/services/authService';
   
-  // Simple fallback translation function
-  let t = (key: string) => {
-    const translations = {
-      'newsAndAnnouncements': 'Noticias y Anuncios',
-      'centroTitle': 'Centro Cultural',
-      'blogDescription': 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara',
-      'stayUpdated': 'Mantente informado sobre las últimas actividades, cursos y eventos de nuestra comunidad educativa.',
-      'allNews': 'Todas las noticias',
-      'loading': 'Cargando...',
-      'tryAgain': 'Intentar de nuevo',
-      'noNewsInCategory': 'No hay noticias en esta categoría',
-      'noBlogPostsYet': 'Aún no hay noticias disponibles',
-      'tryDifferentCategory': 'Prueba con una categoría diferente o ve todas las noticias',
-      'checkBackSoon': 'Vuelve pronto para ver las últimas novedades de nuestra comunidad',
-      'seeAllNews': 'Ver todas las noticias',
-      'backToHome': 'Volver al inicio',
-      'createArticle': 'Crear Artículo'
-    };
-    return translations[key] || key;
-  };
+  import { t } from '$lib/i18n';
   
-  onMount(() => {
-    // Try to load paraglide if available
-    try {
-      import('$lib/paraglide/runtime').then(module => {
-        if (module.translate) {
-          t = module.translate;
-        }
-      }).catch(err => {
-        console.log('Paraglide not available, using fallback translations');
-      });
-    } catch (err) {
-      console.log('Paraglide module not found, using fallback translations');
-    }
-  });
   
   let posts: BlogPost[] = [];
   let isLoading = true;

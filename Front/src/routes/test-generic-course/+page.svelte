@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { CourseDto } from '$lib/types/api/course.types';
 
-	let testResults = [];
+	interface TestResult {
+		courseId: string;
+		success: boolean;
+		data?: CourseDto;
+		error?: string;
+		url: string;
+	}
+
+	let testResults: TestResult[] = [];
 	let loading = false;
 
 	async function testGenericComponent() {
@@ -29,11 +38,11 @@
 						url: `/courses/${courseId}`
 					}];
 				}
-			} catch (error) {
+			} catch (error: unknown) {
 				testResults = [...testResults, {
 					courseId,
 					success: false,
-					error: error.message,
+					error: error instanceof Error ? error.message : 'Error desconocido',
 					url: `/courses/${courseId}`
 				}];
 			}
@@ -42,7 +51,7 @@
 		loading = false;
 	}
 
-	function openCourse(url) {
+	function openCourse(url: string) {
 		window.open(url, '_blank');
 	}
 </script>

@@ -2,7 +2,8 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { courseService, type ModuleDetail } from '$lib/services/courseService';
+	import { courseService } from '$lib/services/courseService';
+	import type { ModuleDetailDto } from '$lib/types/api/course.types';
 	import { modulePostService, type PostDetail } from '$lib/services/modulePostService';
 	import PostList from '$lib/components/course/PostList.svelte';
 	import PostViewer from '$lib/components/course/PostViewer.svelte';
@@ -13,7 +14,7 @@
 
 	const moduleId = $page.params.id;
 
-	let module: ModuleDetail | null = null;
+	let module: ModuleDetailDto | null = null;
 	let isLoading = false;
 	let error: string | null = null;
 	let postCount = 0;
@@ -327,7 +328,7 @@
 			<!-- Post List -->
 			<PostList
 				bind:this={postListComponent}
-				moduleId={module.id}
+				moduleId={module.stringId}
 				showActions={canManagePosts}
 				on:viewPost={handleViewPost}
 				on:editPost={handleEditPost}

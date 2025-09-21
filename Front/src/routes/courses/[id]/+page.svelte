@@ -156,7 +156,7 @@
 				imagePath: editForm.imagePath || undefined
 			};
 
-			await courseService.updateCourse(course.id, updateData);
+			await courseService.updateCourse(course.stringId, updateData);
 
 			// Reload course data
 			await loadCourse();
@@ -473,7 +473,7 @@
 
 						<div class="px-8 pb-8">
 							<ModuleList
-								courseId={course.id}
+								courseId={course.stringId}
 								showActions={canManage}
 								on:createModule={handleCreateModule}
 								on:editModule={handleEditModule}
@@ -496,7 +496,7 @@
 							</h3>
 							<MediaUploader
 								contentType="course"
-								contentId={course.id}
+								contentId={course.stringId}
 								mediaType="image"
 								currentPath={editForm.imagePath}
 								on:upload={handleImageUpload}

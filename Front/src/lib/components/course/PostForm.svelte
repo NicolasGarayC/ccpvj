@@ -3,7 +3,7 @@
 	import { modulePostService, type CreatePostDto, type UpdatePostDto } from '$lib/services/modulePostService';
 	import { postElementService, type ElementType, type ElementWithFile } from '$lib/services/postElementService';
 	import type { PostDetail } from '$lib/services/modulePostService';
-	import type { PostElement } from '$lib/server/db/schema';
+	import type { PostElement } from '$lib/services/postElementService';
 
 	export let visible = false;
 	export let moduleId: string;

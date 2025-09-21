@@ -16,7 +16,7 @@ namespace CentroCultural.Domain.Entities
 
         [Required]
         [Column("UserId")]
-        public int UserId { get; set; }
+        public int? UserId { get; set; } = 0;
 
         [Required]
         [Column("RegistrationDate")]

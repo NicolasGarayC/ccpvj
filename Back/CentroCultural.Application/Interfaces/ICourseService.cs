@@ -11,19 +11,19 @@ namespace CentroCultural.Application.Interfaces
         Task<CoursePagedResultDto> GetCoursesAsync(CourseSearchDto searchDto);
         Task<IEnumerable<CourseSummaryDto>> GetAllCoursesAsync();
         Task<IEnumerable<CourseSummaryDto>> GetFeaturedCoursesAsync(int count = 6);
-        Task<CourseDetailDto?> GetCourseByIdAsync(Guid id);
-        Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto, string userId);
-        Task<bool> UpdateCourseAsync(Guid id, UpdateCourseDto updateCourseDto, string userId);
-        Task<bool> DeleteCourseAsync(Guid id, string userId);
-        Task<IEnumerable<CourseSummaryDto>> GetCoursesByEducatorAsync(string userId);
+        Task<CourseDetailDto?> GetCourseByIdAsync(string id);
+        Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto, int userId);
+        Task<bool> UpdateCourseAsync(Guid id, UpdateCourseDto updateCourseDto, int userId);
+        Task<bool> DeleteCourseAsync(Guid id, int userId);
+        Task<IEnumerable<CourseSummaryDto>> GetCoursesByEducatorAsync(int userId);
 
         // Module operations (kept in CourseService for consistency)
-        Task<IEnumerable<ModuleSummaryDto>> GetCourseModulesAsync(Guid courseId);
-        Task<ModuleDetailDto?> GetModuleByIdAsync(Guid moduleId);
-        Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto, string userId);
-        Task<bool> UpdateModuleAsync(Guid id, UpdateModuleDto updateModuleDto, string userId);
-        Task<bool> DeleteModuleAsync(Guid id, string userId);
-        Task<bool> ReorderModuleAsync(Guid id, int newOrderNumber, string userId);
+        Task<IEnumerable<ModuleSummaryDto>> GetCourseModulesAsync(string courseId);
+        Task<ModuleDetailDto?> GetModuleByIdAsync(string moduleId);
+        Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto, int userId);
+        Task<bool> UpdateModuleAsync(Guid id, UpdateModuleDto updateModuleDto, int userId);
+        Task<bool> DeleteModuleAsync(Guid id, int userId);
+        Task<bool> ReorderModuleAsync(Guid id, int newOrderNumber, int userId);
 
         // Statistics and utility methods
         Task<object> GetCourseStatisticsAsync();

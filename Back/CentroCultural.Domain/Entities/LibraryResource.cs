@@ -61,7 +61,7 @@ namespace CentroCultural.Domain.Entities
         public string Language { get; set; } = "es";
 
         [Required]
-        public int UploadedBy { get; set; }
+        public int UploadedBy { get; set; } = 0;
 
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 

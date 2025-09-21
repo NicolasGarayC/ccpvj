@@ -2,6 +2,7 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
   import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
+  import { t } from '$lib/i18n';
 
   export let post: BlogPost;
   export let showActions = false;
@@ -15,30 +16,8 @@
   let relatedEvents: EventSummary[] = [];
   let loadingEvents = false;
   
-  // Simple fallback translation function
-  let t = (key: string) => {
-    const translations = {
-      'videoNotSupported': 'Tu navegador no soporta video.',
-      'newsPost': 'Noticia',
-      'readMore': 'Leer más'
-    };
-    return translations[key] || key;
-  };
 
   onMount(async () => {
-    // Try to load paraglide if available
-    try {
-      import('$lib/paraglide/runtime').then(module => {
-        if (module.translate) {
-          t = module.translate;
-        }
-      }).catch(err => {
-        console.log('Paraglide not available, using fallback translations');
-      });
-    } catch (err) {
-      console.log('Paraglide module not found, using fallback translations');
-    }
-
     // Cargar eventos relacionados si está habilitado
     if (showRelatedEvents && post.id) {
       await loadRelatedEvents();

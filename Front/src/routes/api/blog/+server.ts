@@ -1,18 +1,20 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-const BACKEND_URL = 'http://localhost:5000'; // Ajusta según tu configuración
+const BACKEND_URL = 'http://localhost:5251/api';
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
+export const GET: RequestHandler = async ({ url, request }) => {
   try {
     const searchParams = url.searchParams;
     const queryString = searchParams.toString();
-    
-    const response = await fetch(`${BACKEND_URL}/api/blog?${queryString}`, {
+
+    const response = await fetch(`${BACKEND_URL}/article?${queryString}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -27,22 +29,18 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
   }
 };
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request }) => {
   try {
-    const session = locals.session;
-    if (!session?.userId) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const postData = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/api/blog`, {
+    const response = await fetch(`${BACKEND_URL}/article`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
-        // No need for Authorization header - using session-based auth
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
       },
-      body: JSON.stringify(postData)
+      body: JSON.stringify(postData),
+      credentials: 'include'
     });
 
     if (!response.ok) {

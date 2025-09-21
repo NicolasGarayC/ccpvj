@@ -28,13 +28,6 @@ export function getMediaDirectory(mediaType: string): string {
 	return path.join(basePath, mediaType);
 }
 
-/**
- * Construye la ruta completa a la base de datos
- */
-export function getDatabasePath(): string {
-	const projectRoot = getProjectRoot();
-	return path.join(projectRoot, 'ccpvj', 'Data', 'ccpvj.db');
-}
 
 /**
  * Construye rutas de archivos legacy para cleanup (rutas anteriores con static/)

@@ -29,7 +29,7 @@ namespace CentroCultural.Domain.Entities
         public DateTime? PublishedAt { get; set; }
         
         [Required]
-        public int AuthorId { get; set; }
+        public int AuthorId { get; set; } = 0;
         
         public Guid? CategoryId { get; set; }
         

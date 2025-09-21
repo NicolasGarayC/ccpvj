@@ -1,11 +1,15 @@
 // Interfaces para tipos de datos centrales de la aplicación
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
-  nombre?: string;
-  apellido?: string;
-  role: 'educator' | 'student';
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  role: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  isActive: boolean;
   email?: string;
 }
 
@@ -16,6 +20,7 @@ export interface BlogPost {
   excerpt: string;
   publishDate: string;
   slug: string;
+  status?: 'draft' | 'published' | 'archived'; // Estado del post
   featuredMedia?: string; // Cambio: de featuredImage a featuredMedia para soportar videos
   videoPoster?: string; // Nuevo: imagen de preview para videos
   mediaType?: 'image' | 'video' | 'text'; // Nuevo: tipo de contenido

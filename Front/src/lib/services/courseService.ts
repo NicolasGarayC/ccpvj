@@ -1,65 +1,20 @@
-import { goto } from '$app/navigation';
-import type { Course, Module, WorkItem, InsertCourse, InsertModule, InsertWorkItem } from '$lib/server/db/schema';
-
-export interface CourseDetail extends Course {
-	modules: ModuleDetail[];
-	moduleCount: number;
-	workItemCount: number;
-	educatorName: string;
-}
-
-export interface ModuleDetail extends Module {
-	workItems: WorkItem[];
-	workItemCount: number;
-}
-
-export interface CreateCourseDto {
-	title: string;
-	description: string;
-	subject: string;
-	isFeatured?: boolean;
-	imagePath?: string;
-}
-
-export interface UpdateCourseDto {
-	title: string;
-	description: string;
-	subject: string;
-	isFeatured: boolean;
-	imagePath?: string;
-}
-
-export interface CreateModuleDto {
-	title: string;
-	description: string;
-	orderNumber: number;
-	courseId: string;
-}
-
-export interface UpdateModuleDto {
-	title: string;
-	description: string;
-	orderNumber: number;
-}
-
-export interface CreateWorkItemDto {
-	title: string;
-	description?: string;
-	longText?: string;
-	orderNumber: number;
-	moduleId: string;
-	imagePath?: string;
-	videoPath?: string;
-}
-
-export interface UpdateWorkItemDto {
-	title: string;
-	description?: string;
-	longText?: string;
-	orderNumber: number;
-	imagePath?: string;
-	videoPath?: string;
-}
+import { BaseHttpService } from './base/baseHttpService';
+import type {
+	CourseDto,
+	CourseDetailDto,
+	CourseSummaryDto,
+	CreateCourseDto,
+	UpdateCourseDto,
+	ModuleDto,
+	CreateModuleDto,
+	UpdateModuleDto,
+	WorkItemDto,
+	CreateWorkItemDto,
+	UpdateWorkItemDto,
+	CoursePagedResultDto,
+	CourseSearchDto,
+	ReorderDto
+} from '$lib/types/api';
 
 export interface CourseSearchParams {
 	page?: number;
@@ -71,21 +26,9 @@ export interface CourseSearchParams {
 	sortBy?: string;
 }
 
-export interface CoursePagedResult {
-	courses: CourseDetail[];
-	totalCount: number;
-	page: number;
-	pageSize: number;
-	totalPages: number;
-	hasNextPage: boolean;
-	hasPreviousPage: boolean;
-}
-
-class CourseService {
-	private apiUrl = '/api/courses';
-
+class CourseService extends BaseHttpService {
 	// Course methods
-	async getCourses(params?: CourseSearchParams): Promise<CoursePagedResult> {
+	async getCourses(params?: CourseSearchParams): Promise<CoursePagedResultDto> {
 		const urlParams = new URLSearchParams();
 		if (params?.page) urlParams.set('page', params.page.toString());
 		if (params?.pageSize) urlParams.set('pageSize', params.pageSize.toString());
@@ -95,497 +38,117 @@ class CourseService {
 		if (params?.isActive !== undefined) urlParams.set('isActive', params.isActive.toString());
 		if (params?.sortBy) urlParams.set('sortBy', params.sortBy);
 
-		const response = await fetch(`${this.apiUrl}?${urlParams.toString()}`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting courses: ${response.statusText}`);
-		}
-
-		return await response.json();
+		return this.get<CoursePagedResultDto>(`/course?${urlParams.toString()}`);
 	}
 
-	async getAllCourses(): Promise<CourseDetail[]> {
-		const response = await fetch(`${this.apiUrl}/all`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting all courses: ${response.statusText}`);
-		}
-
-		return await response.json();
+	async getAllCourses(): Promise<CourseSummaryDto[]> {
+		return this.get<CourseSummaryDto[]>('/course/all');
 	}
 
-	async getFeaturedCourses(count: number = 6): Promise<CourseDetail[]> {
-		const response = await fetch(`${this.apiUrl}/featured?count=${count}`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting featured courses: ${response.statusText}`);
-		}
-
-		return await response.json();
+	async getFeaturedCourses(count: number = 6): Promise<CourseDetailDto[]> {
+		return this.get<CourseDetailDto[]>(`/course/featured?count=${count}`);
 	}
 
-	async getCourseById(id: string): Promise<CourseDetail | null> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
+	async getCourseById(id: string): Promise<CourseDetailDto | null> {
+		try {
+			return await this.get<CourseDetailDto>(`/course/${id}`);
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('404')) {
+				return null;
 			}
-		});
-
-		if (response.status === 404) {
-			return null;
+			throw error;
 		}
-
-		if (!response.ok) {
-			throw new Error(`Error getting course: ${response.statusText}`);
-		}
-
-		return await response.json();
 	}
 
 	// Alias for consistency
-	async getCourse(id: string): Promise<CourseDetail | null> {
+	async getCourse(id: string): Promise<CourseDetailDto | null> {
 		return this.getCourseById(id);
 	}
 
-	async createCourse(courseData: CreateCourseDto): Promise<Course> {
-		const response = await fetch(this.apiUrl, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(courseData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para crear cursos');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error creating course: ${errorText}`);
-		}
-
-		return await response.json();
+	async createCourse(courseData: CreateCourseDto): Promise<CourseDto> {
+		return this.post<CourseDto>('/course', courseData);
 	}
 
 	async updateCourse(id: string, courseData: UpdateCourseDto): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
-			method: 'PUT',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(courseData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para editar este curso');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Curso no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error updating course: ${errorText}`);
-		}
+		return this.put(`/course/${id}`, courseData);
 	}
 
 	async deleteCourse(id: string): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
-			method: 'DELETE',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para eliminar este curso');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Curso no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error deleting course: ${errorText}`);
-		}
+		return this.delete(`/course/${id}`);
 	}
 
-	async getMyCourses(): Promise<CourseDetail[]> {
-		const response = await fetch(`${this.apiUrl}/my-courses`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (!response.ok) {
-			throw new Error(`Error getting my courses: ${response.statusText}`);
-		}
-
-		return await response.json();
+	async getMyCourses(): Promise<CourseDetailDto[]> {
+		return this.get<CourseDetailDto[]>('/course/my-courses');
 	}
 
 	async getAvailableSubjects(): Promise<string[]> {
-		const response = await fetch(`${this.apiUrl}/subjects`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting subjects: ${response.statusText}`);
-		}
-
-		return await response.json();
+		return this.get<string[]>('/course/subjects');
 	}
 
 	// Module methods
-	async getModule(id: string): Promise<ModuleDetail | null> {
-		const response = await fetch(`${this.apiUrl}/modules/${id}`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
+	async getModule(id: string): Promise<ModuleDto | null> {
+		try {
+			return await this.get<ModuleDto>(`/course/modules/${id}`);
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('404')) {
+				return null;
 			}
-		});
-
-		if (response.status === 404) {
-			return null;
+			throw error;
 		}
-
-		if (!response.ok) {
-			throw new Error(`Error getting module: ${response.statusText}`);
-		}
-
-		return await response.json();
 	}
 
-	async getCourseModules(courseId: string): Promise<ModuleDetail[]> {
-		const response = await fetch(`${this.apiUrl}/${courseId}/modules`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting course modules: ${response.statusText}`);
-		}
-
-		return await response.json();
+	async getCourseModules(courseId: string): Promise<ModuleDto[]> {
+		return this.get<ModuleDto[]>(`/course/${courseId}/modules`);
 	}
 
-	async createModule(moduleData: CreateModuleDto): Promise<Module> {
-		const response = await fetch(`${this.apiUrl}/modules`, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(moduleData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para crear módulos en este curso');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error creating module: ${errorText}`);
-		}
-
-		return await response.json();
+	async createModule(moduleData: CreateModuleDto): Promise<ModuleDto> {
+		return this.post<ModuleDto>('/course/modules', moduleData);
 	}
 
 	async updateModule(id: string, moduleData: UpdateModuleDto): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/modules/${id}`, {
-			method: 'PUT',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(moduleData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para editar este módulo');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Módulo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error updating module: ${errorText}`);
-		}
+		return this.put(`/course/modules/${id}`, moduleData);
 	}
 
 	async deleteModule(id: string): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/modules/${id}`, {
-			method: 'DELETE',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para eliminar este módulo');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Módulo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error deleting module: ${errorText}`);
-		}
+		return this.delete(`/course/modules/${id}`);
 	}
 
 	async reorderModule(id: string, newOrderNumber: number): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/modules/${id}/reorder`, {
-			method: 'PATCH',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ newOrderNumber })
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para reordenar módulos en este curso');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Módulo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error reordering module: ${errorText}`);
-		}
+		const reorderData: ReorderDto = { newOrderNumber };
+		return this.patch(`/course/modules/${id}/reorder`, reorderData);
 	}
 
 	// WorkItem methods
-	async getWorkItem(id: string): Promise<WorkItem | null> {
-		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
+	async getWorkItem(id: string): Promise<WorkItemDto | null> {
+		try {
+			return await this.get<WorkItemDto>(`/course/workitems/${id}`);
+		} catch (error) {
+			if (error instanceof Error && error.message.includes('404')) {
+				return null;
 			}
-		});
-
-		if (response.status === 404) {
-			return null;
+			throw error;
 		}
-
-		if (!response.ok) {
-			throw new Error(`Error getting work item: ${response.statusText}`);
-		}
-
-		return await response.json();
 	}
 
-	async getModuleWorkItems(moduleId: string): Promise<WorkItem[]> {
-		const response = await fetch(`${this.apiUrl}/modules/${moduleId}/workitems`, {
-			method: 'GET',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (!response.ok) {
-			throw new Error(`Error getting module work items: ${response.statusText}`);
-		}
-
-		return await response.json();
+	async getModuleWorkItems(moduleId: string): Promise<WorkItemDto[]> {
+		return this.get<WorkItemDto[]>(`/course/modules/${moduleId}/workitems`);
 	}
 
-	async createWorkItem(workItemData: CreateWorkItemDto): Promise<WorkItem> {
-		const response = await fetch(`${this.apiUrl}/workitems`, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(workItemData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para crear elementos de trabajo en este módulo');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error creating work item: ${errorText}`);
-		}
-
-		return await response.json();
+	async createWorkItem(workItemData: CreateWorkItemDto): Promise<WorkItemDto> {
+		return this.post<WorkItemDto>('/course/workitems', workItemData);
 	}
 
 	async updateWorkItem(id: string, workItemData: UpdateWorkItemDto): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
-			method: 'PUT',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(workItemData)
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para editar este elemento de trabajo');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Elemento de trabajo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error updating work item: ${errorText}`);
-		}
+		return this.put(`/course/workitems/${id}`, workItemData);
 	}
 
 	async deleteWorkItem(id: string): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/workitems/${id}`, {
-			method: 'DELETE',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para eliminar este elemento de trabajo');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Elemento de trabajo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error deleting work item: ${errorText}`);
-		}
+		return this.delete(`/course/workitems/${id}`);
 	}
 
 	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/workitems/${id}/reorder`, {
-			method: 'PATCH',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ newOrderNumber })
-		});
-
-		if (response.status === 401) {
-			goto('/auth/login');
-			throw new Error('Authentication required');
-		}
-
-		if (response.status === 403) {
-			throw new Error('No tienes permisos para reordenar elementos de trabajo en este módulo');
-		}
-
-		if (response.status === 404) {
-			throw new Error('Elemento de trabajo no encontrado');
-		}
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Error reordering work item: ${errorText}`);
-		}
+		const reorderData: ReorderDto = { newOrderNumber };
+		return this.patch(`/course/workitems/${id}/reorder`, reorderData);
 	}
 }
 

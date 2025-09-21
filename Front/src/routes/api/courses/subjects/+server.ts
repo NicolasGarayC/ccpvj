@@ -1,31 +1,29 @@
-import { json } from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { db } from '$lib/server/db';
-import { course } from '$lib/server/db/schema';
-import { eq, sql } from 'drizzle-orm';
 
-export const GET: RequestHandler = async () => {
+const BACKEND_URL = 'http://localhost:5251/api';
+
+export const GET: RequestHandler = async ({ request }) => {
 	try {
-		// Get distinct subjects from active courses
-		const subjects = await db
-			.select({
-				subject: course.subject
-			})
-			.from(course)
-			.where(eq(course.isActive, true))
-			.groupBy(course.subject)
-			.orderBy(course.subject);
+		const response = await fetch(`${BACKEND_URL}/course/subjects`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				'Cookie': request.headers.get('cookie') || ''
+			},
+			credentials: 'include'
+		});
 
-		// Extract just the subject names
-		const subjectNames = subjects
-			.map(s => s.subject)
-			.filter(subject => subject && subject.trim() !== '');
+		if (!response.ok) {
+			const errorText = await response.text();
+			return error(response.status, errorText || 'Backend error');
+		}
 
-		return json(subjectNames);
+		const data = await response.json();
+		return json(data);
 
 	} catch (err) {
 		console.error('Error fetching subjects:', err);
-		// Return default subjects if there's an error
-		return json(['Matemáticas', 'Física', 'Sociales', 'Economía']);
+		return error(500, 'Internal server error');
 	}
 };

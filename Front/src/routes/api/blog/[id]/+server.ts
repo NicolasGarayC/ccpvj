@@ -1,17 +1,19 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-const BACKEND_URL = 'http://localhost:5000'; // Ajusta según tu configuración
+const BACKEND_URL = 'http://localhost:5251/api';
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, request }) => {
   try {
     const { id } = params;
-    
-    const response = await fetch(`${BACKEND_URL}/api/blog/${id}`, {
+
+    const response = await fetch(`${BACKEND_URL}/article/${id}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      },
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -29,23 +31,19 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 };
 
-export const PUT: RequestHandler = async ({ params, request, locals }) => {
+export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const session = locals.session;
-    if (!session?.userId) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = params;
     const postData = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/api/blog/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/article/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
-        // No Authorization header needed for session-based auth
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
       },
-      body: JSON.stringify(postData)
+      body: JSON.stringify(postData),
+      credentials: 'include'
     });
 
     if (!response.ok) {
@@ -67,21 +65,17 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
   }
 };
 
-export const DELETE: RequestHandler = async ({ params, locals }) => {
+export const DELETE: RequestHandler = async ({ params, request }) => {
   try {
-    const session = locals.session;
-    if (!session?.userId) {
-      return json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { id } = params;
 
-    const response = await fetch(`${BACKEND_URL}/api/blog/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/article/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
-        // No Authorization header needed for session-based auth
-      }
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      },
+      credentials: 'include'
     });
 
     if (!response.ok) {

@@ -2,7 +2,7 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import type { PostDetail } from '$lib/services/modulePostService';
 	import { postElementService } from '$lib/services/postElementService';
-	import type { PostElement } from '$lib/server/db/schema';
+	import type { PostElement } from '$lib/services/postElementService';
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
 
 	export let visible = false;

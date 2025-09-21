@@ -2,12 +2,13 @@
   import { onMount } from 'svelte';
   import { authService } from '$lib/services/authService';
   import { courseService } from '$lib/services/courseService';
-  import type { CourseDetail, CourseSearchParams } from '$lib/services/courseService';
+  import type { CourseSummaryDto } from '$lib/types/api/course.types';
+  import type { CourseSearchParams } from '$lib/services/courseService';
   import CourseCard from '$lib/components/course/CourseCard.svelte';
-  
+
   // Estado de la aplicación
-  let courses: CourseDetail[] = [];
-  let filteredCourses: CourseDetail[] = [];
+  let courses: CourseSummaryDto[] = [];
+  let filteredCourses: CourseSummaryDto[] = [];
   let subjects: string[] = [];
   let isLoading = true;
   let error: string | null = null;
@@ -56,7 +57,9 @@
       isLoading = true;
       error = null;
       courses = await courseService.getAllCourses();
-    } catch (e) {
+      console.log('Courses loaded:', courses);
+      console.log('First course:', courses[0]);
+    } catch (e: unknown) {
       error = 'Error al cargar los cursos';
       console.error(error, e);
     } finally {
@@ -67,14 +70,20 @@
   async function loadSubjects() {
     try {
       subjects = await courseService.getAvailableSubjects();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Error loading subjects:', e);
     }
   }
   
-  function filterCourses(courses: CourseDetail[], search: string, subject: string, featuredOnly: boolean): CourseDetail[] {
-    return courses.filter(course => {
-      if (!course.isActive) return false;
+  function filterCourses(courses: CourseSummaryDto[], search: string, subject: string, featuredOnly: boolean): CourseSummaryDto[] {
+    console.log('Filtering courses:', courses.length, 'courses');
+    const filtered = courses.filter(course => {
+      console.log('Course:', course.title, 'isActive:', course.isActive);
+      // Temporary fix: don't filter by isActive if it's undefined
+      if (course.isActive !== undefined && !course.isActive) {
+        console.log('Course filtered out due to isActive:', course.title);
+        return false;
+      }
 
       // Filtro por búsqueda de texto
       if (search) {
@@ -96,9 +105,11 @@
 
       return true;
     });
+    console.log('Filtered result:', filtered.length, 'courses');
+    return filtered;
   }
   
-  function sortCourses(courses: CourseDetail[], sortBy: string, order: 'asc' | 'desc'): CourseDetail[] {
+  function sortCourses(courses: CourseSummaryDto[], sortBy: string, order: 'asc' | 'desc'): CourseSummaryDto[] {
     return [...courses].sort((a, b) => {
       let comparison = 0;
 
@@ -124,7 +135,7 @@
     });
   }
   
-  function paginateCourses(courses: CourseDetail[], page: number, perPage: number): CourseDetail[] {
+  function paginateCourses(courses: CourseSummaryDto[], page: number, perPage: number): CourseSummaryDto[] {
     const start = (page - 1) * perPage;
     return courses.slice(start, start + perPage);
   }

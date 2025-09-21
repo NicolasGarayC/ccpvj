@@ -4,37 +4,12 @@
   import { blogService } from '$lib/services/blog/blogService';
   import type { BlogPost } from '$lib/data/models/interfaces';
 
-  // Simple fallback translation function
-  let t = (key: string) => {
-    const translations = {
-      'centroTitle': 'Centro Cultural',
-      'newsArticle': 'Artículo',
-      'articleNotFound': 'Artículo no encontrado',
-      'backToNews': 'Volver a noticias',
-      'videoNotSupported': 'Tu navegador no soporta video.',
-      'readMoreNews': 'Leer más noticias'
-    };
-    return translations[key] || key;
-  };
+  import { t } from '$lib/i18n';
 
   let post: BlogPost | null = null;
   let isLoading = true;
   let error: string | null = null;
 
-  onMount(() => {
-    // Try to load paraglide if available
-    try {
-      import('$lib/paraglide/runtime').then(module => {
-        if (module.translate) {
-          t = module.translate;
-        }
-      }).catch(err => {
-        console.log('Paraglide not available, using fallback translations');
-      });
-    } catch (err) {
-      console.log('Paraglide module not found, using fallback translations');
-    }
-  });
 
   $: slug = $page.params.slug;
 

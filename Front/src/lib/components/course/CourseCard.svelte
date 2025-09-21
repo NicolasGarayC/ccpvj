@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { Course } from '$lib/services/courseService';
+	import type { CourseDto } from '$lib/types/api/course.types';
 	import { courseService } from '$lib/services/courseService';
 	import { createEventDispatcher } from 'svelte';
 	import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
-	export let course: Course;
+	export let course: CourseDto;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();

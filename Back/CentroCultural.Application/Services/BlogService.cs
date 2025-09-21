@@ -154,10 +154,10 @@ namespace CentroCultural.Application.Services
             };
         }
 
-        public async Task<BlogPostDto> CreateBlogPostAsync(CreateBlogPostDto createDto, string authorId)
+        public async Task<BlogPostDto> CreateBlogPostAsync(CreateBlogPostDto createDto, int authorId)
         {
             // Validate author exists
-            var author = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario.ToString() == authorId);
+            var author = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario == authorId);
             if (author == null)
                 throw new ArgumentException("Author not found");
 
@@ -196,7 +196,7 @@ namespace CentroCultural.Application.Services
             return await GetBlogPostByIdAsync(blogPost.Id) ?? throw new Exception("Failed to retrieve created post");
         }
 
-        public async Task<BlogPostDto?> UpdateBlogPostAsync(Guid id, UpdateBlogPostDto updateDto, string userId)
+        public async Task<BlogPostDto?> UpdateBlogPostAsync(Guid id, UpdateBlogPostDto updateDto, int userId)
         {
             var post = await _context.BlogPost
                 .Include(p => p.Author)
@@ -206,8 +206,8 @@ namespace CentroCultural.Application.Services
                 return null;
 
             // Check permissions - author or admin
-            var user = await _context.Usuario.Include(u => u.Rol).FirstOrDefaultAsync(u => u.IdUsuario.ToString() == userId);
-            if (user == null || (post.AuthorId.ToString() != userId && user.Rol.NombreRol != "Administrador"))
+            var user = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario == userId);
+            if (user == null || (post.AuthorId != userId && user.RoleString != "administrador"))
                 throw new UnauthorizedAccessException("No tienes permisos para editar este post");
 
             // Validate slug uniqueness if changed
@@ -241,7 +241,7 @@ namespace CentroCultural.Application.Services
             return await GetBlogPostByIdAsync(id);
         }
 
-        public async Task<bool> DeleteBlogPostAsync(Guid id, string userId)
+        public async Task<bool> DeleteBlogPostAsync(Guid id, int userId)
         {
             var post = await _context.BlogPost
                 .Include(p => p.Author)
@@ -251,8 +251,8 @@ namespace CentroCultural.Application.Services
                 return false;
 
             // Check permissions
-            var user = await _context.Usuario.Include(u => u.Rol).FirstOrDefaultAsync(u => u.IdUsuario.ToString() == userId);
-            if (user == null || (post.AuthorId.ToString() != userId && user.Rol.NombreRol != "Administrador"))
+            var user = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario == userId);
+            if (user == null || (post.AuthorId != userId && user.RoleString != "administrador"))
                 throw new UnauthorizedAccessException("No tienes permisos para eliminar este post");
 
             // Delete associated media files
@@ -267,14 +267,14 @@ namespace CentroCultural.Application.Services
             return true;
         }
 
-        public async Task<bool> PublishBlogPostAsync(Guid id, string userId)
+        public async Task<bool> PublishBlogPostAsync(Guid id, int userId)
         {
             var post = await _context.BlogPost.FirstOrDefaultAsync(p => p.Id == id);
             if (post == null) return false;
 
             // Check permissions
-            var user = await _context.Usuario.Include(u => u.Rol).FirstOrDefaultAsync(u => u.IdUsuario.ToString() == userId);
-            if (user == null || (post.AuthorId.ToString() != userId && user.Rol.NombreRol != "Administrador"))
+            var user = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario == userId);
+            if (user == null || (post.AuthorId != userId && user.RoleString != "administrador"))
                 throw new UnauthorizedAccessException("No tienes permisos para publicar este post");
 
             post.IsPublished = true;
@@ -285,14 +285,14 @@ namespace CentroCultural.Application.Services
             return true;
         }
 
-        public async Task<bool> UnpublishBlogPostAsync(Guid id, string userId)
+        public async Task<bool> UnpublishBlogPostAsync(Guid id, int userId)
         {
             var post = await _context.BlogPost.FirstOrDefaultAsync(p => p.Id == id);
             if (post == null) return false;
 
             // Check permissions
-            var user = await _context.Usuario.Include(u => u.Rol).FirstOrDefaultAsync(u => u.IdUsuario.ToString() == userId);
-            if (user == null || (post.AuthorId.ToString() != userId && user.Rol.NombreRol != "Administrador"))
+            var user = await _context.Usuario.FirstOrDefaultAsync(u => u.IdUsuario == userId);
+            if (user == null || (post.AuthorId != userId && user.RoleString != "administrador"))
                 throw new UnauthorizedAccessException("No tienes permisos para despublicar este post");
 
             post.IsPublished = false;

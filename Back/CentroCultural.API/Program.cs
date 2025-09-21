@@ -35,8 +35,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/api/auth/login";
-        options.LogoutPath = "/api/auth/logout";
+        options.LoginPath = "/api/simple-auth/login";
+        options.LogoutPath = "/api/simple-auth/logout";
         options.Cookie.Name = "auth-session";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;

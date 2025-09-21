@@ -8,11 +8,11 @@ namespace CentroCultural.Application.Interfaces
         Task<BlogPostPagedResultDto> GetBlogPostsAsync(BlogPostSearchDto searchDto);
         Task<BlogPostDto?> GetBlogPostByIdAsync(Guid id);
         Task<BlogPostDto?> GetBlogPostBySlugAsync(string slug);
-        Task<BlogPostDto> CreateBlogPostAsync(CreateBlogPostDto createDto, string authorId);
-        Task<BlogPostDto?> UpdateBlogPostAsync(Guid id, UpdateBlogPostDto updateDto, string userId);
-        Task<bool> DeleteBlogPostAsync(Guid id, string userId);
-        Task<bool> PublishBlogPostAsync(Guid id, string userId);
-        Task<bool> UnpublishBlogPostAsync(Guid id, string userId);
+        Task<BlogPostDto> CreateBlogPostAsync(CreateBlogPostDto createDto, int authorId);
+        Task<BlogPostDto?> UpdateBlogPostAsync(Guid id, UpdateBlogPostDto updateDto, int userId);
+        Task<bool> DeleteBlogPostAsync(Guid id, int userId);
+        Task<bool> PublishBlogPostAsync(Guid id, int userId);
+        Task<bool> UnpublishBlogPostAsync(Guid id, int userId);
         Task<bool> IncrementViewsAsync(Guid id);
 
         // Blog Categories

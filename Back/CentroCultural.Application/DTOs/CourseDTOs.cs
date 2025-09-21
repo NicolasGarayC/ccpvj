@@ -22,6 +22,7 @@ namespace CentroCultural.Application.DTOs
 
     public class CourseDetailDto : CourseDto
     {
+        public string StringId { get; set; } = string.Empty;
         public IEnumerable<ModuleSummaryDto> Modules { get; set; } = new List<ModuleSummaryDto>();
     }
 
@@ -45,12 +46,13 @@ namespace CentroCultural.Application.DTOs
 
     public class CourseSummaryDto
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Subject { get; set; } = string.Empty;
         public bool IsFeatured { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; }
+        public long CreatedAt { get; set; }
         public string EducatorName { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
         public int ModuleCount { get; set; }
@@ -59,6 +61,7 @@ namespace CentroCultural.Application.DTOs
     public class ModuleDto
     {
         public Guid Id { get; set; }
+        public string StringId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; }
@@ -78,6 +81,7 @@ namespace CentroCultural.Application.DTOs
     public class ModuleSummaryDto
     {
         public Guid Id { get; set; }
+        public string StringId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; }

@@ -10,7 +10,7 @@
 	let showDeleteModal = false;
 
 	function handleView() {
-		dispatch('view', module.id);
+		dispatch('view', module.stringId);
 	}
 
 	function handleEdit() {

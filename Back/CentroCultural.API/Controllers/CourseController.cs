@@ -69,7 +69,7 @@ namespace CentroCultural.API.Controllers
 
         // GET: api/course/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<CourseDetailDto>> GetCourse(Guid id)
+        public async Task<ActionResult<CourseDetailDto>> GetCourse(string id)
         {
             try
             {
@@ -88,7 +88,7 @@ namespace CentroCultural.API.Controllers
         }
 
         [HttpGet("{courseId}/modules")]
-        public async Task<ActionResult<IEnumerable<ModuleSummaryDto>>> GetCourseModules(Guid courseId)
+        public async Task<ActionResult<IEnumerable<ModuleSummaryDto>>> GetCourseModules(string courseId)
         {
             try
             {
@@ -115,7 +115,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var course = await _courseService.CreateCourseAsync(courseDto, userIdClaim);
+                var course = await _courseService.CreateCourseAsync(courseDto, int.Parse(userIdClaim));
                 return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
             }
             catch (UnauthorizedAccessException)
@@ -146,7 +146,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.UpdateCourseAsync(id, courseDto, userIdClaim);
+                var result = await _courseService.UpdateCourseAsync(id, courseDto, int.Parse(userIdClaim));
 
                 if (!result)
                     return NotFound($"Curso con ID {id} no encontrado");
@@ -181,7 +181,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.DeleteCourseAsync(id, userIdClaim);
+                var result = await _courseService.DeleteCourseAsync(id, int.Parse(userIdClaim));
 
                 if (!result)
                     return NotFound($"Curso con ID {id} no encontrado");
@@ -211,7 +211,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var courses = await _courseService.GetCoursesByEducatorAsync(userIdClaim);
+                var courses = await _courseService.GetCoursesByEducatorAsync(int.Parse(userIdClaim));
                 return Ok(courses);
             }
             catch (Exception ex)
@@ -253,12 +253,12 @@ namespace CentroCultural.API.Controllers
         }
 
         [HttpGet("modules/{id}")]
-        public async Task<ActionResult<ModuleDetailDto>> GetModule(Guid id)
+        public async Task<ActionResult<ModuleDetailDto>> GetModule(string id)
         {
             try
             {
                 var module = await _courseService.GetModuleByIdAsync(id);
-                
+
                 if (module == null)
                     return NotFound($"Módulo con ID {id} no encontrado");
 
@@ -283,7 +283,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var module = await _courseService.CreateModuleAsync(moduleDto, userIdClaim);
+                var module = await _courseService.CreateModuleAsync(moduleDto, int.Parse(userIdClaim));
                 return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
             }
             catch (UnauthorizedAccessException)
@@ -313,7 +313,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.UpdateModuleAsync(id, moduleDto, userIdClaim);
+                var result = await _courseService.UpdateModuleAsync(id, moduleDto, int.Parse(userIdClaim));
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -347,7 +347,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.DeleteModuleAsync(id, userIdClaim);
+                var result = await _courseService.DeleteModuleAsync(id, int.Parse(userIdClaim));
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -377,7 +377,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized("Usuario no autenticado correctamente");
                 }
 
-                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, userIdClaim);
+                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, int.Parse(userIdClaim));
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");

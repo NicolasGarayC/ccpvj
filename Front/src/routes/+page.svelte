@@ -9,108 +9,10 @@
 	import { authService } from '$lib/services/authService';
 	import type { BlogPost, Course } from '$lib/data/models/interfaces';
 
-	// Comprehensive fallback translation function
-	let t = (key: string) => {
-		const translations = {
-			// Títulos principales
-			'centroTitle': 'Centro Cultural Víctor Jara',
-			'centroDescription': 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje',
-			'welcomeToCentro': '¡Bienvenido al Centro Cultural! 🎉',
-			'centroPurpose': '✨ Tu espacio de aprendizaje y creatividad ✨',
-
-			// Botones de acción
-			'educatorLogin': '👨‍🏫 Acceso Educadores',
-			'browseMaterials': '📚 Explorar Materiales',
-			'educatorDashboard': '📊 Panel Educador',
-			'createContent': '✨ Crear Contenido',
-			'myMaterials': '🎒 Mis Materiales',
-			'startLearning': '🚀 ¡Empezar a Aprender!',
-			'joinCommunity': '🤝 Unirse a la Comunidad',
-			'exploreLibrary': '📖 Explorar Biblioteca',
-
-			// Estadísticas
-			'availableCourses': '📚 Cursos Disponibles',
-			'totalModules': '📝 Módulos Totales',
-			'studentsServed': '👥 Estudiantes Atendidos',
-			'activeProjects': '🎨 Proyectos Activos',
-			'communityMembers': '🌟 Miembros Activos',
-
-			// Materias y cursos
-			'preuniversity': '🎓 Preuniversitario',
-			'basicComputing': '💻 Computación Básica',
-			'craftWorkshop': '🎨 Taller de Artesanías',
-			'mathematics': '🔢 Matemáticas',
-			'physics': '⚛️ Física',
-			'socialStudies': '🌍 Ciencias Sociales',
-			'economics': '💰 Economía',
-			'digitalArt': '🎨 Arte Digital',
-			'music': '🎵 Música',
-
-			// Noticias y blog
-			'latestNews': '📰 ¡Últimas Noticias!',
-			'stayUpdated': 'Mantente al día con las últimas actividades del centro',
-			'noBlogPostsYet': '¡Próximamente tendremos noticias increíbles!',
-			'viewAllNews': '👀 Ver Todas las Noticias',
-			'readMore': '📖 Leer Más',
-
-			// Eventos y calendario
-			'upcomingEvents': '🎪 ¡Próximos Eventos Geniales!',
-			'noEventsYet': '¡Estamos preparando eventos súper divertidos!',
-			'viewCalendar': '📅 Ver Calendario Completo',
-			'registerEvent': '✅ ¡Inscríbete Ya!',
-
-			// Materiales educativos
-			'educationalMaterials': '🎒 ¡Materiales de Aprendizaje!',
-			'accessCourseMaterials': 'Descubre recursos increíbles para aprender y crear',
-			'moduleCountLabel': '📚 {count} módulos súper geniales',
-			'accessMaterials': '🎯 ¡Acceder Ya!',
-			'modules': 'módulos',
-
-			// Cursos destacados
-			'featuredCourses': '⭐ ¡Cursos Más Populares!',
-			'exploreCourseOfferings': 'Los cursos que más les gustan a nuestros estudiantes',
-			'noCoursesYet': '¡Estamos creando cursos increíbles para ti!',
-			'exploreCourseMaterials': '🎮 ¡Explorar Curso!',
-			'viewAllCourses': '🌟 Ver Todos los Cursos',
-
-			// Información del centro
-			'aboutCenter': '🏛️ Sobre Nuestro Centro',
-			'centerDescription1': '¡Somos un espacio donde la educación se vuelve una aventura! Aquí puedes aprender desde matemáticas hasta arte digital, todo en un ambiente divertido y colaborativo.',
-			'centerDescription2': 'Nuestro centro está diseñado especialmente para jóvenes como tú, donde cada día es una nueva oportunidad para descubrir algo genial y compartirlo con tus amigos.',
-			'noInternetRequired': '📶 ¡Sin Internet, Sin Problema!',
-			'localNetworkExplanation': 'Todo funciona en nuestra red local, así puedes acceder a todos los recursos sin necesidad de internet. ¡Perfecto para concentrarte en aprender!',
-
-			// Call to action final
-			'readyToStart': '🎯 ¿Listo para la Aventura?',
-			'joinCommunityText': '¡Únete a nuestra comunidad de jóvenes creativos y empezemos juntos esta increíble experiencia de aprendizaje!',
-			'exploreCourses': '🚀 Explorar Cursos',
-			'readLatestNews': '📱 Leer Noticias',
-
-			// Secciones especiales
-			'quickActions': '⚡ Acciones Rápidas',
-			'popularContent': '🔥 Contenido Popular',
-			'achievements': '🏆 Logros y Reconocimientos',
-			'communitySpotlight': '🌟 Destacados de la Comunidad'
-		};
-		return translations[key] || key;
-	};
+	import { t, t_params } from '$lib/i18n';
 
 	let currentLocale = 'es';
 
-	onMount(() => {
-		// Try to load paraglide if available
-		try {
-			import('$lib/paraglide/runtime').then(module => {
-				if (module.translate) {
-					t = module.translate;
-				}
-			}).catch(err => {
-				console.log('Paraglide not available, using fallback translations');
-			});
-		} catch (err) {
-			console.log('Paraglide module not found, using fallback translations');
-		}
-	});
 
 	function switchLocale() {
 		currentLocale = currentLocale === 'es' ? 'en' : 'es';
@@ -443,7 +345,7 @@
 							<!-- Descripción genial -->
 							<div class="text-center mb-6">
 								<div class="inline-block bg-gradient-to-r {module.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
-									{t('moduleCountLabel').replace('{count}', module.modules)}
+									{t_params('moduleCountLabel', { count: module.modules })}
 								</div>
 							</div>
 

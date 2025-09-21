@@ -85,7 +85,7 @@ namespace CentroCultural.Domain.Entities
 
         // Referencias opcionales a contenido relacionado
         [Column("RelatedCourseId")]
-        public Guid? RelatedCourseId { get; set; }
+        public string? RelatedCourseId { get; set; }
 
         [Column("RelatedBlogPostId")]
         public Guid? RelatedBlogPostId { get; set; }
@@ -100,7 +100,7 @@ namespace CentroCultural.Domain.Entities
 
         [Required]
         [Column("OrganizerId")]
-        public int OrganizerId { get; set; }
+        public int OrganizerId { get; set; } = 0;
 
         // Propiedades de navegación
         [ForeignKey("OrganizerId")]
