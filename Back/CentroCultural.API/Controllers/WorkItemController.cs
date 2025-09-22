@@ -1,7 +1,7 @@
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -19,9 +19,15 @@ namespace CentroCultural.API.Controllers
             _logger = logger;
         }
 
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
+        }
+
         // GET: api/workitem/module/{moduleId}
         [HttpGet("module/{moduleId}")]
-        public async Task<ActionResult<IEnumerable<WorkItemDto>>> GetWorkItemsByModule(Guid moduleId)
+        public async Task<ActionResult<IEnumerable<WorkItemDto>>> GetWorkItemsByModule(string moduleId)
         {
             try
             {
@@ -37,7 +43,7 @@ namespace CentroCultural.API.Controllers
 
         // GET: api/workitem/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<WorkItemDetailDto>> GetWorkItem(Guid id)
+        public async Task<ActionResult<WorkItemDetailDto>> GetWorkItem(string id)
         {
             try
             {
@@ -57,7 +63,7 @@ namespace CentroCultural.API.Controllers
 
         // GET: api/workitem/{id}/media
         [HttpGet("{id}/media")]
-        public async Task<ActionResult<IEnumerable<MediaFileDto>>> GetWorkItemMedia(Guid id)
+        public async Task<ActionResult<IEnumerable<MediaFileDto>>> GetWorkItemMedia(string id)
         {
             try
             {
@@ -72,19 +78,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/workitem
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost]
         public async Task<ActionResult<WorkItemDto>> CreateWorkItem([FromBody] CreateWorkItemDto workItemDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var workItem = await _workItemService.CreateWorkItemAsync(workItemDto, userIdClaim);
+                var workItem = await _workItemService.CreateWorkItemAsync(workItemDto, userId.ToString());
                 return CreatedAtAction(nameof(GetWorkItem), new { id = workItem.Id }, workItem);
             }
             catch (UnauthorizedAccessException)
@@ -103,19 +104,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // PUT: api/workitem/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateWorkItem(Guid id, [FromBody] UpdateWorkItemDto workItemDto)
+        public async Task<IActionResult> UpdateWorkItem(string id, [FromBody] UpdateWorkItemDto workItemDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _workItemService.UpdateWorkItemAsync(id, workItemDto, userIdClaim);
+                var result = await _workItemService.UpdateWorkItemAsync(id, workItemDto, userId.ToString());
 
                 if (!result)
                     return NotFound($"WorkItem con ID {id} no encontrado o no tienes permisos para editarlo");
@@ -138,19 +134,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // DELETE: api/workitem/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteWorkItem(Guid id)
+        public async Task<IActionResult> DeleteWorkItem(string id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _workItemService.DeleteWorkItemAsync(id, userIdClaim);
+                var result = await _workItemService.DeleteWorkItemAsync(id, userId.ToString());
 
                 if (!result)
                     return NotFound($"WorkItem con ID {id} no encontrado o no tienes permisos para eliminarlo");
@@ -169,19 +160,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/workitem/{id}/reorder
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost("{id}/reorder")]
-        public async Task<IActionResult> ReorderWorkItem(Guid id, [FromBody] ReorderWorkItemDto reorderDto)
+        public async Task<IActionResult> ReorderWorkItem(string id, [FromBody] ReorderWorkItemDto reorderDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _workItemService.ReorderWorkItemAsync(id, reorderDto.NewOrderNumber, userIdClaim);
+                var result = await _workItemService.ReorderWorkItemAsync(id, reorderDto.NewOrderNumber, userId.ToString());
 
                 if (!result)
                     return NotFound($"WorkItem con ID {id} no encontrado o no tienes permisos para reordenarlo");
@@ -205,7 +191,7 @@ namespace CentroCultural.API.Controllers
 
         // GET: api/workitem/course/{courseId}/all
         [HttpGet("course/{courseId}/all")]
-        public async Task<ActionResult<IEnumerable<WorkItemWithModuleDto>>> GetWorkItemsByCourse(Guid courseId)
+        public async Task<ActionResult<IEnumerable<WorkItemWithModuleDto>>> GetWorkItemsByCourse(string courseId)
         {
             try
             {

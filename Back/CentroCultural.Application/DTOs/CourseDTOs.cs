@@ -5,10 +5,9 @@ namespace CentroCultural.Application.DTOs
 {
     public class CourseDto
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public bool IsFeatured { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -22,7 +21,6 @@ namespace CentroCultural.Application.DTOs
 
     public class CourseDetailDto : CourseDto
     {
-        public string StringId { get; set; } = string.Empty;
         public IEnumerable<ModuleSummaryDto> Modules { get; set; } = new List<ModuleSummaryDto>();
     }
 
@@ -30,7 +28,6 @@ namespace CentroCultural.Application.DTOs
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
         public bool IsFeatured { get; set; } = false;
         public string? ImagePath { get; set; }
     }
@@ -39,7 +36,6 @@ namespace CentroCultural.Application.DTOs
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
         public bool IsFeatured { get; set; }
         public string? ImagePath { get; set; }
     }
@@ -49,7 +45,6 @@ namespace CentroCultural.Application.DTOs
         public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
         public bool IsFeatured { get; set; }
         public bool IsActive { get; set; }
         public long CreatedAt { get; set; }
@@ -60,15 +55,14 @@ namespace CentroCultural.Application.DTOs
 
     public class ModuleDto
     {
-        public Guid Id { get; set; }
-        public string StringId { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public Guid CourseId { get; set; }
+        public string CourseId { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public int WorkItemCount { get; set; }
     }
@@ -80,8 +74,7 @@ namespace CentroCultural.Application.DTOs
 
     public class ModuleSummaryDto
     {
-        public Guid Id { get; set; }
-        public string StringId { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; }
@@ -94,7 +87,7 @@ namespace CentroCultural.Application.DTOs
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; } = 0;
-        public Guid CourseId { get; set; }
+        public string CourseId { get; set; } = string.Empty;
     }
 
     public class UpdateModuleDto
@@ -114,7 +107,6 @@ namespace CentroCultural.Application.DTOs
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
-        public string? Subject { get; set; }
         public bool? IsFeatured { get; set; }
         public bool? IsActive { get; set; }
         public string? SortBy { get; set; } = "created_desc"; // created_desc, created_asc, title_asc, featured_desc
@@ -131,14 +123,4 @@ namespace CentroCultural.Application.DTOs
         public bool HasPreviousPage { get; set; }
     }
 
-    // Constants for subjects
-    public static class CourseSubjects
-    {
-        public const string Matematicas = "Matemáticas";
-        public const string Fisica = "Física";
-        public const string Sociales = "Sociales";
-        public const string Economia = "Economía";
-
-        public static readonly string[] All = { Matematicas, Fisica, Sociales, Economia };
-    }
 }

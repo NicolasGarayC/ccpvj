@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import EventForm from '$lib/components/calendar/EventForm.svelte';
 	import { calendarService, type CreateEventData } from '$lib/services/calendar/calendarService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	let loading = false;
 	let error = '';
@@ -13,13 +13,13 @@
 
 	onMount(async () => {
 		// ✅ Verificar autenticación
-		if (!authService.isAuthenticated()) {
+		if (!jwtService.isAuthenticated()) {
 			goto('/auth/login?redirect=/calendar/create');
 			return;
 		}
 
-		const user = authService.getUser();
-		const canCreate = user?.role === 'Colaborador' || user?.role === 'Administrador';
+		const user = jwtService.getUser();
+		const canCreate = user?.role === 'colaborador' || user?.role === 'administrador';
 		
 		if (!canCreate) {
 			goto('/calendar');

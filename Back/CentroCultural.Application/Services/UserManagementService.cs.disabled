@@ -3,7 +3,6 @@ using CentroCultural.Application.Interfaces;
 using CentroCultural.Domain.Entities;
 using CentroCultural.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
 
 namespace CentroCultural.Application.Services
 {

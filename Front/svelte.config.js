@@ -10,7 +10,7 @@ const config = {
 	kit: {
 		adapter: adapter()
 	},
-	extensions: ['.svelte', '.svx']
+	extensions: ['.svelte', '.svx'],
 };
 
 export default config;

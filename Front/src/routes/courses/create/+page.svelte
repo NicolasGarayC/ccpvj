@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { courseService } from '$lib/services/courseService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import CourseForm from '$lib/components/course/CourseForm.svelte';
 
 	let error = '';
@@ -10,12 +10,12 @@
 
 	onMount(async () => {
 		// Check permissions
-		if (!authService.isAuthenticated()) {
+		if (!jwtService.isAuthenticated()) {
 			goto('/auth/login');
 			return;
 		}
 
-		const user = authService.getUser();
+		const user = jwtService.getUser();
 		canCreate = user?.role === 'colaborador' || user?.role === 'administrador';
 
 		if (!canCreate) {

@@ -6,6 +6,7 @@ import type {
 	CreateCourseDto,
 	UpdateCourseDto,
 	ModuleDto,
+	ModuleSummaryDto,
 	CreateModuleDto,
 	UpdateModuleDto,
 	WorkItemDto,
@@ -81,9 +82,6 @@ class CourseService extends BaseHttpService {
 		return this.get<CourseDetailDto[]>('/course/my-courses');
 	}
 
-	async getAvailableSubjects(): Promise<string[]> {
-		return this.get<string[]>('/course/subjects');
-	}
 
 	// Module methods
 	async getModule(id: string): Promise<ModuleDto | null> {
@@ -97,8 +95,8 @@ class CourseService extends BaseHttpService {
 		}
 	}
 
-	async getCourseModules(courseId: string): Promise<ModuleDto[]> {
-		return this.get<ModuleDto[]>(`/course/${courseId}/modules`);
+	async getCourseModules(courseId: string): Promise<ModuleSummaryDto[]> {
+		return this.get<ModuleSummaryDto[]>(`/course/${courseId}/modules`);
 	}
 
 	async createModule(moduleData: CreateModuleDto): Promise<ModuleDto> {
@@ -121,7 +119,7 @@ class CourseService extends BaseHttpService {
 	// WorkItem methods
 	async getWorkItem(id: string): Promise<WorkItemDto | null> {
 		try {
-			return await this.get<WorkItemDto>(`/course/workitems/${id}`);
+			return await this.get<WorkItemDto>(`/workitem/${id}`);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes('404')) {
 				return null;
@@ -131,24 +129,32 @@ class CourseService extends BaseHttpService {
 	}
 
 	async getModuleWorkItems(moduleId: string): Promise<WorkItemDto[]> {
-		return this.get<WorkItemDto[]>(`/course/modules/${moduleId}/workitems`);
+		return this.get<WorkItemDto[]>(`/workitem/module/${moduleId}`);
 	}
 
 	async createWorkItem(workItemData: CreateWorkItemDto): Promise<WorkItemDto> {
-		return this.post<WorkItemDto>('/course/workitems', workItemData);
+		return this.post<WorkItemDto>('/workitem', workItemData);
 	}
 
 	async updateWorkItem(id: string, workItemData: UpdateWorkItemDto): Promise<void> {
-		return this.put(`/course/workitems/${id}`, workItemData);
+		return this.put(`/workitem/${id}`, workItemData);
 	}
 
 	async deleteWorkItem(id: string): Promise<void> {
-		return this.delete(`/course/workitems/${id}`);
+		return this.delete(`/workitem/${id}`);
 	}
 
 	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
 		const reorderData: ReorderDto = { newOrderNumber };
-		return this.patch(`/course/workitems/${id}/reorder`, reorderData);
+		return this.post(`/workitem/${id}/reorder`, reorderData);
+	}
+
+	/**
+	 * Check authentication status - will be implemented with JWT
+	 */
+	async checkAuthStatus(): Promise<{ canManage: boolean; user: any | null }> {
+		// TODO: Implement with JWT token validation
+		return { canManage: true, user: { id: 1, username: 'admin', role: 'administrador' } };
 	}
 }
 

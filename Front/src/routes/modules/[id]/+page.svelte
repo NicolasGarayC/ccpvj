@@ -14,14 +14,14 @@
 
 	const moduleId = $page.params.id;
 
+	// Authentication state
+	let canManagePosts = false;
+
 	let module: ModuleDetailDto | null = null;
 	let isLoading = false;
 	let error: string | null = null;
 	let postCount = 0;
 
-	// Check if user has admin/collaborator permissions
-	let userRole: string | null = null;
-	let canManagePosts = false;
 
 	// Post viewer and editor state
 	let showPostViewer = false;
@@ -38,8 +38,21 @@
 
 	onMount(() => {
 		loadModule();
-		loadUserRole();
+		checkAuthStatus();
 	});
+
+	async function checkAuthStatus() {
+		try {
+			// TODO: Use JWT-based authentication
+			const authResult = await courseService.checkAuthStatus();
+
+			canManagePosts = authResult.canManage;
+			console.log('[DEBUG] Auth check result:', authResult);
+		} catch (error) {
+			console.log('[DEBUG] Auth check error:', error);
+			canManagePosts = false;
+		}
+	}
 
 	async function loadModule() {
 		if (isLoading) return;
@@ -68,28 +81,6 @@
 		}
 	}
 
-	async function loadUserRole() {
-		try {
-			// Get current user info - this should come from your auth store/context
-			const response = await fetch('/api/auth/me', {
-				credentials: 'include'
-			});
-
-			if (response.ok) {
-				const result = await response.json();
-				if (result.success && result.data?.user) {
-					const user = result.data.user;
-					userRole = user.role;
-					canManagePosts = user.role === 'administrador' || user.role === 'colaborador';
-				} else {
-					console.log('No authenticated user found');
-					canManagePosts = false;
-				}
-			}
-		} catch (err) {
-			console.error('Error loading user role:', err);
-		}
-	}
 
 	function handleViewPost(event: CustomEvent) {
 		const post = event.detail;
@@ -328,7 +319,7 @@
 			<!-- Post List -->
 			<PostList
 				bind:this={postListComponent}
-				moduleId={module.stringId}
+				moduleId={module.id}
 				showActions={canManagePosts}
 				on:viewPost={handleViewPost}
 				on:editPost={handleEditPost}

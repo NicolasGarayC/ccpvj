@@ -1,6 +1,5 @@
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CentroCultural.API.Controllers
@@ -54,7 +53,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/blogcategory
-        [Authorize(Roles = "Administrador")]
         [HttpPost]
         public async Task<ActionResult<BlogCategoryDto>> CreateCategory([FromBody] CreateBlogCategoryDto createDto)
         {
@@ -71,7 +69,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // PUT: api/blogcategory/{id}
-        [Authorize(Roles = "Administrador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateBlogCategoryDto updateDto)
         {
@@ -91,7 +88,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // DELETE: api/blogcategory/{id}
-        [Authorize(Roles = "Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(Guid id)
         {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { libraryService } from '$lib/services/library/libraryService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import LibraryResourceCard from '$lib/components/library/LibraryResourceCard.svelte';
 	import LibraryFilters from '$lib/components/library/LibraryFilters.svelte';
 	import type { LibraryResource, LibrarySearchFilters, LibraryStats } from '$lib/data/models/library';
@@ -40,9 +40,9 @@
 	
 	onMount(async () => {
 		// Verificar permisos de usuario
-		isAuthenticated = authService.isAuthenticated();
+		isAuthenticated = jwtService.isAuthenticated();
 		if (isAuthenticated) {
-			const user = authService.getUser();
+			const user = jwtService.getUser();
 			canManage = user?.role === 'colaborador' || user?.role === 'administrador';
 		}
 		
@@ -322,6 +322,7 @@
 								<button
 									on:click={() => { searchTerm = ''; handleSearch(); }}
 									class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
+									aria-label="Limpiar búsqueda"
 								>
 									<i class="fas fa-times text-lg"></i>
 								</button>
@@ -405,9 +406,10 @@
 			<div class="flex items-center">
 				<i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
 				<span class="text-red-700">{error}</span>
-				<button 
+				<button
 					on:click={() => error = null}
 					class="ml-auto text-red-500 hover:text-red-700"
+					aria-label="Cerrar mensaje de error"
 				>
 					<i class="fas fa-times"></i>
 				</button>
@@ -532,18 +534,20 @@
 			<!-- Paginación mejorada -->
 			{#if totalPages > 1}
 				<div class="flex items-center justify-center space-x-3 mt-12">
-					<button 
+					<button
 						on:click={() => currentPage = 1}
 						disabled={currentPage === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+						aria-label="Ir a la primera página"
 					>
 						<i class="fas fa-angle-double-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
 					
-					<button 
+					<button
 						on:click={() => currentPage = Math.max(1, currentPage - 1)}
 						disabled={currentPage === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+						aria-label="Página anterior"
 					>
 						<i class="fas fa-angle-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
@@ -565,18 +569,20 @@
 						</button>
 					{/each}
 
-					<button 
+					<button
 						on:click={() => currentPage = Math.min(totalPages, currentPage + 1)}
 						disabled={currentPage === totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+						aria-label="Página siguiente"
 					>
 						<i class="fas fa-angle-right text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
 					
-					<button 
+					<button
 						on:click={() => currentPage = totalPages}
 						disabled={currentPage === totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
+						aria-label="Ir a la última página"
 					>
 						<i class="fas fa-angle-double-right text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>

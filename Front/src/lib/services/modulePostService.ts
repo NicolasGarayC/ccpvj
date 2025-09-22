@@ -62,11 +62,11 @@ export interface PostSearchParams {
 }
 
 class ModulePostService {
-	private apiUrl = '/api/posts';
+	private apiUrl = 'http://localhost:5251/api/workitem';
 
 	// Get all posts for a specific module
 	async getModulePosts(moduleId: string): Promise<PostDetail[]> {
-		const response = await fetch(`${this.apiUrl}?moduleId=${moduleId}`, {
+		const response = await fetch(`${this.apiUrl}/module/${moduleId}`, {
 			method: 'GET',
 			credentials: 'include',
 			headers: {

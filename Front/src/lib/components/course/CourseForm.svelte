@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import { courseService, type CreateCourseDto, type UpdateCourseDto, type Course } from '$lib/services/courseService';
 	import MediaUploader from '../blog/MediaUploader.svelte';
 
@@ -12,24 +12,13 @@
 	let formData = {
 		title: course?.title || '',
 		description: course?.description || '',
-		subject: course?.subject || '',
 		isFeatured: course?.isFeatured || false,
 		imagePath: course?.imagePath || ''
 	};
 
-	let availableSubjects: string[] = [];
 	let formErrors: Record<string, string> = {};
 	let submitting = false;
 
-	onMount(async () => {
-		try {
-			availableSubjects = await courseService.getAvailableSubjects();
-		} catch (err) {
-			console.error('Error loading subjects:', err);
-			// Fallback subjects
-			availableSubjects = ['Matemáticas', 'Física', 'Sociales', 'Economía'];
-		}
-	});
 
 	function validateForm(): boolean {
 		formErrors = {};
@@ -57,10 +46,6 @@
 			isValid = false;
 		}
 
-		if (!formData.subject.trim()) {
-			formErrors.subject = 'La materia es requerida';
-			isValid = false;
-		}
 
 		return isValid;
 	}
@@ -77,7 +62,6 @@
 				const updateData: UpdateCourseDto = {
 					title: formData.title.trim(),
 					description: formData.description.trim(),
-					subject: formData.subject,
 					isFeatured: formData.isFeatured,
 					imagePath: formData.imagePath || undefined
 				};
@@ -88,7 +72,6 @@
 				const createData: CreateCourseDto = {
 					title: formData.title.trim(),
 					description: formData.description.trim(),
-					subject: formData.subject,
 					isFeatured: formData.isFeatured,
 					imagePath: formData.imagePath || undefined
 				};
@@ -133,7 +116,6 @@
 			const updateData: UpdateCourseDto = {
 				title: formData.title.trim(),
 				description: formData.description.trim(),
-				subject: formData.subject,
 				isFeatured: formData.isFeatured,
 				imagePath: imagePath || undefined
 			};
@@ -172,26 +154,6 @@
 			</div>
 		</div>
 
-		<div class="form-group">
-			<label for="subject">
-				Materia <span class="required">*</span>
-			</label>
-			<select
-				id="subject"
-				bind:value={formData.subject}
-				class="select"
-				class:error={formErrors.subject}
-				disabled={submitting || loading}
-			>
-				<option value="">Selecciona una materia</option>
-				{#each availableSubjects as subject}
-					<option value={subject}>{subject}</option>
-				{/each}
-			</select>
-			{#if formErrors.subject}
-				<span class="error-message">{formErrors.subject}</span>
-			{/if}
-		</div>
 
 		<div class="form-group">
 			<label for="description">

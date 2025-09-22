@@ -2,46 +2,47 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { authService, type AuthUser } from '$lib/services/authService';
+	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
 	import { browser } from '$app/environment';
 	import { t } from '$lib/i18n';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
-	let user: AuthUser | null = null;
+	let user: JwtUser | null = null;
 	let userName = '';
 	let userRole = '';
 
 	// Estado del menú móvil
 	let mobileMenuOpen = false;
 
-	// Calcular si es educador
+	// Calcular si es educador (administrador puede crear contenido)
 	$: isEducator =
-		isLoggedIn && (user?.role === 'Educador' || user?.role === 'Administrador');
-	
-	// Calcular si puede gestionar usuarios
+		isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
+
+	// Calcular si puede gestionar usuarios (solo administradores)
 	$: canManageUsers =
-		isLoggedIn && (user?.role === 'Administrador' || user?.role === 'Colaborador');
+		isLoggedIn && user?.role === 'administrador';
 
 	// Variable reactiva simple para el idioma actual
 	let currentLocale = 'es';
 
 	// Función para actualizar el estado de autenticación
 	async function updateAuthState() {
-		// Verificar primero si hay datos en localStorage
-		isLoggedIn = authService.isAuthenticated();
-		user = authService.getUser();
-		
-		// Si no hay datos locales o estamos en el navegador, verificar sesión del servidor
-		if (browser && !isLoggedIn) {
-			const serverUser = await authService.checkSession();
-			if (serverUser) {
-				isLoggedIn = true;
-				user = serverUser;
+		// Verificar el token JWT
+		isLoggedIn = jwtService.isAuthenticated();
+		user = jwtService.getUser();
+
+		// Si hay token pero no usuario, intentar validarlo con el servidor
+		if (browser && isLoggedIn && !user) {
+			const validatedUser = await jwtService.validateToken();
+			if (validatedUser) {
+				user = validatedUser;
+			} else {
+				isLoggedIn = false;
 			}
 		}
-		
-		userName = isLoggedIn ? user?.nombre || '' : '';
+
+		userName = isLoggedIn ? user?.nombre || user?.username || '' : '';
 		userRole = isLoggedIn ? user?.role || '' : '';
 	}
 
@@ -52,9 +53,9 @@
 			updateAuthState();
 		} else {
 			// Si estamos en login, solo verificar estado local
-			isLoggedIn = authService.isAuthenticated();
-			user = authService.getUser();
-			userName = isLoggedIn ? user?.nombre || '' : '';
+			isLoggedIn = jwtService.isAuthenticated();
+			user = jwtService.getUser();
+			userName = isLoggedIn ? user?.nombre || user?.username || '' : '';
 			userRole = isLoggedIn ? user?.role || '' : '';
 		}
 
@@ -74,7 +75,7 @@
 	async function handleLogout(e: Event) {
 		e.preventDefault();
 		try {
-			await authService.logout();
+			await jwtService.logout();
 			updateAuthState(); // Actualizar estado después del logout
 			window.location.href = '/';
 		} catch (error) {

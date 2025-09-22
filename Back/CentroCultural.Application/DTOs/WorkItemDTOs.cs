@@ -2,7 +2,7 @@ namespace CentroCultural.Application.DTOs
 {
     public class WorkItemDto
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? LongText { get; set; }
@@ -10,7 +10,7 @@ namespace CentroCultural.Application.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public Guid ModuleId { get; set; }
+        public string ModuleId { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
         public string? VideoPath { get; set; }
     }
@@ -19,7 +19,6 @@ namespace CentroCultural.Application.DTOs
     {
         public string ModuleName { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
     }
 
     public class CreateWorkItemDto
@@ -28,7 +27,7 @@ namespace CentroCultural.Application.DTOs
         public string? Description { get; set; }
         public string? LongText { get; set; }
         public int OrderNumber { get; set; } = 0;
-        public Guid ModuleId { get; set; }
+        public string ModuleId { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
         public string? VideoPath { get; set; }
     }
@@ -52,7 +51,6 @@ namespace CentroCultural.Application.DTOs
     {
         public string ModuleName { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
     }
 
     public class MediaFileDto

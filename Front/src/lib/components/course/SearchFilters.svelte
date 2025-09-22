@@ -1,14 +1,12 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type CourseSearchParams } from '$lib/services/courseService';
+	import { createEventDispatcher } from 'svelte';
+	import { type CourseSearchParams } from '$lib/services/courseService';
 
 	export let searchParams: CourseSearchParams;
 
 	const dispatch = createEventDispatcher();
-	
-	let availableSubjects: string[] = [];
+
 	let searchTerm = searchParams.searchTerm || '';
-	let selectedSubject = searchParams.subject || '';
 	let selectedSort = searchParams.sortBy || 'created_desc';
 	let showFeaturedOnly = searchParams.isFeatured || false;
 	let showActiveOnly = searchParams.isActive !== false; // default to true unless explicitly false
@@ -20,41 +18,32 @@
 		{ value: 'featured_desc', label: 'Destacados primero' }
 	];
 
-	onMount(async () => {
-		try {
-			availableSubjects = await courseService.getAvailableSubjects();
-		} catch (err) {
-			console.error('Error loading subjects:', err);
-		}
-	});
 
 	function handleSearch() {
 		const newSearchParams: CourseSearchParams = {
 			...searchParams,
 			searchTerm: searchTerm.trim() || undefined,
-			subject: selectedSubject || undefined,
 			sortBy: selectedSort,
 			isFeatured: showFeaturedOnly || undefined,
 			isActive: showActiveOnly ? undefined : true, // only filter if false
 			page: 1
 		};
-		
+
 		dispatch('search', newSearchParams);
 	}
 
 	function handleReset() {
 		searchTerm = '';
-		selectedSubject = '';
 		selectedSort = 'created_desc';
 		showFeaturedOnly = false;
 		showActiveOnly = true;
-		
+
 		const resetParams: CourseSearchParams = {
 			page: 1,
 			pageSize: searchParams.pageSize,
 			sortBy: 'created_desc'
 		};
-		
+
 		dispatch('search', resetParams);
 	}
 
@@ -79,19 +68,6 @@
 			/>
 		</div>
 
-		<div class="filter-select">
-			<label for="subject">Materia</label>
-			<select 
-				id="subject"
-				bind:value={selectedSubject}
-				class="select"
-			>
-				<option value="">Todas las materias</option>
-				{#each availableSubjects as subject}
-					<option value={subject}>{subject}</option>
-				{/each}
-			</select>
-		</div>
 
 		<div class="filter-select">
 			<label for="sort">Ordenar por</label>

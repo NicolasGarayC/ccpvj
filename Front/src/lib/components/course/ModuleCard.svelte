@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { Module } from '$lib/services/courseService';
+	import type { ModuleSummaryDto } from '$lib/types/api/course.types';
 	import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
-	export let module: Module;
+	export let module: ModuleSummaryDto;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
 	let showDeleteModal = false;
 
 	function handleView() {
-		dispatch('view', module.stringId);
+		dispatch('view', module.id);
 	}
 
 	function handleEdit() {

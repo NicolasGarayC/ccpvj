@@ -88,10 +88,8 @@
 		editingPost = null;
 	}
 
-	// Drag and Drop functionality
+	// Drag and Drop functionality - simplified
 	function handleDragStart(event: DragEvent, post: PostDetail) {
-		if (!showActions) return;
-
 		draggedPost = post;
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
@@ -100,7 +98,7 @@
 	}
 
 	function handleDragOver(event: DragEvent, index: number) {
-		if (!showActions || !draggedPost) return;
+		if (!draggedPost) return;
 
 		event.preventDefault();
 		if (event.dataTransfer) {
@@ -110,8 +108,6 @@
 	}
 
 	function handleDragLeave(event: DragEvent) {
-		if (!showActions) return;
-
 		// Only reset if leaving the container, not child elements
 		const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
 		const x = event.clientX;
@@ -123,7 +119,7 @@
 	}
 
 	async function handleDrop(event: DragEvent, targetIndex: number) {
-		if (!showActions || !draggedPost) return;
+		if (!draggedPost) return;
 
 		event.preventDefault();
 		draggedOverIndex = -1;
@@ -254,7 +250,7 @@
 				<div
 					class="post-item"
 					class:drag-over={draggedOverIndex === index && draggedPost?.id !== post.id}
-					draggable={showActions}
+					draggable={true}
 					on:dragstart={(e) => handleDragStart(e, post)}
 					on:dragover={(e) => handleDragOver(e, index)}
 					on:dragleave={handleDragLeave}
@@ -263,7 +259,7 @@
 				>
 					<PostCard
 						{post}
-						{showActions}
+						showActions={true}
 						isDragging={draggedPost?.id === post.id}
 						on:view={handleViewPost}
 						on:edit={handleEditPost}
@@ -274,11 +270,11 @@
 		</div>
 
 		<!-- Drag and Drop Hint -->
-		{#if showActions && posts.length > 1}
+		{#if posts.length > 1}
 			<div class="reorder-hint">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M7 13l3 3 7-7"></path>
-					<path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.39 0 4.58.94 6.24 2.46"></path>
+					<path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9s4.03-9 9-9c2.39 0 4.58.94 6.24 2.46"></path>
 				</svg>
 				Arrastra los posts usando el ícono de líneas para reordenarlos
 			</div>

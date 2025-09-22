@@ -82,7 +82,6 @@
 	<div class="course-content">
 		<div class="course-header">
 			<h3 class="course-title">{course.title}</h3>
-			<span class="course-subject">{course.subject}</span>
 		</div>
 
 		<p class="course-description">
@@ -256,15 +255,6 @@
 		line-height: 1.4;
 	}
 
-	.course-subject {
-		background: var(--color-primary-light);
-		color: var(--color-primary-dark);
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 500;
-		white-space: nowrap;
-	}
 
 	.course-description {
 		color: var(--color-text-muted);
@@ -427,9 +417,6 @@
 			align-items: stretch;
 		}
 
-		.course-subject {
-			align-self: flex-start;
-		}
 
 		.stats {
 			flex-direction: column;

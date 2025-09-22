@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { courseService, type CourseDetail, type UpdateCourseDto, type Module } from '$lib/services/courseService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import ModuleList from '$lib/components/course/ModuleList.svelte';
 	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
 	import ModuleForm from '$lib/components/course/ModuleForm.svelte';
@@ -18,13 +18,11 @@
 	// Edit mode state
 	let editMode = false;
 	let saving = false;
-	let availableSubjects: string[] = ['Matemáticas', 'Física', 'Sociales', 'Economía'];
 
 	// Form data for editing
 	let editForm = {
 		title: '',
 		description: '',
-		subject: '',
 		isFeatured: false,
 		imagePath: ''
 	};
@@ -38,24 +36,31 @@
 	let moduleFormLoading = false;
 
 	const courseId = $page.params.id;
+	let actualCourseId = courseId; // ID real del curso para operaciones
 
 	onMount(async () => {
-		// Check authentication
-		isAuthenticated = authService.isAuthenticated();
+		// Check authentication - try localStorage first, then verify with server if needed
+		isAuthenticated = jwtService.isAuthenticated();
 		if (isAuthenticated) {
-			user = authService.getUser();
+			user = jwtService.getUser();
 			canManage = user?.role === 'colaborador' || user?.role === 'administrador';
+		} else {
+			// If localStorage is empty, check server once
+			try {
+				const validatedUser = await jwtService.validateToken();
+				if (validatedUser) {
+					isAuthenticated = true;
+					user = validatedUser;
+					canManage = user?.role === 'colaborador' || user?.role === 'administrador';
+				}
+			} catch (err) {
+				console.error('Error validating token:', err);
+			}
 		}
 
 		// Load course details
 		await loadCourse();
 
-		// Load available subjects
-		try {
-			availableSubjects = await courseService.getAvailableSubjects();
-		} catch (err) {
-			console.error('Error loading subjects:', err);
-		}
 	});
 
 	async function loadCourse() {
@@ -63,6 +68,11 @@
 			loading = true;
 			error = '';
 			course = await courseService.getCourse(courseId);
+
+			// Update actualCourseId with the real ID from the loaded course
+			if (course) {
+				actualCourseId = course.id;
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error cargando el curso';
 			console.error('Error loading course:', err);
@@ -90,7 +100,6 @@
 		editForm = {
 			title: course.title,
 			description: course.description,
-			subject: course.subject,
 			isFeatured: course.isFeatured || false,
 			imagePath: course.imagePath || ''
 		};
@@ -131,10 +140,6 @@
 			isValid = false;
 		}
 
-		if (!editForm.subject.trim()) {
-			formErrors.subject = 'La materia es requerida';
-			isValid = false;
-		}
 
 		return isValid;
 	}
@@ -151,12 +156,11 @@
 			const updateData: UpdateCourseDto = {
 				title: editForm.title.trim(),
 				description: editForm.description.trim(),
-				subject: editForm.subject,
 				isFeatured: editForm.isFeatured,
 				imagePath: editForm.imagePath || undefined
 			};
 
-			await courseService.updateCourse(course.stringId, updateData);
+			await courseService.updateCourse(course.id, updateData);
 
 			// Reload course data
 			await loadCourse();
@@ -388,26 +392,6 @@
 								</h1>
 							{/if}
 							<div class="flex flex-wrap gap-3 mb-4">
-								{#if editMode}
-									<select
-										bind:value={editForm.subject}
-										class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30 text-white focus:outline-none focus:border-white/60"
-										class:border-red-300={formErrors.subject}
-										disabled={saving}
-									>
-										<option value="">Seleccionar materia</option>
-										{#each availableSubjects as subject}
-											<option value={subject} class="text-black">{subject}</option>
-										{/each}
-									</select>
-									{#if formErrors.subject}
-										<div class="text-red-300 text-sm bg-red-900/30 backdrop-blur-sm rounded-lg p-2 w-full">{formErrors.subject}</div>
-									{/if}
-								{:else}
-									<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
-										📖 {course.subject}
-									</span>
-								{/if}
 								<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
 									👨‍🏫 {course.educatorName || 'Instructor'}
 								</span>
@@ -473,7 +457,7 @@
 
 						<div class="px-8 pb-8">
 							<ModuleList
-								courseId={course.stringId}
+								courseId={course.id}
 								showActions={canManage}
 								on:createModule={handleCreateModule}
 								on:editModule={handleEditModule}
@@ -496,7 +480,7 @@
 							</h3>
 							<MediaUploader
 								contentType="course"
-								contentId={course.stringId}
+								contentId={course.id}
 								mediaType="image"
 								currentPath={editForm.imagePath}
 								on:upload={handleImageUpload}
@@ -593,10 +577,6 @@
 								</span>
 							</div>
 
-							<div class="flex justify-between items-center py-3 border-b border-gray-100">
-								<span class="text-gray-600 font-medium">Materia:</span>
-								<span class="font-bold text-emerald-600">{course.subject}</span>
-							</div>
 
 							<div class="flex justify-between items-center py-3 border-b border-gray-100">
 								<span class="text-gray-600 font-medium">Educador:</span>
@@ -662,7 +642,7 @@
 <!-- Module Form Modal -->
 <ModuleForm
 	module={editingModule}
-	{courseId}
+	courseId={actualCourseId}
 	loading={moduleFormLoading}
 	visible={showModuleForm}
 	on:success={handleModuleFormSuccess}
@@ -682,9 +662,6 @@
 			padding-right: 1rem;
 		}
 
-		.grid.lg\\:grid-cols-3 {
-			grid-template-columns: 1fr;
-		}
 
 		h1 {
 			font-size: 2rem !important;

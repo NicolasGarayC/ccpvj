@@ -5,7 +5,7 @@
 	import CalendarView from '$lib/components/calendar/CalendarView.svelte';
 	import EventList from '$lib/components/calendar/EventList.svelte';
 	import { calendarService, type EventSummary, type CalendarView as CalendarViewType } from '$lib/services/calendar/calendarService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	// Estado de la página
 	let loading = true;
@@ -23,10 +23,10 @@
 	// Cargar datos iniciales
 	onMount(async () => {
 		// ✅ Verificar autenticación y permisos
-		isAuthenticated = authService.isAuthenticated();
+		isAuthenticated = jwtService.isAuthenticated();
 		if (isAuthenticated) {
-			const user = authService.getUser();
-			canCreateEvents = user?.role === 'Colaborador' || user?.role === 'Administrador';
+			const user = jwtService.getUser();
+			canCreateEvents = user?.role === 'colaborador' || user?.role === 'administrador';
 		}
 
 		await Promise.all([

@@ -1,4 +1,4 @@
-import { authService } from '../authService';
+import { jwtService } from '../auth/jwtService.js';
 
 // Tipos TypeScript para gestión de usuarios
 export interface User {
@@ -69,7 +69,7 @@ export interface UserStats {
 class UserManagementService {
   private baseURL = 'https://localhost:5251/api';
 
-  // Already using authService.authenticatedFetch for cookie-based auth
+  // Using JWT authentication headers
 
   private adaptBackendToFrontend(backendUser: any): User {
     return {
@@ -88,7 +88,12 @@ class UserManagementService {
   // Obtener usuario por ID
   async getUser(id: number): Promise<User | null> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`);
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) return null;
 
@@ -110,7 +115,12 @@ class UserManagementService {
         }
       });
 
-      const response = await authService.authenticatedFetchResponse(`/usermanagement?${queryParams}`);
+      const response = await fetch(`${this.baseURL}/usermanagement?${queryParams}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) throw new Error('Error al obtener usuarios');
 
@@ -133,8 +143,12 @@ class UserManagementService {
   // Crear nuevo usuario
   async createUser(userData: CreateUserData): Promise<User> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement`, {
+      const response = await fetch(`${this.baseURL}/usermanagement`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        },
         body: JSON.stringify(userData)
       });
 
@@ -154,8 +168,12 @@ class UserManagementService {
   // Actualizar usuario
   async updateUser(id: number, userData: UpdateUserData): Promise<User> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`, {
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}`, {
         method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        },
         body: JSON.stringify(userData)
       });
 
@@ -175,8 +193,12 @@ class UserManagementService {
   // Eliminar (desactivar) usuario
   async deleteUser(id: number): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
       });
 
       return response.ok;
@@ -189,8 +211,12 @@ class UserManagementService {
   // Cambiar estado de usuario (activar/desactivar)
   async toggleUserStatus(id: number, isActive: boolean): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/status`, {
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}/status`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        },
         body: JSON.stringify(isActive)
       });
 
@@ -204,7 +230,12 @@ class UserManagementService {
   // Obtener roles disponibles
   async getAvailableRoles(): Promise<Role[]> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/roles`);
+      const response = await fetch(`${this.baseURL}/usermanagement/roles`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) throw new Error('Error al obtener roles');
 
@@ -218,8 +249,12 @@ class UserManagementService {
   // Cambiar rol de usuario
   async changeUserRole(id: number, newRole: string): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/role`, {
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}/role`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        },
         body: JSON.stringify(newRole)
       });
 
@@ -237,7 +272,12 @@ class UserManagementService {
         ? `${this.baseURL}/usermanagement/check-username/${username}?excludeUserId=${excludeUserId}`
         : `${this.baseURL}/usermanagement/check-username/${username}`;
 
-      const response = await authService.authenticatedFetchResponse(url.replace(this.baseURL, ''));
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) throw new Error('Error al verificar username');
 
@@ -252,7 +292,12 @@ class UserManagementService {
   // Obtener estadísticas de usuarios (solo admin)
   async getUserStatistics(): Promise<UserStats> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/statistics`);
+      const response = await fetch(`${this.baseURL}/usermanagement/statistics`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) throw new Error('Error al obtener estadísticas');
 
@@ -270,8 +315,12 @@ class UserManagementService {
   // Restablecer contraseña
   async resetUserPassword(id: number, newPassword: string): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/${id}/reset-password`, {
+      const response = await fetch(`${this.baseURL}/usermanagement/${id}/reset-password`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        },
         body: JSON.stringify(newPassword)
       });
 
@@ -285,7 +334,12 @@ class UserManagementService {
   // Obtener usuario actual
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/me`);
+      const response = await fetch(`${this.baseURL}/usermanagement/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) return null;
 
@@ -300,7 +354,12 @@ class UserManagementService {
   // Verificar si puede gestionar usuarios
   async canManageUsers(): Promise<boolean> {
     try {
-      const response = await authService.authenticatedFetchResponse(`/usermanagement/can-manage`);
+      const response = await fetch(`${this.baseURL}/usermanagement/can-manage`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...jwtService.getAuthHeader()
+        }
+      });
 
       if (!response.ok) return false;
 

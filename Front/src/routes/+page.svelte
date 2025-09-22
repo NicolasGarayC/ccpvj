@@ -6,7 +6,7 @@
 	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
 	import { blogService } from '$lib/services/blog/blogService';
 	import { courseService } from '$lib/services/courseService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import type { BlogPost, Course } from '$lib/data/models/interfaces';
 
 	import { t, t_params } from '$lib/i18n';
@@ -18,9 +18,9 @@
 		currentLocale = currentLocale === 'es' ? 'en' : 'es';
 	}
 
-	$: isLoggedIn = authService.isAuthenticated();
-	$: user = authService.getUser();
-	$: isEducator = isLoggedIn && user?.nombreRol === 'Educador';
+	$: isLoggedIn = jwtService.isAuthenticated();
+	$: user = jwtService.getUser();
+	$: isEducator = isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
 
 	let latestBlogPosts: BlogPost[] = [];
 	let featuredCourses: Course[] = [];

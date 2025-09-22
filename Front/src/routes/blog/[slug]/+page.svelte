@@ -129,12 +129,13 @@
       {#if post.featuredMedia}
         <div class="mb-8 rounded-lg overflow-hidden shadow-lg">
           {#if isVideo(post.featuredMedia)}
-            <video 
-              class="w-full" 
+            <video
+              class="w-full"
               controls
               poster={post.videoPoster ? getMediaUrl(post.videoPoster) : ''}
             >
               <source src={getMediaUrl(post.featuredMedia)} type="video/mp4">
+              <track kind="captions" src="" label="Captions" default>
               <p class="text-gray-500 p-4">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
             </video>
           {:else if isImage(post.featuredMedia)}

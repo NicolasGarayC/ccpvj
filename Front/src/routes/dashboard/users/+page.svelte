@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import UserList from '$lib/components/users/UserList.svelte';
   import UserForm from '$lib/components/users/UserForm.svelte';
-  import { authService } from '$lib/services/authService.js';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
   import { userManagementService, type User } from '$lib/services/users/userManagementService';
 
   let canManageUsers = false;
@@ -15,7 +15,7 @@
   onMount(async () => {
     if (!browser) return;
 
-    const isAuthenticated = await authService.isAuthenticated();
+    const isAuthenticated = await jwtService.isAuthenticated();
     if (!isAuthenticated) {
       goto('/auth/login');
       return;
@@ -91,6 +91,7 @@
             <button
               on:click={handleCloseForm}
               class="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Cerrar formulario"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

@@ -1,7 +1,7 @@
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -17,6 +17,12 @@ namespace CentroCultural.API.Controllers
         {
             _courseService = courseService;
             _logger = logger;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
 
         // GET: api/course
@@ -103,19 +109,15 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/course
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<CourseDto>> CreateCourse([FromBody] CreateCourseDto courseDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var course = await _courseService.CreateCourseAsync(courseDto, int.Parse(userIdClaim));
+                var course = await _courseService.CreateCourseAsync(courseDto, userId);
                 return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
             }
             catch (UnauthorizedAccessException)
@@ -134,19 +136,15 @@ namespace CentroCultural.API.Controllers
         }
 
         // PUT: api/course/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseDto courseDto)
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> UpdateCourse(string id, [FromBody] UpdateCourseDto courseDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _courseService.UpdateCourseAsync(id, courseDto, int.Parse(userIdClaim));
+                var result = await _courseService.UpdateCourseAsync(id, courseDto, userId);
 
                 if (!result)
                     return NotFound($"Curso con ID {id} no encontrado");
@@ -169,19 +167,15 @@ namespace CentroCultural.API.Controllers
         }
 
         // DELETE: api/course/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCourse(Guid id)
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> DeleteCourse(string id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _courseService.DeleteCourseAsync(id, int.Parse(userIdClaim));
+                var result = await _courseService.DeleteCourseAsync(id, userId);
 
                 if (!result)
                     return NotFound($"Curso con ID {id} no encontrado");
@@ -199,19 +193,14 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpGet("my-courses")]
         public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetMyCourses()
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var courses = await _courseService.GetCoursesByEducatorAsync(int.Parse(userIdClaim));
+                var courses = await _courseService.GetCoursesByEducatorAsync(userId);
                 return Ok(courses);
             }
             catch (Exception ex)
@@ -221,7 +210,6 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Administrador")]
         [HttpGet("statistics")]
         public async Task<ActionResult<object>> GetCourseStatistics()
         {
@@ -237,20 +225,6 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [HttpGet("subjects")]
-        public async Task<ActionResult<IEnumerable<string>>> GetAvailableSubjects()
-        {
-            try
-            {
-                var subjects = await _courseService.GetAvailableSubjectsAsync();
-                return Ok(subjects);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo materias disponibles");
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
 
         [HttpGet("modules/{id}")]
         public async Task<ActionResult<ModuleDetailDto>> GetModule(string id)
@@ -271,19 +245,15 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost("modules")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<ModuleDto>> CreateModule([FromBody] CreateModuleDto moduleDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var module = await _courseService.CreateModuleAsync(moduleDto, int.Parse(userIdClaim));
+                var module = await _courseService.CreateModuleAsync(moduleDto, userId);
                 return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
             }
             catch (UnauthorizedAccessException)
@@ -301,19 +271,15 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPut("modules/{id}")]
-        public async Task<IActionResult> UpdateModule(Guid id, [FromBody] UpdateModuleDto moduleDto)
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> UpdateModule(string id, [FromBody] UpdateModuleDto moduleDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _courseService.UpdateModuleAsync(id, moduleDto, int.Parse(userIdClaim));
+                var result = await _courseService.UpdateModuleAsync(id, moduleDto, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -335,19 +301,15 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("modules/{id}")]
-        public async Task<IActionResult> DeleteModule(Guid id)
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> DeleteModule(string id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _courseService.DeleteModuleAsync(id, int.Parse(userIdClaim));
+                var result = await _courseService.DeleteModuleAsync(id, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -365,19 +327,14 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPatch("modules/{id}/reorder")]
-        public async Task<IActionResult> ReorderModule(Guid id, [FromBody] ReorderModuleDto reorderDto)
+        public async Task<IActionResult> ReorderModule(string id, [FromBody] ReorderModuleDto reorderDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, int.Parse(userIdClaim));
+                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");

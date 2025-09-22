@@ -1,7 +1,7 @@
 using CentroCultural.Application.DTOs.Library;
 using CentroCultural.Application.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -73,13 +73,12 @@ namespace CentroCultural.API.Controllers
         /// Crear un nuevo recurso de biblioteca
         /// </summary>
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> CreateResource([FromForm] CreateLibraryResourceRequest request)
         {
             try
             {
                 // Verificar permisos del usuario
-                var userRole = User.FindFirst("role")?.Value;
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "usuario";
                 if (!CanManageLibrary(userRole))
                 {
                     return Forbid("No tienes permisos para gestionar la biblioteca");
@@ -113,8 +112,8 @@ namespace CentroCultural.API.Controllers
                     });
                 }
 
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
-                if (!int.TryParse(userIdClaim, out int userId))
+                var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
+                if (!int.TryParse(userIdStr, out int userId))
                 {
                     return BadRequest("ID de usuario inválido");
                 }
@@ -142,13 +141,12 @@ namespace CentroCultural.API.Controllers
         /// Actualizar un recurso existente
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<IActionResult> UpdateResource(string id, [FromBody] UpdateLibraryResourceDto dto)
         {
             try
             {
                 // Verificar permisos del usuario
-                var userRole = User.FindFirst("role")?.Value;
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "usuario";
                 if (!CanManageLibrary(userRole))
                 {
                     return Forbid("No tienes permisos para gestionar la biblioteca");
@@ -187,13 +185,12 @@ namespace CentroCultural.API.Controllers
         /// Eliminar un recurso (soft delete)
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> DeleteResource(string id)
         {
             try
             {
                 // Verificar permisos del usuario
-                var userRole = User.FindFirst("role")?.Value;
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "usuario";
                 if (!CanManageLibrary(userRole))
                 {
                     return Forbid("No tienes permisos para gestionar la biblioteca");

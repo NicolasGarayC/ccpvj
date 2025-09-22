@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { translate as paraglideT } from '$lib/paraglide/runtime';
-  import { authService } from '$lib/services/authService';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
   import BlogEditor from '$lib/components/blog/BlogEditor.svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
 
@@ -13,8 +13,8 @@
     t = paraglideT;
     
     // Verificar permisos
-    const user = authService.getUser();
-    if (!user || !authService.isAuthenticated()) {
+    const user = jwtService.getUser();
+    if (!user || !jwtService.isAuthenticated()) {
       goto('/auth/login');
       return;
     }

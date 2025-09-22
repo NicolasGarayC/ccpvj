@@ -1,5 +1,4 @@
 using CentroCultural.Domain.Entities;
-using Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -17,7 +16,7 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
-        public DbSet<WorkItem> WorkItem { get; set; }
+        public DbSet<ModulePost> ModulePosts { get; set; }
         public DbSet<MediaEntity> MediaEntity { get; set; }
         public DbSet<UploadStatus> UploadStatus { get; set; }
         
@@ -89,7 +88,6 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.Id).HasColumnName("id");
                 entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).HasColumnName("description").IsRequired().HasMaxLength(1000);
-                entity.Property(e => e.Subject).HasColumnName("subject").HasMaxLength(100);
                 entity.Property(e => e.ImagePath).HasColumnName("image_path").HasMaxLength(500);
                 entity.Property(e => e.IsActive).HasColumnName("is_active");
                 entity.Property(e => e.IsFeatured).HasColumnName("is_featured");
@@ -117,26 +115,20 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.IsActive);
             });
 
-            // Configuración de WorkItem
-            modelBuilder.Entity<WorkItem>(entity =>
+            // Configuración de ModulePost
+            modelBuilder.Entity<ModulePost>(entity =>
             {
-                entity.ToTable("work_item");
+                entity.ToTable("module_post"); // Explicitly specify table name
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).HasColumnName("id");
-                entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
-                entity.Property(e => e.LongText).HasColumnName("long_text").HasColumnType("TEXT");
-                entity.Property(e => e.OrderNumber).HasColumnName("order_number").IsRequired();
-                entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-                entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-                entity.Property(e => e.ModuleId).HasColumnName("module_id").IsRequired();
-                entity.Property(e => e.ImagePath).HasColumnName("image_path").HasMaxLength(500);
-                entity.Property(e => e.VideoPath).HasColumnName("video_path").HasMaxLength(500);
+
+                // No configure foreign keys explicitly - let the database handle them
+                // The table already has the foreign key constraints defined
 
                 // Índices para búsquedas y ordenamiento
                 entity.HasIndex(e => new { e.ModuleId, e.OrderNumber });
                 entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.AuthorId);
+                entity.HasIndex(e => e.CreatedAt);
             });
 
             // Configuraci�n de MediaEntity (contextual multimedia)

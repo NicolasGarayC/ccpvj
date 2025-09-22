@@ -3,7 +3,10 @@ using CentroCultural.Infrastructure.Configuration;
 using CentroCultural.Infrastructure.Data;
 using CentroCultural.Application.Interfaces;
 using CentroCultural.Application.Configuration;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using CentroCultural.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,35 +30,42 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JWT Configuration
+builder.Services.Configure<CentroCultural.Infrastructure.Configuration.JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
+// JWT Service
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<CentroCultural.Infrastructure.Configuration.JwtSettings>();
+var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = jwtSettings.ValidateIssuerSigningKey,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = jwtSettings.ValidateIssuer,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = jwtSettings.ValidateAudience,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = jwtSettings.ValidateLifetime,
+        ClockSkew = TimeSpan.FromMinutes(jwtSettings.ClockSkewMinutes)
+    };
+});
+
+builder.Services.AddAuthorization();
+
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Cookie Authentication (replacing JWT)
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/api/simple-auth/login";
-        options.LogoutPath = "/api/simple-auth/logout";
-        options.Cookie.Name = "auth-session";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-        options.SlidingExpiration = true;
-
-        // Return 401 instead of redirect for API calls
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = 401;
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = 403;
-            return Task.CompletedTask;
-        };
-    });
 
 // Servicios de biblioteca
 builder.Services.AddScoped<CentroCultural.Application.Services.ILibraryService, CentroCultural.Application.Services.LibraryService>();
@@ -89,7 +99,7 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // Para servir archivos estáticos
 app.UseCors("AllowSvelteKit");
-app.UseAuthentication(); // Cookie authentication
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { calendarService, type EventDetail, type EventSummary } from '$lib/services/calendar/calendarService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	// Props desde la URL
 	$: eventId = $page.params.id;
@@ -24,9 +24,9 @@
 	// Cargar evento y datos relacionados
 	onMount(async () => {
 		// ✅ Verificar autenticación y permisos
-		isAuthenticated = authService.isAuthenticated();
+		isAuthenticated = jwtService.isAuthenticated();
 		if (isAuthenticated) {
-			currentUser = authService.getUser();
+			currentUser = jwtService.getUser();
 		}
 
 		if (eventId) {

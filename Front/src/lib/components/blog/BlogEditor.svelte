@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { t, loadMessages } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { canCreateContent, canEditContent, requiresAuthentication, type UserRole } from '$lib/utils/roleUtils';
   import MediaUploader from './MediaUploader.svelte';
 
@@ -40,15 +40,15 @@
       error = isEditing ? t('auth.no_permissions_edit') : t('auth.no_permissions_create');
     } else if (needsAuth && !currentUser?.id) {
       error = t('auth.login_required');
-    } else if (isEditing && post && currentUser?.role !== 'Administrador' && post.authorId !== currentUser?.id) {
-      error = t('auth.own_posts_only');
+    //} else if (isEditing && post && currentUser?.role !== 'Administrador' && post.authorId !== currentUser?.id) {
+    //  error = t('auth.own_posts_only');
     } else {
       error = null;
     }
   }
 
   onMount(async () => {
-    await loadMessages();
+    //await loadMessages();
     
     // Load categories
     try {
@@ -117,7 +117,7 @@
 
       const response = await fetch(url, {
         method,
-        credentials: 'include', // Use cookies for authentication
+        // TODO: Add JWT Bearer token when implemented
         headers: {
           'Content-Type': 'application/json'
         },
@@ -313,7 +313,6 @@
           contentId={post.id}
           mediaType="image"
           onUploadComplete={handleImageUploaded}
-          currentMedia={featuredImagePath}
           disabled={isLoading}
         />
       {:else}
@@ -334,7 +333,6 @@
           contentId={post.id}
           mediaType="video"
           onUploadComplete={handleVideoUploaded}
-          currentMedia={videoPath}
           disabled={isLoading}
         />
       {:else}
@@ -355,7 +353,6 @@
           contentId={post.id}
           mediaType="pdf"
           onUploadComplete={handlePdfUploaded}
-          currentMedia={pdfPath}
           disabled={isLoading}
         />
       {:else}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { t, loadMessages } from '$lib/i18n';
+  import { t } from '$lib/i18n';
   import { getLocale } from '$lib/paraglide/runtime';
   import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
 

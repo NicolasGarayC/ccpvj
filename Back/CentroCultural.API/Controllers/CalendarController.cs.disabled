@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -17,6 +17,12 @@ namespace CentroCultural.API.Controllers
         {
             _calendarService = calendarService;
             _logger = logger;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
 
         /// <summary>
@@ -81,7 +87,6 @@ namespace CentroCultural.API.Controllers
         /// Crea un nuevo evento (requiere autenticación)
         /// </summary>
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<EventDto>> CreateEvent([FromBody] CreateEventDto createEventDto)
         {
             try
@@ -106,7 +111,6 @@ namespace CentroCultural.API.Controllers
         /// Actualiza un evento existente (solo organizador o admin)
         /// </summary>
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<ActionResult<EventDto>> UpdateEvent(Guid id, [FromBody] UpdateEventDto updateEventDto)
         {
             try
@@ -139,7 +143,6 @@ namespace CentroCultural.API.Controllers
         /// Elimina un evento (solo organizador o admin)
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<ActionResult> DeleteEvent(Guid id)
         {
             try
@@ -301,7 +304,6 @@ namespace CentroCultural.API.Controllers
         /// Registra un usuario a un evento (requiere autenticación)
         /// </summary>
         [HttpPost("{id}/register")]
-        [Authorize]
         public async Task<ActionResult> RegisterToEvent(Guid id)
         {
             try
@@ -331,7 +333,6 @@ namespace CentroCultural.API.Controllers
         /// Desregistra un usuario de un evento (requiere autenticación)
         /// </summary>
         [HttpPost("{id}/unregister")]
-        [Authorize]
         public async Task<ActionResult> UnregisterFromEvent(Guid id)
         {
             try
@@ -361,7 +362,6 @@ namespace CentroCultural.API.Controllers
         /// Obtiene eventos en los que está registrado el usuario actual
         /// </summary>
         [HttpGet("my-registrations")]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetMyRegisteredEvents()
         {
             try
@@ -386,7 +386,6 @@ namespace CentroCultural.API.Controllers
         /// Marca o desmarca un evento como destacado (solo admin)
         /// </summary>
         [HttpPatch("{id}/featured")]
-        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult> SetEventFeatured(Guid id, [FromBody] bool isFeatured)
         {
             try
@@ -416,7 +415,6 @@ namespace CentroCultural.API.Controllers
         /// Obtiene estadísticas de eventos (solo admin)
         /// </summary>
         [HttpGet("statistics")]
-        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult> GetEventStatistics([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
         {
             try
@@ -431,13 +429,5 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Obtiene el ID del usuario actual desde el token JWT
-        /// </summary>
-        private int? GetCurrentUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(userIdClaim, out var userId) ? userId : null;
-        }
     }
 }

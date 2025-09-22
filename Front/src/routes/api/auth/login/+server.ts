@@ -1,136 +1,107 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { encryptCredentials, obfuscateResponse } from '$lib/utils/crypto.js';
 
-const BACKEND_URL = 'http://localhost:5251/api';
-
-export const POST: RequestHandler = async ({ request, cookies }) => {
-	let data: any = null;
+export const POST: RequestHandler = async ({ request }) => {
 	try {
+		console.log('[DEBUG] Login endpoint called');
+
 		const { username, password } = await request.json();
+		console.log(`[DEBUG] Request data - username: ${username}, password: ${password ? '[PROVIDED]' : '[MISSING]'}`);
 
 		if (!username || !password) {
-			return json({
-				success: false,
-				error: 'Usuario y contraseña son requeridos'
-			}, { status: 400 });
+			console.log('[DEBUG] Missing credentials');
+			return json(
+				{ success: false, message: 'Username and password are required' },
+				{ status: 400 }
+			);
 		}
 
-		// Cifrar credenciales antes de enviarlas al backend
-		const encrypted = encryptCredentials(username, password);
+		const requestBody = JSON.stringify({ username, password });
+		console.log(`[DEBUG] Request body to backend: ${requestBody}`);
 
-		// Forward the login request to the backend using only SimpleAuth
-		const response = await fetch(`${BACKEND_URL}/simple-auth/login`, {
+		// Forward the request to the backend
+		console.log('[DEBUG] Attempting to connect to backend at http://localhost:5251/api/auth/login');
+
+		const backendResponse = await fetch('http://localhost:5251/api/auth/login', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({
-				encryptedUsername: encrypted.encryptedUsername,
-				encryptedPassword: encrypted.encryptedPassword,
-				isEncrypted: true
-			}),
-			credentials: 'include'
+			body: requestBody
 		});
 
-		data = await response.json();
-		console.log('[DEBUG] Backend response data:', data);
+		console.log(`[DEBUG] Backend response status: ${backendResponse.status}`);
+		console.log(`[DEBUG] Backend response headers:`, Object.fromEntries(backendResponse.headers.entries()));
+		console.log(`[DEBUG] Backend response ok: ${backendResponse.ok}`);
 
-		if (response.ok && data.success !== false) {
-			// Backend login succeeded
-			// The backend should have set its own auth cookies
-			// We can also set a frontend session cookie for compatibility if needed
+		// Check if response has content
+		const responseText = await backendResponse.text();
+		console.log(`[DEBUG] Backend response text length: ${responseText.length}`);
+		console.log(`[DEBUG] Backend response text:`, responseText);
 
-			// Get cookies from backend response
-			const setCookieHeader = response.headers.get('set-cookie');
-			if (setCookieHeader) {
-				// Parse the auth-session cookie from backend and forward it
-				const authSessionMatch = setCookieHeader.match(/auth-session=([^;]+)/);
-				if (authSessionMatch) {
-					const sessionValue = authSessionMatch[1];
-					cookies.set('auth-session', sessionValue, {
-						httpOnly: true,
-						secure: false, // For development
-						sameSite: 'lax',
-						maxAge: 60 * 60 * 24 * 30, // 30 days
-						path: '/'
-					});
-				}
-			}
-
-			// Check if the backend returned encrypted data
-			if (data.encrypted && data.payload) {
-				// Backend already encrypted the response, forward it as-is
-				return json({
-					success: true,
-					encrypted: true,
-					payload: data.payload
-				});
-			} else {
-				// Backend returned unencrypted data, process and encrypt it
-				let userData;
-
-				// Handle different response structures
-				if (data.data && data.data.user) {
-					userData = data.data.user;
-				} else if (data.user) {
-					userData = data.user;
-				} else {
-					throw new Error('User data not found in response');
-				}
-
-				const responseData = {
-					success: true,
-					data: {
-						user: {
-							id: userData.id,
-							username: userData.username,
-							nombre: userData.nombre,
-							apellido: userData.apellido,
-							role: userData.role,
-							nombreRol: userData.role
-						}
-					}
-				};
-
-				// Obfuscar respuesta exitosa
-				const obfuscatedResponse = obfuscateResponse(responseData);
-
-				return json({
-					success: true,
-					encrypted: true,
-					payload: obfuscatedResponse
-				});
-			}
-		} else {
-			// Backend login failed - NOT 401 to avoid redirect loop
-			return json({
-				success: false,
-				error: data.error || 'Credenciales inválidas'
-			}, { status: 200 }); // Return 200 with success: false instead of 401
+		// Handle different status codes
+		if (backendResponse.status === 404) {
+			console.log('[DEBUG] Backend returned 404 - endpoint not found');
+			return json(
+				{ success: false, message: 'Authentication service unavailable (404)' },
+				{ status: 503 }
+			);
 		}
+
+		if (backendResponse.status === 500) {
+			console.log('[DEBUG] Backend returned 500 - internal server error');
+			return json(
+				{ success: false, message: 'Backend server error (500)' },
+				{ status: 500 }
+			);
+		}
+
+		if (!responseText || responseText.trim() === '') {
+			console.log('[DEBUG] Empty response from backend');
+			return json(
+				{ success: false, message: 'Empty response from backend' },
+				{ status: 502 }
+			);
+		}
+
+		let data;
+		try {
+			data = JSON.parse(responseText);
+			console.log(`[DEBUG] Parsed backend response:`, data);
+		} catch (parseError) {
+			console.error('[DEBUG] JSON parse error:', parseError);
+			console.error('[DEBUG] Response text that failed to parse:', responseText);
+			return json(
+				{ success: false, message: 'Invalid JSON response from server', rawResponse: responseText },
+				{ status: 502 }
+			);
+		}
+
+		console.log(`[DEBUG] Returning response with status ${backendResponse.status}`);
+
+		// Return the response from backend
+		return json(data, { status: backendResponse.status });
 
 	} catch (error) {
-		console.error('Login proxy error:', error);
+		console.error('[DEBUG] Login endpoint error:', error);
+		console.error('[DEBUG] Error details:', {
+			name: error.name,
+			message: error.message,
+			stack: error.stack
+		});
 
-		// Si es un error de procesamiento de datos pero el backend respondió exitosamente,
-		// intentar retornar directamente la respuesta del backend sin procesamiento
-		if (error instanceof TypeError && error.message.includes('Cannot read properties')) {
-			console.log('[DEBUG] Error de procesamiento de datos, retornando respuesta directa del backend');
-			try {
-				// Si tenemos data del backend y es exitosa, retornarla directamente
-				return json({
-					success: true,
-					data: data || { user: { id: 1, username: 'admin', nombre: 'Admin', apellido: 'User', role: 'administrador' } }
-				});
-			} catch (fallbackError) {
-				console.error('Fallback error:', fallbackError);
-			}
+		// Check if it's a network error
+		if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+			console.log('[DEBUG] Network error - backend might be down');
+			return json(
+				{ success: false, message: 'Cannot connect to authentication server', errorType: 'NETWORK_ERROR' },
+				{ status: 503 }
+			);
 		}
 
-		return json({
-			success: false,
-			error: 'Error de conexión con el servidor'
-		}, { status: 500 });
+		return json(
+			{ success: false, message: 'Error interno del servidor', errorDetails: error.message },
+			{ status: 500 }
+		);
 	}
 };

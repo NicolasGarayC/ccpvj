@@ -1,7 +1,7 @@
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -17,6 +17,12 @@ namespace CentroCultural.API.Controllers
         {
             _blogService = blogService;
             _logger = logger;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
 
         // GET: api/blog
@@ -77,44 +83,13 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/blog
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost]
+        [Authorize(Roles = "administrador,colaborador")]
         public async Task<ActionResult<BlogPostDto>> CreateBlogPost([FromBody] CreateBlogPostDto createDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                    return Unauthorized("Usuario no autenticado correctamente");
-
-                var post = await _blogService.CreateBlogPostAsync(createDto, int.Parse(userIdClaim));
-                return CreatedAtAction(nameof(GetBlogPost), new { id = post.Id }, post);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating blog post");
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
-
-        // PUT: api/blog/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBlogPost(Guid id, [FromBody] UpdateBlogPostDto updateDto)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                    return Unauthorized("Usuario no autenticado correctamente");
-
-                var post = await _blogService.UpdateBlogPostAsync(id, updateDto, int.Parse(userIdClaim));
-                if (post == null)
-                    return NotFound($"Post con ID {id} no encontrado");
+                var userId = GetCurrentUserId();
 
                 return Ok(post);
             }
@@ -134,47 +109,12 @@ namespace CentroCultural.API.Controllers
         }
 
         // DELETE: api/blog/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBlogPost(Guid id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                    return Unauthorized("Usuario no autenticado correctamente");
-
-                var result = await _blogService.DeleteBlogPostAsync(id, int.Parse(userIdClaim));
-                if (!result)
-                    return NotFound($"Post con ID {id} no encontrado");
-
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid("No tienes permisos para eliminar este post");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting blog post: {PostId}", id);
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
-
-        // POST: api/blog/{id}/publish
-        [Authorize(Roles = "Colaborador,Administrador")]
-        [HttpPost("{id}/publish")]
-        public async Task<IActionResult> PublishBlogPost(Guid id)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                    return Unauthorized("Usuario no autenticado correctamente");
-
-                var result = await _blogService.PublishBlogPostAsync(id, int.Parse(userIdClaim));
-                if (!result)
-                    return NotFound($"Post con ID {id} no encontrado");
+                var userId = GetCurrentUserId();
 
                 return NoContent();
             }
@@ -190,17 +130,16 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/blog/{id}/unpublish
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost("{id}/unpublish")]
         public async Task<IActionResult> UnpublishBlogPost(Guid id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
                     return Unauthorized("Usuario no autenticado correctamente");
 
-                var result = await _blogService.UnpublishBlogPostAsync(id, int.Parse(userIdClaim));
+                var result = await _blogService.UnpublishBlogPostAsync(id, userId);
                 if (!result)
                     return NotFound($"Post con ID {id} no encontrado");
 
@@ -266,7 +205,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // GET: api/blog/stats
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpGet("stats")]
         public async Task<IActionResult> GetBlogStatistics()
         {
@@ -283,7 +221,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/blog/check-slug
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost("check-slug")]
         public async Task<IActionResult> CheckSlugAvailability([FromBody] CheckSlugDto checkSlugDto)
         {
@@ -300,7 +237,6 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/blog/generate-slug
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost("generate-slug")]
         public async Task<IActionResult> GenerateSlug([FromBody] GenerateSlugDto generateSlugDto)
         {

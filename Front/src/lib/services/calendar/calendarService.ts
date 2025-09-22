@@ -130,10 +130,10 @@ export interface EventTypeStats {
 class CalendarService {
   private baseURL = 'http://localhost:5251/api';
 
-  // Using cookie-based authentication - no headers needed
+  // TODO: Add JWT Bearer token when implemented
   private getRequestOptions(options: RequestInit = {}): RequestInit {
     return {
-      credentials: 'include', // Include cookies for authentication
+      // TODO: Add JWT Bearer token when implemented
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {})

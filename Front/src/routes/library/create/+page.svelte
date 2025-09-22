@@ -158,6 +158,7 @@
 				on:click={handleCancel}
 				class="text-gray-600 hover:text-gray-800"
 				title="Volver a la biblioteca"
+				aria-label="Volver a la biblioteca"
 			>
 				<i class="fas fa-times text-xl"></i>
 			</button>
@@ -173,10 +174,11 @@
 			<div class="grid grid-cols-1 gap-6">
 				<!-- Nombre -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-name" class="block text-sm font-medium text-gray-700 mb-2">
 						Nombre del recurso *
 					</label>
 					<input
+						id="resource-name"
 						type="text"
 						bind:value={formData.name}
 						on:blur={() => validateField('name')}
@@ -191,10 +193,11 @@
 
 				<!-- Descripción -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-description" class="block text-sm font-medium text-gray-700 mb-2">
 						Descripción
 					</label>
 					<textarea
+						id="resource-description"
 						bind:value={formData.description}
 						rows="4"
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -204,10 +207,11 @@
 
 				<!-- Autores -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-authors" class="block text-sm font-medium text-gray-700 mb-2">
 						Autores *
 					</label>
 					<input
+						id="resource-authors"
 						type="text"
 						bind:value={authorsInput}
 						on:input={updateAuthors}
@@ -237,10 +241,11 @@
 			<h2 class="text-lg font-medium text-gray-900 mb-4">Archivo</h2>
 			
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="resource-file" class="block text-sm font-medium text-gray-700 mb-2">
 					Seleccionar archivo *
 				</label>
 				<input
+					id="resource-file"
 					type="file"
 					on:change={handleFileChange}
 					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -274,10 +279,11 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<!-- Categoría -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-category" class="block text-sm font-medium text-gray-700 mb-2">
 						Categoría *
 					</label>
 					<select
+						id="resource-category"
 						bind:value={formData.category}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 					>
@@ -289,10 +295,11 @@
 
 				<!-- Tipo de archivo -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-media-type" class="block text-sm font-medium text-gray-700 mb-2">
 						Tipo de archivo *
 					</label>
 					<select
+						id="resource-media-type"
 						bind:value={formData.mediaType}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 					>
@@ -304,10 +311,11 @@
 
 				<!-- Año de publicación -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-publish-year" class="block text-sm font-medium text-gray-700 mb-2">
 						Año de publicación
 					</label>
 					<input
+						id="resource-publish-year"
 						type="number"
 						bind:value={formData.publishYear}
 						min="1900"
@@ -319,10 +327,11 @@
 
 				<!-- Idioma -->
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-language" class="block text-sm font-medium text-gray-700 mb-2">
 						Idioma *
 					</label>
 					<select
+						id="resource-language"
 						bind:value={formData.language}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 					>
@@ -335,10 +344,11 @@
 				<!-- ISBN (para documentos) -->
 				{#if formData.mediaType === 'pdf' || formData.mediaType === 'document'}
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-isbn" class="block text-sm font-medium text-gray-700 mb-2">
 							ISBN
 						</label>
 						<input
+							id="resource-isbn"
 							type="text"
 							bind:value={formData.isbn}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -350,10 +360,11 @@
 				<!-- Duración (para videos/audio) -->
 				{#if formData.mediaType === 'video' || formData.mediaType === 'audio'}
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-duration" class="block text-sm font-medium text-gray-700 mb-2">
 							Duración (segundos)
 						</label>
 						<input
+							id="resource-duration"
 							type="number"
 							bind:value={formData.duration}
 							min="1"
@@ -366,10 +377,11 @@
 
 			<!-- Tags -->
 			<div class="mt-6">
-				<label class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="resource-tags" class="block text-sm font-medium text-gray-700 mb-2">
 					Tags
 				</label>
 				<input
+					id="resource-tags"
 					type="text"
 					bind:value={tagsInput}
 					on:input={updateTags}

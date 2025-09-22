@@ -1,7 +1,7 @@
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
@@ -17,6 +17,12 @@ namespace CentroCultural.API.Controllers
         {
             _eventService = eventService;
             _logger = logger;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
 
         // GET: api/event
@@ -104,19 +110,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // POST: api/event
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPost]
         public async Task<ActionResult<EventDto>> CreateEvent([FromBody] CreateEventDto eventDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var eventItem = await _eventService.CreateEventAsync(eventDto, int.Parse(userIdClaim));
+                var eventItem = await _eventService.CreateEventAsync(eventDto, userId);
                 return CreatedAtAction(nameof(GetEvent), new { id = eventItem.Id }, eventItem);
             }
             catch (UnauthorizedAccessException)
@@ -135,19 +136,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // PUT: api/event/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] UpdateEventDto eventDto)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _eventService.UpdateEventAsync(id, eventDto, int.Parse(userIdClaim));
+                var result = await _eventService.UpdateEventAsync(id, eventDto, userId);
 
                 if (!result)
                     return NotFound($"Evento con ID {id} no encontrado");
@@ -170,19 +166,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // DELETE: api/event/{id}
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEvent(Guid id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var result = await _eventService.DeleteEventAsync(id, int.Parse(userIdClaim));
+                var result = await _eventService.DeleteEventAsync(id, userId);
 
                 if (!result)
                     return NotFound($"Evento con ID {id} no encontrado");
@@ -201,19 +192,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // GET: api/event/{id}/registrations
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpGet("{id}/registrations")]
         public async Task<ActionResult<IEnumerable<EventRegistrationDto>>> GetEventRegistrations(Guid id)
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var registrations = await _eventService.GetEventRegistrationsAsync(id, int.Parse(userIdClaim));
+                var registrations = await _eventService.GetEventRegistrationsAsync(id, userId);
                 return Ok(registrations);
             }
             catch (UnauthorizedAccessException)
@@ -233,40 +219,9 @@ namespace CentroCultural.API.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                
-                var registration = await _eventService.RegisterForEventAsync(id, registrationDto, int.TryParse(userIdClaim, out var userId) ? userId : (int?)null);
-                return CreatedAtAction(nameof(GetEventRegistrations), new { id }, registration);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error registrando para el evento: {EventId}", id);
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
+                var userId = GetCurrentUserId();
 
-        // PUT: api/event/registration/{registrationId}/status
-        [Authorize(Roles = "Colaborador,Administrador")]
-        [HttpPut("registration/{registrationId}/status")]
-        public async Task<IActionResult> UpdateRegistrationStatus(Guid registrationId, [FromBody] UpdateRegistrationStatusDto statusDto)
-        {
-            try
-            {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
-
-                var result = await _eventService.UpdateRegistrationStatusAsync(registrationId, statusDto, int.Parse(userIdClaim));
+                var result = await _eventService.UpdateRegistrationStatusAsync(registrationId, statusDto, userId);
 
                 if (!result)
                     return NotFound($"Inscripción con ID {registrationId} no encontrada");
@@ -285,19 +240,14 @@ namespace CentroCultural.API.Controllers
         }
 
         // GET: api/event/my-events
-        [Authorize(Roles = "Colaborador,Administrador")]
         [HttpGet("my-events")]
         public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetMyEvents()
         {
             try
             {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                {
-                    return Unauthorized("Usuario no autenticado correctamente");
-                }
+                var userId = GetCurrentUserId();
 
-                var events = await _eventService.GetEventsByOrganizerAsync(int.Parse(userIdClaim));
+                var events = await _eventService.GetEventsByOrganizerAsync(userId);
                 return Ok(events);
             }
             catch (Exception ex)

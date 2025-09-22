@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { authService } from '$lib/services/authService';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
 
   export let data;
 
@@ -11,7 +11,7 @@
   async function handleLogout() {
     loading = true;
     try {
-      await authService.logout();
+      await jwtService.logout();
       goto('/');
     } catch (error) {
       console.error('Error durante logout:', error);
@@ -24,7 +24,7 @@
 
   // Redireccionar si no está autenticado
   onMount(() => {
-    if (!user && !authService.isAuthenticated()) {
+    if (!user && !jwtService.isAuthenticated()) {
       goto('/auth/login');
     }
   });

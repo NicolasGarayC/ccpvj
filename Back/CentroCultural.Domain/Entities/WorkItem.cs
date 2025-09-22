@@ -1,37 +1,57 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    public class WorkItem
+    [Table("module_post")]
+    public class ModulePost
     {
-        public Guid Id { get; set; }
-        
+        [Column("id")]
+        public string Id { get; set; } = string.Empty;
+
         [Required]
         [MaxLength(200)]
+        [Column("title")]
         public string Title { get; set; } = string.Empty;
-        
+
         [MaxLength(500)]
-        public string? Description { get; set; }
-        
-        public string? LongText { get; set; }
-        
+        [Column("subtitle")]
+        public string? Subtitle { get; set; }
+
+        [Column("content")]
+        public string? Content { get; set; }
+
+        [Column("order_number")]
         public int OrderNumber { get; set; } = 0;
-        
+
+        [Column("is_active")]
         public bool IsActive { get; set; } = true;
-        
+
+        [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
+
+        [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
-        
+
         [Required]
-        public Guid ModuleId { get; set; }
-        
-        
-        // Contextual multimedia paths (stored in WorkItem directly)
+        [Column("module_id")]
+        public string ModuleId { get; set; } = string.Empty;
+
+        [Required]
+        [Column("author_id")]
+        public int AuthorId { get; set; }
+
+        // Contextual multimedia paths
         [MaxLength(500)]
+        [Column("image_path")]
         public string? ImagePath { get; set; }
-        
+
         [MaxLength(500)]
+        [Column("video_path")]
         public string? VideoPath { get; set; }
+
+        [MaxLength(500)]
+        [Column("audio_path")]
+        public string? AudioPath { get; set; }
     }
 }

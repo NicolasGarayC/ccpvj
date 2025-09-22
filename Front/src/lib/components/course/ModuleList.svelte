@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type Module } from '$lib/services/courseService';
+	import { courseService } from '$lib/services/courseService';
+	import type { ModuleSummaryDto } from '$lib/types/api/course.types';
 	import ModuleCard from './ModuleCard.svelte';
 
 	export let courseId: string;
-	export let showActions = false;
 	export let allowReorder = false;
+	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
 
-	let modules: Module[] = [];
+	let modules: ModuleSummaryDto[] = [];
 	let loading = true;
 	let error = '';
-	let draggedModule: Module | null = null;
+	let draggedModule: ModuleSummaryDto | null = null;
 
 	onMount(() => {
 		loadModules();
@@ -48,9 +49,9 @@
 	}
 
 	// Drag and drop functionality for reordering
-	function handleDragStart(event: DragEvent, module: Module) {
+	function handleDragStart(event: DragEvent, module: ModuleSummaryDto) {
 		if (!allowReorder) return;
-		
+
 		draggedModule = module;
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
@@ -67,7 +68,7 @@
 		}
 	}
 
-	async function handleDrop(event: DragEvent, targetModule: Module) {
+	async function handleDrop(event: DragEvent, targetModule: ModuleSummaryDto) {
 		if (!allowReorder || !draggedModule || draggedModule.id === targetModule.id) {
 			draggedModule = null;
 			return;
@@ -99,7 +100,7 @@
 	<div class="header">
 		<h3>Módulos del Curso</h3>
 		{#if showActions}
-			<button 
+			<button
 				class="btn btn-primary"
 				on:click={handleCreateModule}
 			>
@@ -132,7 +133,7 @@
 			<h4>No hay módulos creados</h4>
 			<p>Este curso aún no tiene módulos. Los módulos te permiten organizar el contenido de manera estructurada.</p>
 			{#if showActions}
-				<button 
+				<button
 					class="btn btn-primary"
 					on:click={handleCreateModule}
 				>
@@ -167,9 +168,9 @@
 						</div>
 					{/if}
 
-					<ModuleCard 
+					<ModuleCard
 						{module}
-						{showActions}
+						showActions={true}
 						on:edit={handleEditModule}
 						on:delete={handleDeleteModule}
 						on:view={handleViewModule}

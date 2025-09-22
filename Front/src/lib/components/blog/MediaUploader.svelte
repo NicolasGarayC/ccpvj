@@ -124,7 +124,7 @@
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        credentials: 'include', // Include cookies for session-based auth
+        // TODO: Add JWT Bearer token when implemented
         headers,
         body: formData
       });
@@ -158,7 +158,7 @@
       try {
         const response = await fetch(`/api/courses/${contentId}/remove-image`, {
           method: 'DELETE',
-          credentials: 'include'
+          // TODO: Add JWT Bearer token when implemented
         });
 
         if (!response.ok) {

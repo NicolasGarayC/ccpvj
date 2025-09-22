@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { courseService } from '$lib/services/courseService';
-	import { authService } from '$lib/services/authService';
+	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	let testResults = [];
 	let loading = false;
@@ -9,9 +9,9 @@
 	let user = null;
 
 	onMount(() => {
-		isAuthenticated = authService.isAuthenticated();
+		isAuthenticated = jwtService.isAuthenticated();
 		if (isAuthenticated) {
-			user = authService.getUser();
+			user = jwtService.getUser();
 		}
 	});
 

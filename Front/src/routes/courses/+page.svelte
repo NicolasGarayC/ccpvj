@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { authService } from '$lib/services/authService';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
   import { courseService } from '$lib/services/courseService';
   import type { CourseSummaryDto } from '$lib/types/api/course.types';
   import type { CourseSearchParams } from '$lib/services/courseService';
@@ -9,7 +9,6 @@
   // Estado de la aplicación
   let courses: CourseSummaryDto[] = [];
   let filteredCourses: CourseSummaryDto[] = [];
-  let subjects: string[] = [];
   let isLoading = true;
   let error: string | null = null;
   
@@ -19,7 +18,6 @@
   
   // Filtros y búsqueda
   let searchTerm = '';
-  let selectedSubject = '';
   let showFeaturedOnly = false;
   let sortBy = 'createdAt';
   let sortOrder: 'asc' | 'desc' = 'desc';
@@ -31,7 +29,7 @@
   
   // Calcular cursos filtrados y paginados
   $: {
-    filteredCourses = filterCourses(courses, searchTerm, selectedSubject, showFeaturedOnly);
+    filteredCourses = filterCourses(courses, searchTerm, showFeaturedOnly);
     filteredCourses = sortCourses(filteredCourses, sortBy, sortOrder);
     totalCourses = filteredCourses.length;
   }
@@ -41,15 +39,14 @@
   
   onMount(async () => {
     // Verificar permisos de usuario
-    isAuthenticated = authService.isAuthenticated();
+    isAuthenticated = jwtService.isAuthenticated();
     if (isAuthenticated) {
-      const user = authService.getUser();
+      const user = jwtService.getUser();
       canManage = user?.role === 'colaborador' || user?.role === 'administrador';
     }
     
     // Cargar datos
     await loadCourses();
-    await loadSubjects();
   });
   
   async function loadCourses() {
@@ -67,15 +64,8 @@
     }
   }
   
-  async function loadSubjects() {
-    try {
-      subjects = await courseService.getAvailableSubjects();
-    } catch (e: unknown) {
-      console.error('Error loading subjects:', e);
-    }
-  }
   
-  function filterCourses(courses: CourseSummaryDto[], search: string, subject: string, featuredOnly: boolean): CourseSummaryDto[] {
+  function filterCourses(courses: CourseSummaryDto[], search: string, featuredOnly: boolean): CourseSummaryDto[] {
     console.log('Filtering courses:', courses.length, 'courses');
     const filtered = courses.filter(course => {
       console.log('Course:', course.title, 'isActive:', course.isActive);
@@ -96,9 +86,6 @@
           return false;
         }
       }
-
-      // Filtro por subject (materia)
-      if (subject && course.subject !== subject) return false;
 
       // Filtro por destacados
       if (featuredOnly && !course.isFeatured) return false;
@@ -126,9 +113,6 @@
         case 'moduleCount':
           comparison = (a.moduleCount || 0) - (b.moduleCount || 0);
           break;
-        case 'subject':
-          comparison = a.subject.localeCompare(b.subject);
-          break;
       }
 
       return order === 'asc' ? comparison : -comparison;
@@ -146,7 +130,6 @@
   
   function clearFilters() {
     searchTerm = '';
-    selectedSubject = '';
     showFeaturedOnly = false;
     currentPage = 1;
   }
@@ -241,7 +224,7 @@
             <span class="text-2xl">📚</span>
           </div>
           <p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Módulos</p>
-          <p class="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">{subjects.length}</p>
+          <p class="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">{courses.reduce((acc, course) => acc + (course.moduleCount || 0), 0)}</p>
           <p class="text-xs text-blue-600 font-semibold">¡Módulos increíbles! 🌈</p>
         </div>
       </div>
@@ -281,6 +264,7 @@
                 <button
                   on:click={() => { searchTerm = ''; handleSearch(); }}
                   class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
+                  aria-label="Limpiar búsqueda"
                 >
                   <i class="fas fa-times text-lg"></i>
                 </button>
@@ -290,18 +274,6 @@
 
           <!-- Controles juveniles -->
           <div class="flex items-center gap-4 flex-wrap">
-            <!-- Filtro por Módulo -->
-            <div class="relative">
-              <select bind:value={selectedSubject} class="appearance-none px-6 py-3 pr-10 border-2 border-emerald-200 rounded-2xl focus:ring-4 focus:ring-emerald-300/20 focus:border-emerald-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
-                <option value="">📚 Todos los módulos</option>
-                {#each subjects as subject}
-                  <option value={subject}>📖 {subject}</option>
-                {/each}
-              </select>
-              <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-400 pointer-events-none">
-                <i class="fas fa-chevron-down"></i>
-              </div>
-            </div>
 
             <!-- Destacados con estilo juvenil -->
             <label class="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl cursor-pointer hover:from-yellow-100 hover:to-orange-100 hover:border-yellow-300 transition-all duration-300 shadow-lg">
@@ -321,7 +293,6 @@
               <select bind:value={sortBy} class="appearance-none px-6 py-3 pr-10 border-2 border-emerald-200 rounded-2xl focus:ring-4 focus:ring-emerald-300/20 focus:border-emerald-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
                 <option value="createdAt">🆕 Más recientes</option>
                 <option value="title">🔤 Nombre A-Z</option>
-                <option value="subject">📚 Por materia</option>
                 <option value="educatorName">👨‍🏫 Por educador</option>
                 <option value="moduleCount">📊 Por módulos</option>
               </select>
@@ -341,7 +312,7 @@
             </button>
 
             <!-- Limpiar filtros con estilo -->
-            {#if searchTerm || selectedSubject || showFeaturedOnly}
+            {#if searchTerm || showFeaturedOnly}
               <button
                 on:click={clearFilters}
                 class="group px-4 py-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-2xl hover:from-red-100 hover:to-pink-100 hover:border-red-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
@@ -370,7 +341,7 @@
                 <p class="font-bold text-gray-700">
                   Mostrando <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredCourses.length)}</span>
                   de <span class="text-teal-600 font-black">{filteredCourses.length}</span> cursos increíbles
-                  {#if searchTerm || selectedSubject || showFeaturedOnly}
+                  {#if searchTerm || showFeaturedOnly}
                     <span class="text-gray-500">(de {courses.length} totales)</span>
                   {/if}
                 </p>
@@ -515,18 +486,20 @@
       <!-- Paginación mejorada -->
       {#if totalPages > 1}
         <div class="flex items-center justify-center space-x-3 mt-12">
-          <button 
+          <button
             on:click={() => currentPage = 1}
             disabled={currentPage === 1}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
+            aria-label="Ir a la primera página"
           >
             <i class="fas fa-angle-double-left text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
           
-          <button 
+          <button
             on:click={() => currentPage = Math.max(1, currentPage - 1)}
             disabled={currentPage === 1}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
+            aria-label="Página anterior"
           >
             <i class="fas fa-angle-left text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
@@ -548,18 +521,20 @@
             </button>
           {/each}
 
-          <button 
+          <button
             on:click={() => currentPage = Math.min(totalPages, currentPage + 1)}
             disabled={currentPage === totalPages}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
+            aria-label="Página siguiente"
           >
             <i class="fas fa-angle-right text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
           
-          <button 
+          <button
             on:click={() => currentPage = totalPages}
             disabled={currentPage === totalPages}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
+            aria-label="Ir a la última página"
           >
             <i class="fas fa-angle-double-right text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
@@ -570,12 +545,6 @@
 </div>
 
 <style>
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
 
   .course-card-wrapper {
     height: 100%;

@@ -3,7 +3,7 @@
   import { blogService } from '$lib/services/blog/blogService';
   import BlogPostCard from '$lib/components/blog/BlogPostCard.svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
-  import { authService } from '$lib/services/authService';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
   
   import { t } from '$lib/i18n';
   
@@ -28,10 +28,10 @@
   onMount(async () => {
     try {
       // Verificar autenticación y permisos
-      isAuthenticated = authService.isAuthenticated();
+      isAuthenticated = jwtService.isAuthenticated();
       if (isAuthenticated) {
-        const user = authService.getUser();
-        canCreateArticles = user?.nombreRol === 'Educador' || user?.nombreRol === 'Administrador' || user?.nombreRol === 'Colaborador';
+        const user = jwtService.getUser();
+        canCreateArticles = (user?.role === 'administrador' || user?.role === 'colaborador') || user?.role === 'administrador' || user?.role === 'colaborador';
       }
       
       // Cargar posts

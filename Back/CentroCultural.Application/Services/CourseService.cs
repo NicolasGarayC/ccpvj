@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using CentroCultural.Infrastructure.Data;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
-using Models;
+using CentroCultural.Domain.Entities;
 
 namespace CentroCultural.Application.Services
 {
@@ -24,7 +24,6 @@ namespace CentroCultural.Application.Services
                 Id = c.Id,
                 Title = c.Title,
                 Description = c.Description,
-                Subject = c.Subject ?? "",
                 IsFeatured = c.IsFeatured,
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt,
@@ -35,17 +34,6 @@ namespace CentroCultural.Application.Services
             .OrderByDescending(c => c.CreatedAt);
         }
 
-        public async Task<IEnumerable<string>> GetAvailableSubjectsAsync()
-        {
-            var subjects = await _context.Course
-                .Where(c => c.IsActive && !string.IsNullOrEmpty(c.Subject))
-                .Select(c => c.Subject!)
-                .Distinct()
-                .OrderBy(s => s)
-                .ToListAsync();
-
-            return subjects;
-        }
 
         // Stub methods to satisfy ICourseService interface
         public Task<CoursePagedResultDto> GetCoursesAsync(CourseSearchDto searchDto) =>
@@ -58,6 +46,12 @@ namespace CentroCultural.Application.Services
         {
             var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
 
+            // Si no se encuentra por ID y no es un GUID válido, buscar por título
+            if (course == null && !Guid.TryParse(id, out _))
+            {
+                course = await _context.Course.FirstOrDefaultAsync(c => c.Title == id);
+            }
+
             if (course == null)
                 return null;
 
@@ -69,8 +63,7 @@ namespace CentroCultural.Application.Services
 
             var modules = moduleEntities.Select(m => new ModuleSummaryDto
             {
-                Id = Guid.TryParse(m.Id, out var moduleGuid) ? moduleGuid : Guid.Empty,
-                StringId = m.Id,
+                Id = m.Id,
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
@@ -80,11 +73,9 @@ namespace CentroCultural.Application.Services
 
             return new CourseDetailDto
             {
-                Id = Guid.TryParse(course.Id, out var courseGuid) ? courseGuid : Guid.NewGuid(),
-                StringId = course.Id,
+                Id = course.Id,
                 Title = course.Title,
                 Description = course.Description,
-                Subject = course.Subject ?? "",
                 IsActive = course.IsActive,
                 IsFeatured = course.IsFeatured,
                 CreatedAt = DateTime.FromBinary(course.CreatedAt),
@@ -98,13 +89,45 @@ namespace CentroCultural.Application.Services
             };
         }
 
-        public Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto, int userId) =>
+        public async Task<CourseDto> CreateCourseAsync(CreateCourseDto createCourseDto, int userId)
+        {
+            var course = new Course
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = createCourseDto.Title,
+                Description = createCourseDto.Description,
+                IsFeatured = createCourseDto.IsFeatured,
+                ImagePath = createCourseDto.ImagePath,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                UpdatedAt = null,
+                EducatorId = userId.ToString()
+            };
+
+            _context.Course.Add(course);
+            await _context.SaveChangesAsync();
+
+            return new CourseDto
+            {
+                Id = course.Id,
+                Title = course.Title,
+                Description = course.Description,
+                IsActive = course.IsActive,
+                IsFeatured = course.IsFeatured,
+                CreatedAt = DateTimeOffset.FromUnixTimeSeconds(course.CreatedAt).DateTime,
+                UpdatedAt = course.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(course.UpdatedAt.Value).DateTime : null,
+                EducatorId = int.Parse(course.EducatorId),
+                EducatorName = "Instructor",
+                ImagePath = course.ImagePath,
+                ModuleCount = 0,
+                WorkItemCount = 0
+            };
+        }
+
+        public Task<bool> UpdateCourseAsync(string id, UpdateCourseDto updateCourseDto, int userId) =>
             throw new NotImplementedException();
 
-        public Task<bool> UpdateCourseAsync(Guid id, UpdateCourseDto updateCourseDto, int userId) =>
-            throw new NotImplementedException();
-
-        public Task<bool> DeleteCourseAsync(Guid id, int userId) =>
+        public Task<bool> DeleteCourseAsync(string id, int userId) =>
             throw new NotImplementedException();
 
         public Task<IEnumerable<CourseSummaryDto>> GetCoursesByEducatorAsync(int userId) =>
@@ -112,15 +135,25 @@ namespace CentroCultural.Application.Services
 
         public async Task<IEnumerable<ModuleSummaryDto>> GetCourseModulesAsync(string courseId)
         {
+            // Si no es un GUID válido, buscar el curso por título para obtener el ID real
+            string actualCourseId = courseId;
+            if (!Guid.TryParse(courseId, out _))
+            {
+                var course = await _context.Course.FirstOrDefaultAsync(c => c.Title == courseId);
+                if (course != null)
+                {
+                    actualCourseId = course.Id;
+                }
+            }
+
             var moduleEntities = await _context.Module
-                .Where(m => m.CourseId == courseId)
+                .Where(m => m.CourseId == actualCourseId)
                 .OrderBy(m => m.OrderNumber)
                 .ToListAsync();
 
             return moduleEntities.Select(m => new ModuleSummaryDto
             {
-                Id = Guid.TryParse(m.Id, out var moduleGuid) ? moduleGuid : Guid.Empty,
-                StringId = m.Id,
+                Id = m.Id,
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
@@ -142,31 +175,58 @@ namespace CentroCultural.Application.Services
 
             return new ModuleDetailDto
             {
-                Id = Guid.TryParse(module.Id, out var moduleGuid) ? moduleGuid : Guid.NewGuid(),
-                StringId = module.Id,
+                Id = module.Id,
                 Title = module.Title,
                 Description = module.Description,
                 OrderNumber = module.OrderNumber,
                 IsActive = module.IsActive,
                 CreatedAt = DateTime.FromBinary(module.CreatedAt),
                 UpdatedAt = module.UpdatedAt.HasValue ? DateTime.FromBinary(module.UpdatedAt.Value) : null,
-                CourseId = Guid.TryParse(module.CourseId, out var courseGuid) ? courseGuid : Guid.NewGuid(),
+                CourseId = module.CourseId,
                 CourseName = "", // TODO: Get course name if needed
                 WorkItemCount = 0,
                 WorkItems = workItems
             };
         }
 
-        public Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto, int userId) =>
+        public async Task<ModuleDto> CreateModuleAsync(CreateModuleDto createModuleDto, int userId)
+        {
+            var module = new Module
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = createModuleDto.Title,
+                Description = createModuleDto.Description,
+                OrderNumber = createModuleDto.OrderNumber,
+                CourseId = createModuleDto.CourseId,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                UpdatedAt = null
+            };
+
+            _context.Module.Add(module);
+            await _context.SaveChangesAsync();
+
+            return new ModuleDto
+            {
+                Id = module.Id,
+                Title = module.Title,
+                Description = module.Description,
+                OrderNumber = module.OrderNumber,
+                IsActive = module.IsActive,
+                CourseId = module.CourseId,
+                CreatedAt = DateTimeOffset.FromUnixTimeSeconds(module.CreatedAt).DateTime,
+                UpdatedAt = module.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(module.UpdatedAt.Value).DateTime : null,
+                WorkItemCount = 0
+            };
+        }
+
+        public Task<bool> UpdateModuleAsync(string id, UpdateModuleDto updateModuleDto, int userId) =>
             throw new NotImplementedException();
 
-        public Task<bool> UpdateModuleAsync(Guid id, UpdateModuleDto updateModuleDto, int userId) =>
+        public Task<bool> DeleteModuleAsync(string id, int userId) =>
             throw new NotImplementedException();
 
-        public Task<bool> DeleteModuleAsync(Guid id, int userId) =>
-            throw new NotImplementedException();
-
-        public Task<bool> ReorderModuleAsync(Guid id, int newOrderNumber, int userId) =>
+        public Task<bool> ReorderModuleAsync(string id, int newOrderNumber, int userId) =>
             throw new NotImplementedException();
 
         public Task<object> GetCourseStatisticsAsync() =>

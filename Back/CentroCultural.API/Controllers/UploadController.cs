@@ -21,7 +21,6 @@ namespace CentroCultural.API.Controllers
             => (_mediaService, _logger) = (mediaService, logger);
 
         [HttpPost("{contentType}/{contentId}/images")]
-        [Authorize]
         public async Task<IActionResult> ProcessImageUpload(string contentType, Guid contentId)
         {
             // Validate content type
@@ -59,7 +58,6 @@ namespace CentroCultural.API.Controllers
         }
 
         [HttpPost("{contentType}/{contentId}/videos")]
-        [Authorize]
         public async Task<IActionResult> ProcessVideoUpload(string contentType, Guid contentId)
         {
             // Validate content type
@@ -119,7 +117,6 @@ namespace CentroCultural.API.Controllers
         }
 
         [HttpPost("{contentType}/{contentId}/audio")]
-        [Authorize]
         public async Task<IActionResult> ProcessAudioUpload(string contentType, Guid contentId)
         {
             // Validate content type
@@ -180,7 +177,6 @@ namespace CentroCultural.API.Controllers
         }
 
         [HttpDelete("{mediaId}")]
-        [Authorize]
         public async Task<IActionResult> DeleteMedia(int mediaId)
         {
             var result = await _mediaService.DeleteMedia(mediaId);

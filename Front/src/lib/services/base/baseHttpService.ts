@@ -3,6 +3,8 @@
  * Reemplaza el acceso directo SQLite por HTTP calls al backend .NET
  */
 
+import { jwtService } from '../auth/jwtService.js';
+
 export interface ApiResponse<T> {
 	success: boolean;
 	data?: T;
@@ -42,9 +44,9 @@ export class BaseHttpService {
 		const url = `${this.baseURL}${endpoint}`;
 
 		const defaultOptions: RequestInit = {
-			credentials: 'include', // CRUCIAL para cookies authentication
 			headers: {
 				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader(),
 				...options.headers
 			}
 		};
@@ -52,7 +54,7 @@ export class BaseHttpService {
 		const response = await fetch(url, { ...defaultOptions, ...options });
 
 		if (!response.ok) {
-			await this.handleError(response);
+			await this.handleError(response, { ...defaultOptions, ...options });
 		}
 
 		// Handle empty responses (204 No Content, etc.)
@@ -132,7 +134,7 @@ export class BaseHttpService {
 		});
 
 		if (!response.ok) {
-			await this.handleError(response);
+			await this.handleError(response, { ...defaultOptions, ...options }, cookieHeader);
 		}
 
 		return response.blob();
@@ -156,7 +158,7 @@ export class BaseHttpService {
 	/**
 	 * Handle HTTP errors with proper error messages
 	 */
-	private async handleError(response: Response): Promise<never> {
+	private async handleError(response: Response, requestOptions?: RequestInit): Promise<never> {
 		let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
 		try {
@@ -175,11 +177,9 @@ export class BaseHttpService {
 		// Handle specific HTTP status codes
 		switch (response.status) {
 			case 401:
-				// Redirect to login on unauthorized, but NOT if we're already on login page
-				if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-					window.location.href = '/auth/login';
-				}
-				throw new ApiError(401, 'No autorizado. Redirigiendo al login...');
+				// Token expired or invalid, remove it
+				jwtService.removeToken();
+				throw new ApiError(401, 'Sesión expirada - Por favor inicia sesión nuevamente');
 
 			case 403:
 				throw new ApiError(403, 'No tienes permisos para realizar esta acción');
@@ -199,18 +199,10 @@ export class BaseHttpService {
 	}
 
 	/**
-	 * Check if user is authenticated by making a test request
+	 * Check if user is authenticated using JWT
 	 */
 	protected async checkAuth(): Promise<boolean> {
-		try {
-			await this.get('/simple-auth/me');
-			return true;
-		} catch (error) {
-			if (error instanceof ApiError && error.status === 401) {
-				return false;
-			}
-			throw error;
-		}
+		return jwtService.isAuthenticated();
 	}
 
 	/**
@@ -254,4 +246,5 @@ export class BaseHttpService {
 
 		throw lastError!;
 	}
+
 }

@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace CentroCultural.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // Todas las operaciones requieren autenticación
+    [Authorize(Roles = "administrador")]
     public class UserManagementController : ControllerBase
     {
         private readonly IUserManagementService _userManagementService;
@@ -18,6 +18,12 @@ namespace CentroCultural.API.Controllers
         {
             _userManagementService = userManagementService;
             _logger = logger;
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdClaim, out var userId) ? userId : null;
         }
 
         /// <summary>
@@ -132,7 +138,6 @@ namespace CentroCultural.API.Controllers
         /// Elimina (desactiva) un usuario (solo administradores)
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult> DeleteUser(int id)
         {
             try
@@ -258,7 +263,6 @@ namespace CentroCultural.API.Controllers
         /// Obtiene estadísticas de usuarios (solo administradores)
         /// </summary>
         [HttpGet("statistics")]
-        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<UserStatsDto>> GetUserStatistics()
         {
             try
@@ -340,13 +344,5 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Obtiene el ID del usuario actual desde el token JWT
-        /// </summary>
-        private int? GetCurrentUserId()
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(userIdClaim, out var userId) ? userId : null;
-        }
     }
 }

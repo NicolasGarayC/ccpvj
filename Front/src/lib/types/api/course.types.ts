@@ -7,7 +7,6 @@ export interface CourseDto {
 	id: string; // Guid as string
 	title: string;
 	description: string;
-	subject: string;
 	isActive: boolean;
 	isFeatured: boolean;
 	createdAt: string; // ISO date string
@@ -20,14 +19,12 @@ export interface CourseDto {
 }
 
 export interface CourseDetailDto extends CourseDto {
-	stringId: string; // Original course ID as string (e.g., "curso-002")
 	modules: ModuleSummaryDto[];
 }
 
 export interface CreateCourseDto {
 	title: string;
 	description: string;
-	subject: string;
 	isFeatured?: boolean;
 	imagePath?: string;
 }
@@ -35,7 +32,6 @@ export interface CreateCourseDto {
 export interface UpdateCourseDto {
 	title: string;
 	description: string;
-	subject: string;
 	isFeatured: boolean;
 	imagePath?: string;
 }
@@ -44,7 +40,6 @@ export interface CourseSummaryDto {
 	id: string;
 	title: string;
 	description: string;
-	subject: string;
 	educatorName: string;
 	moduleCount: number;
 	isFeatured: boolean;
@@ -55,7 +50,6 @@ export interface CourseSummaryDto {
 
 export interface ModuleDto {
 	id: string;
-	stringId: string;
 	title: string;
 	description: string;
 	orderNumber: number;
@@ -68,10 +62,10 @@ export interface ModuleDto {
 
 export interface ModuleSummaryDto {
 	id: string;
-	stringId: string;
 	title: string;
 	description: string;
 	orderNumber: number;
+	isActive: boolean;
 	workItemCount: number;
 }
 
@@ -128,7 +122,6 @@ export interface UpdateWorkItemDto {
 // Search and filter DTOs
 export interface CourseSearchDto {
 	title?: string;
-	subject?: string;
 	educatorId?: number;
 	isActive?: boolean;
 	isFeatured?: boolean;
