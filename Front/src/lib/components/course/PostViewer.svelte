@@ -88,11 +88,11 @@
 			case 'text':
 				return element.content || 'Sin contenido';
 			case 'image':
-				return element.filePath ? { type: 'image', src: element.filePath, alt: element.fileName || 'Imagen' } : null;
+				return element.filePath ? { type: 'image', src: postElementService.getFileUrl(element.filePath), alt: element.fileName || 'Imagen' } : null;
 			case 'video':
-				return element.filePath ? { type: 'video', src: element.filePath } : null;
+				return element.filePath ? { type: 'video', src: postElementService.getFileUrl(element.filePath) } : null;
 			case 'audio':
-				return element.filePath ? { type: 'audio', src: element.filePath } : null;
+				return element.filePath ? { type: 'audio', src: postElementService.getFileUrl(element.filePath) } : null;
 			default:
 				return null;
 		}
@@ -181,43 +181,102 @@
 							{@const renderedElement = renderElement(element)}
 							{#if renderedElement}
 								<div class="element element-{element.elementType}">
-									{#if element.elementType === 'title'}
-										<h3 class="element-title">{renderedElement}</h3>
-									{:else if element.elementType === 'text'}
-										<div class="element-text">{@html renderedElement.replace(/\n/g, '<br>')}</div>
-									{:else if renderedElement.type === 'image'}
-										<div class="element-image">
-											<img
-												src={renderedElement.src}
-												alt={renderedElement.alt}
-												loading="lazy"
-											/>
-											{#if element.fileName}
-												<div class="media-caption">{element.fileName}</div>
+									<div class="element-header">
+										<div class="element-type-badge element-type-{element.elementType}">
+											{#if element.elementType === 'title'}
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M4 12h16m-8-8v16"/>
+												</svg>
+												Título
+											{:else if element.elementType === 'text'}
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+													<polyline points="14,2 14,8 20,8"/>
+													<line x1="16" y1="13" x2="8" y2="13"/>
+													<line x1="16" y1="17" x2="8" y2="17"/>
+												</svg>
+												Texto
+											{:else if element.elementType === 'image'}
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+													<circle cx="8.5" cy="8.5" r="1.5"/>
+													<polyline points="21,15 16,10 5,21"/>
+												</svg>
+												Imagen
+											{:else if element.elementType === 'video'}
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<polygon points="23 7 16 12 23 17 23 7"/>
+													<rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+												</svg>
+												Video
+											{:else if element.elementType === 'audio'}
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+													<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+													<path d="m19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+												</svg>
+												Audio
 											{/if}
 										</div>
-									{:else if renderedElement.type === 'video'}
-										<div class="element-video">
-											<video controls preload="metadata">
-												<source src={renderedElement.src} type={element.mimeType || 'video/mp4'} />
-												<track kind="captions" />
-												Tu navegador no soporta la reproducción de video.
-											</video>
-											{#if element.fileName}
-												<div class="media-caption">{element.fileName}</div>
-											{/if}
-										</div>
-									{:else if renderedElement.type === 'audio'}
-										<div class="element-audio">
-											<audio controls preload="metadata">
-												<source src={renderedElement.src} type={element.mimeType || 'audio/mpeg'} />
-												Tu navegador no soporta la reproducción de audio.
-											</audio>
-											{#if element.fileName}
-												<div class="media-caption">{element.fileName}</div>
-											{/if}
-										</div>
-									{/if}
+										<div class="element-order">#{element.orderNumber}</div>
+									</div>
+
+									<div class="element-content">
+										{#if element.elementType === 'title'}
+											<h3 class="element-title">{renderedElement}</h3>
+										{:else if element.elementType === 'text'}
+											<div class="element-text">{@html renderedElement.replace(/\n/g, '<br>')}</div>
+										{:else if renderedElement.type === 'image'}
+											<div class="element-image">
+												<img
+													src={renderedElement.src}
+													alt={renderedElement.alt}
+													loading="lazy"
+												/>
+												{#if element.fileName}
+													<div class="media-caption">
+														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+															<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+															<polyline points="14,2 14,8 20,8"/>
+														</svg>
+														{element.fileName}
+													</div>
+												{/if}
+											</div>
+										{:else if renderedElement.type === 'video'}
+											<div class="element-video">
+												<video controls preload="metadata">
+													<source src={renderedElement.src} type={element.mimeType || 'video/mp4'} />
+													<track kind="captions" />
+													Tu navegador no soporta la reproducción de video.
+												</video>
+												{#if element.fileName}
+													<div class="media-caption">
+														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+															<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+															<polyline points="14,2 14,8 20,8"/>
+														</svg>
+														{element.fileName}
+													</div>
+												{/if}
+											</div>
+										{:else if renderedElement.type === 'audio'}
+											<div class="element-audio">
+												<audio controls preload="metadata">
+													<source src={renderedElement.src} type={element.mimeType || 'audio/mpeg'} />
+													Tu navegador no soporta la reproducción de audio.
+												</audio>
+												{#if element.fileName}
+													<div class="media-caption">
+														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+															<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+															<polyline points="14,2 14,8 20,8"/>
+														</svg>
+														{element.fileName}
+													</div>
+												{/if}
+											</div>
+										{/if}
+									</div>
 								</div>
 							{/if}
 						{/each}
@@ -258,8 +317,8 @@
 		background: white;
 		border-radius: 16px;
 		width: 100%;
-		max-width: 900px;
-		max-height: 90vh;
+		max-width: 1200px;
+		max-height: 95vh;
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -400,17 +459,84 @@
 	}
 
 	.element {
-		padding: 0;
+		background: white;
+		border: 2px solid var(--color-border);
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		transition: all 0.3s ease;
+	}
+
+	.element:hover {
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+		transform: translateY(-2px);
+	}
+
+	.element-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1.5rem;
+		background: var(--color-background-subtle);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.element-type-badge {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 20px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.element-type-title {
+		background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+		color: white;
+	}
+
+	.element-type-text {
+		background: linear-gradient(135deg, #10b981, #059669);
+		color: white;
+	}
+
+	.element-type-image {
+		background: linear-gradient(135deg, #f59e0b, #d97706);
+		color: white;
+	}
+
+	.element-type-video {
+		background: linear-gradient(135deg, #ef4444, #dc2626);
+		color: white;
+	}
+
+	.element-type-audio {
+		background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+		color: white;
+	}
+
+	.element-order {
+		background: var(--color-background-muted);
+		color: var(--color-text-muted);
+		padding: 0.25rem 0.75rem;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.element-content {
+		padding: 1.5rem;
 	}
 
 	.element-title {
 		margin: 0;
-		font-size: 1.4rem;
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--color-text-primary);
 		line-height: 1.3;
-		border-left: 4px solid var(--color-primary);
-		padding-left: 1rem;
 	}
 
 	.element-text {
@@ -418,8 +544,7 @@
 		line-height: 1.7;
 		font-size: 1rem;
 		white-space: pre-wrap;
-		border-left: 4px solid var(--color-secondary);
-		padding-left: 1rem;
+		margin: 0;
 	}
 
 	.element-image,
@@ -427,7 +552,6 @@
 	.element-audio {
 		border-radius: 12px;
 		overflow: hidden;
-		border: 1px solid var(--color-border);
 		background: var(--color-background-subtle);
 	}
 
@@ -436,26 +560,36 @@
 		height: auto;
 		display: block;
 		object-fit: cover;
+		max-height: 60vh;
 	}
 
 	.element-video video,
 	.element-audio audio {
 		width: 100%;
 		display: block;
+		border-radius: 8px;
 	}
 
 	.element-video video {
-		max-height: 70vh;
+		max-height: 60vh;
 		object-fit: contain;
 	}
 
 	.media-caption {
-		padding: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1rem;
 		background: var(--color-background-muted);
 		color: var(--color-text-muted);
-		font-size: 0.9rem;
+		font-size: 0.875rem;
 		font-weight: 500;
 		border-top: 1px solid var(--color-border);
+	}
+
+	.media-caption svg {
+		flex-shrink: 0;
+		opacity: 0.7;
 	}
 
 	.modal-footer {

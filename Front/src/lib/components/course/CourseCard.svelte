@@ -84,9 +84,9 @@
 			<h3 class="course-title">{course.title}</h3>
 		</div>
 
-		<p class="course-description">
-			{course.description.length > 120 
-				? course.description.substring(0, 120) + '...'
+		<p class="course-description" title={course.description}>
+			{course.description.length > 150
+				? course.description.substring(0, 150).trim() + '...'
 				: course.description
 			}
 		</p>
@@ -111,7 +111,7 @@
 						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 						<polyline points="14,2 14,8 20,8"></polyline>
 					</svg>
-					{course.workItemCount} contenidos
+					{course.postCount} contenidos
 				</span>
 			</div>
 		</div>
@@ -236,6 +236,8 @@
 
 	.course-content {
 		padding: 1.5rem;
+		overflow: hidden;
+		word-wrap: break-word;
 	}
 
 	.course-header {
@@ -253,6 +255,10 @@
 		margin: 0;
 		flex: 1;
 		line-height: 1.4;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		hyphens: auto;
+		max-width: 100%;
 	}
 
 
@@ -261,6 +267,14 @@
 		line-height: 1.5;
 		margin-bottom: 1rem;
 		font-size: 0.9rem;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		hyphens: auto;
+		max-width: 100%;
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
 	}
 
 	.course-meta {

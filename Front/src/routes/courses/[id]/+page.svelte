@@ -38,25 +38,29 @@
 	const courseId = $page.params.id;
 	let actualCourseId = courseId; // ID real del curso para operaciones
 
-	onMount(async () => {
-		// Check authentication - try localStorage first, then verify with server if needed
+	// Function to update authentication state (same as layout)
+	async function updateAuthState() {
+		// Verificar el token JWT
 		isAuthenticated = jwtService.isAuthenticated();
-		if (isAuthenticated) {
-			user = jwtService.getUser();
-			canManage = user?.role === 'colaborador' || user?.role === 'administrador';
-		} else {
-			// If localStorage is empty, check server once
-			try {
-				const validatedUser = await jwtService.validateToken();
-				if (validatedUser) {
-					isAuthenticated = true;
-					user = validatedUser;
-					canManage = user?.role === 'colaborador' || user?.role === 'administrador';
-				}
-			} catch (err) {
-				console.error('Error validating token:', err);
+		user = jwtService.getUser();
+
+		// Si hay token pero no usuario, intentar validarlo con el servidor
+		if (isAuthenticated && !user) {
+			const validatedUser = await jwtService.validateToken();
+			if (validatedUser) {
+				user = validatedUser;
+			} else {
+				isAuthenticated = false;
 			}
 		}
+
+		// Set canManage using the service method
+		canManage = isAuthenticated && jwtService.canManageContent();
+	}
+
+	onMount(async () => {
+		// Update authentication state
+		await updateAuthState();
 
 		// Load course details
 		await loadCourse();
@@ -314,7 +318,7 @@
 						🏠 Cursos
 					</button>
 					<span class="text-gray-400">/</span>
-					<span class="text-gray-600 font-medium">{course.title}</span>
+					<span class="text-gray-600 font-medium break-words overflow-wrap-anywhere hyphens-auto max-w-full">{course.title}</span>
 				</nav>
 			</div>
 
@@ -324,7 +328,7 @@
 					{#if course.imagePath}
 						<div class="h-80 overflow-hidden">
 							<img
-								src={course.imagePath}
+								src={course.imagePath.startsWith('http') || course.imagePath.startsWith('/media/') ? course.imagePath : `/media/${course.imagePath}`}
 								alt={course.title}
 								class="w-full h-full object-cover"
 							/>
@@ -387,7 +391,7 @@
 									{/if}
 								</div>
 							{:else}
-								<h1 class="text-4xl md:text-5xl font-black mb-4 leading-tight drop-shadow-lg">
+								<h1 class="text-4xl md:text-5xl font-black mb-4 leading-tight drop-shadow-lg break-words overflow-wrap-anywhere hyphens-auto max-w-full">
 									{course.title}
 								</h1>
 							{/if}
@@ -441,7 +445,7 @@
 									</div>
 								</div>
 							{:else}
-								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">{course.description}</p>
+								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap break-words overflow-wrap-anywhere hyphens-auto max-w-full overflow-hidden">{course.description}</p>
 							{/if}
 						</div>
 					</div>
@@ -590,7 +594,7 @@
 
 							<div class="flex justify-between items-center py-3">
 								<span class="text-gray-600 font-medium">Contenidos:</span>
-								<span class="font-bold text-indigo-600">{course.workItemCount || 0}</span>
+								<span class="font-bold text-indigo-600">{course.postCount || 0}</span>
 							</div>
 						</div>
 					</div>
@@ -654,6 +658,41 @@
 	.prose p {
 		margin-bottom: 1rem;
 		line-height: 1.7;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		hyphens: auto;
+		max-width: 100%;
+	}
+
+	/* Forzar wrapping en textos largos */
+	.break-words {
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		word-break: break-word;
+		hyphens: auto;
+	}
+
+	.overflow-wrap-anywhere {
+		overflow-wrap: anywhere;
+	}
+
+	/* Contenedores que deben prevenir overflow */
+	.bg-white {
+		overflow-wrap: break-word;
+		word-wrap: break-word;
+	}
+
+	/* Específico para contenedores de texto largo */
+	.prose {
+		max-width: 100%;
+		overflow-wrap: break-word;
+		word-wrap: break-word;
+	}
+
+	/* Navigation breadcrumb */
+	nav {
+		overflow-wrap: break-word;
+		word-wrap: break-word;
 	}
 
 	@media (max-width: 768px) {

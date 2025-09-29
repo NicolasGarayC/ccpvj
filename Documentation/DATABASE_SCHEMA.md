@@ -8,6 +8,28 @@
 - **Foreign Keys**: **HABILITADAS** con `PRAGMA foreign_keys = ON`
 - **Roles**: `asistente`, `colaborador`, `administrador` (minúsculas)
 
+### 🔧 **Correcciones Aplicadas (Septiembre 2025)**
+
+#### **Mapeo de Entidades Backend**
+1. **Course Entity** (`CentroCultural.Domain.Entities.Course.cs`):
+   - ✅ Agregados atributos `[Table("course")]` y `[Column("column_name")]`
+   - ✅ Mapeo snake_case (BD) ↔ PascalCase (C#) funcional
+
+2. **ModulePost Entity** (`CentroCultural.Domain.Entities.WorkItem.cs`):
+   - ✅ `UpdatedAt`: `DateTime?` → `long?` (unix timestamp)
+   - ✅ `AuthorId`: `int` → `string` (consistencia con user.id)
+   - ✅ Agregados atributos de mapeo faltantes
+
+#### **Servicios Backend**
+1. **CourseService**:
+   - ✅ Corregido `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
+   - ✅ Manejo correcto de unix timestamps en conversiones
+
+2. **WorkItemService**:
+   - ✅ Eliminado uso de `DateTime.UtcNow` → `DateTimeOffset.UtcNow.ToUnixTimeSeconds()`
+   - ✅ AuthorId manejado como string
+   - ✅ Conversiones correctas en DTOs
+
 ---
 
 ## 🏗️ **Estructura de Tablas (13 tablas)**

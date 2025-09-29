@@ -182,7 +182,7 @@
 							</p>
 						{:else if element.elementType === 'image' && element.filePath}
 							<div class="preview-media image-preview">
-								<img src={element.filePath} alt={element.fileName || 'Imagen'} loading="lazy" />
+								<img src={postElementService.getFileUrl(element.filePath)} alt={element.fileName || 'Imagen'} loading="lazy" />
 							</div>
 						{:else if ['video', 'audio'].includes(element.elementType) && element.filePath}
 							<div class="preview-media {element.elementType}-preview">

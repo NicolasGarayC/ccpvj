@@ -5,7 +5,7 @@ This file provides technical context to Claude Code when working with this repos
 ## Project Technical Overview
 
 **Centro Cultural Víctor Jara** - SvelteKit 5 web platform for community cultural center (Bogotá).
-**Current Status**: ✅ CORE FUNCTIONALITY WORKING - APIs functional, database unified, roles corrected.
+**Current Status**: ✅ COURSES MODULE CORRECTED - Blog, Events, Library modules need same corrections.
 
 **Key Architectural Concept**: Contextual multimedia (no independent files - all media belongs to specific content).
 
@@ -70,29 +70,66 @@ work_item (id TEXT, module_id TEXT, title TEXT, long_text TEXT, image_path TEXT,
 
 ## Current Technical Issues
 
-### ✅ Working Modules
-- **Course System**: ✅ APIs functional, database unified
+### ✅ Working Modules (COURSES CORRECTED + DELETE CASCADE FIXED)
+- **Course System**: ✅ Backend entities, services, DTOs completely corrected
+- **DELETE Operations**: ✅ Cascade deletion with multimedia cleanup implemented
 - **Authentication**: ✅ Session management working
 - **Database**: ✅ SQLite connection stable, foreign keys enabled
 - **Role System**: ✅ Unified roles (asistente, colaborador, administrador)
 - **Multimedia System**: ✅ Upload/serving/cleanup system fully implemented
 - **File Cleanup**: ✅ Automatic cleanup on replace/delete operations
 
-### ⚠️ Needs Development
-- **Blog System**: Partial implementation, needs completion
-- **Multimedia Integration**: Extend cleanup system to blog, library, user profiles
-- **Frontend Integration**: Some components need backend connection
-- **Testing**: No comprehensive test coverage
+### ⚠️ CRITICAL: Modules Need Same Corrections as Courses
+**URGENTE**: Apply identical corrections pattern to other modules:
 
-### 🔧 Recently Fixed
-- **Schema Conflicts**: ✅ Resolved duplicate table issues
-- **Role Inconsistencies**: ✅ Unified to lowercase roles
-- **API Endpoints**: ✅ Working with correct database schema
-- **Foreign Keys**: ✅ All references working properly
+#### **🚨 Blog System Module**
+- **Status**: ❌ NEEDS SAME FIXES AS COURSES
+- **Backend**: BlogPost entity likely missing `[Table]` and `[Column]` attributes
+- **Services**: BlogService probably has DateTime/unix timestamp inconsistencies
+- **DTOs**: Conversion errors similar to courses (DateTime.FromBinary() issues)
+- **Required**: Same mapping and date conversion fixes applied to courses
+
+#### **🚨 Events System Module**
+- **Status**: ❌ NEEDS SAME FIXES AS COURSES
+- **Backend**: Event entity likely missing database mapping attributes
+- **Services**: EventService probably has date handling inconsistencies
+- **DTOs**: Same unix timestamp conversion issues
+- **Required**: Apply same pattern as CourseService corrections
+
+#### **🚨 Library/Media System Module**
+- **Status**: ❌ NEEDS SAME FIXES AS COURSES
+- **Backend**: MediaFile entity may need mapping corrections
+- **Services**: Media services may have date/author inconsistencies
+- **DTOs**: Same pattern of conversion errors expected
+- **Required**: Same corrections as applied to WorkItem entity
+
+### 🔧 Recently Fixed (COURSES MODULE COMPLETE)
+- **Course Entity**: ✅ Added missing `[Table("course")]` and `[Column]` attributes
+- **CourseService**: ✅ Fixed `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
+- **WorkItem Entity**: ✅ Changed `UpdatedAt`: DateTime → long, `AuthorId`: int → string
+- **WorkItemService**: ✅ Replaced `DateTime.UtcNow` with unix timestamps
+- **DTOs**: ✅ Fixed all date conversions between unix timestamps and DateTime
+- **DELETE Operations**: ✅ Implemented complete cascade deletion with multimedia cleanup
+
+#### **🗑️ DELETE CASCADE HIERARCHY (FIXED)**
+```
+Course → Modules → Posts → Multimedia Files
+  ├── Course.DeleteCourseAsync(): Deletes all modules, posts, and media
+  ├── Module.DeleteModuleAsync(): Deletes all posts and media in module
+  └── Post.DeleteWorkItemAsync(): Deletes post and its media files
+```
+
+**Key DELETE Features Implemented:**
+- ✅ **Complete cascade deletion**: Course → Module → Post → Media
+- ✅ **Multimedia cleanup**: Physical files deleted after DB commit
+- ✅ **Transaction safety**: DB changes committed before file deletion
+- ✅ **Error resilience**: Failed file deletions don't break process
+- ✅ **Explicit ordering**: No reliance on DB foreign key cascade
+- ✅ **Logging**: Detailed logs for troubleshooting
 
 ## API Endpoints Status
 
-**✅ Course APIs** (functional):
+**✅ Course APIs** (functional + DELETE cascade):
 - `GET/POST /api/courses` - ✅ Working with unified schema
 - `GET /api/courses/all` - ✅ Returns course list with educator info
 - `GET /api/courses/featured` - ✅ Functional
@@ -101,6 +138,9 @@ work_item (id TEXT, module_id TEXT, title TEXT, long_text TEXT, image_path TEXT,
 - `POST /api/courses/modules` - ✅ Module creation working
 - `POST /api/courses/workitems` - ✅ WorkItem creation working
 - `PUT/DELETE` endpoints - ✅ With proper role validation
+- `DELETE /api/courses/[id]` - ✅ **CASCADE DELETE** with multimedia cleanup
+- `DELETE /api/courses/modules/[id]` - ✅ **CASCADE DELETE** with multimedia cleanup
+- `DELETE /api/courses/workitems/[id]` - ✅ **HARD DELETE** with multimedia cleanup
 
 **✅ Upload APIs** (implemented with nginx compatibility):
 - `POST /api/upload/images` - ✅ Image upload with auto-cleanup (20MB direct, 50MB nginx)
@@ -122,38 +162,146 @@ work_item (id TEXT, module_id TEXT, title TEXT, long_text TEXT, image_path TEXT,
 
 ## Development Priorities
 
-1. **Complete blog system** - Finish blog post management with multimedia cleanup
-2. **Extend multimedia cleanup** - Integrate with library, user profiles, CMS content
-3. **Testing coverage** - Add comprehensive tests
-4. **Frontend-backend integration** - Connect remaining components
-5. **Performance optimization** - Cache and optimize queries
+### 🚨 **URGENT: Apply Same Corrections to Other Modules**
 
-## Multimedia System (Recently Implemented)
+1. **Blog System Backend Corrections** - SAME PATTERN AS COURSES:
+   - Fix BlogPost entity mapping attributes
+   - Correct BlogService date conversions
+   - Update DTOs with proper unix timestamp handling
 
-### ✅ **Current Coverage**
-- **Post Elements**: ✅ Automatic cleanup on upload/delete
-- **Module Posts**: ✅ Complete cleanup when post deleted
-- **File Serving**: ✅ Development (`/media/`) + production (nginx)
-- **Admin Cleanup**: ✅ Manual cleanup endpoint with dry-run mode
+2. **Events System Backend Corrections** - SAME PATTERN AS COURSES:
+   - Fix Event entity mapping attributes
+   - Correct EventService date conversions
+   - Update DTOs with proper unix timestamp handling
 
-### ⚠️ **Extension Required**
-- **Blog Posts**: Integrate multimedia cleanup
-- **Library Resources**: PDF/document cleanup
-- **User Avatars**: Profile image cleanup
-- **CMS Content**: Static page media cleanup
+3. **Library/Media System Backend Corrections** - SAME PATTERN AS COURSES:
+   - Fix MediaFile entity mapping attributes
+   - Correct media services date conversions
+   - Update DTOs with proper unix timestamp handling
 
-### 📁 **File Structure**
+### 🔄 **Secondary Priorities (After Backend Corrections)**
+4. **Testing coverage** - Add comprehensive tests
+5. **Frontend-backend integration** - Connect remaining components
+6. **Performance optimization** - Cache and optimize queries
+
+## 🎥 **DEFINITIVE MULTIMEDIA SYSTEM** (September 2025)
+
+### ✅ **Status: FULLY IMPLEMENTED WITH GENERIC STRUCTURE**
+
+**CRITICAL**: This is the FINAL media structure. DO NOT change without extreme justification.
+
+### 🏗️ **DEFINITIVE Generic Media Structure**
+
 ```
 Data/media/
-├── image/     # All images (posts, blog, profiles, etc)
-├── video/     # All videos
-├── audio/     # All audio files
-├── document/  # All documents (PDFs, Office files, text files)
-└── temp/      # Nginx temporary uploads
-    ├── images/
-    ├── videos/
-    ├── audio/
-    └── documents/
+├── content/                          # All application content
+│   ├── courses/                      # Educational content
+│   │   └── {course-id}/
+│   │       ├── banner.{ext}          # Course banner image
+│   │       └── modules/
+│   │           └── {module-id}/
+│   │               └── posts/
+│   │                   └── {post-id}/
+│   │                       ├── images/
+│   │                       ├── videos/
+│   │                       └── audio/
+│   ├── blog/                         # Blog system
+│   │   └── posts/
+│   │       └── {post-id}/
+│   │           ├── featured-image.{ext}
+│   │           ├── images/
+│   │           ├── videos/
+│   │           └── documents/
+│   ├── library/                      # Library/Resources
+│   │   └── resources/
+│   │       └── {resource-id}/
+│   │           ├── cover.{ext}
+│   │           ├── documents/       # PDFs, docs, etc
+│   │           └── media/           # Images, videos
+│   └── events/                       # Events system
+│       └── {event-id}/
+│           ├── poster.{ext}
+│           └── gallery/
+├── user-content/                     # User-generated content
+│   └── profiles/
+│       └── {user-id}/
+│           └── avatar.{ext}
+└── system/                           # System files
+    ├── assets/                       # Static assets
+    └── temp/                         # Temporary uploads
+        ├── images/
+        ├── videos/
+        ├── audio/
+        └── documents/
+```
+
+### 🎯 **Structure Benefits**
+- **Scalable**: Easy to add new content types
+- **Organized**: Clear separation by context
+- **Maintainable**: Each module manages its own files
+- **Clean**: Automatic cleanup per content type
+- **Flexible**: Allows different internal structures
+
+### 📡 **DEFINITIVE API Endpoints**
+
+#### **Content Upload APIs**
+```typescript
+// Educational Content
+POST /api/upload/content/courses/{courseId}/banner
+POST /api/upload/content/courses/{courseId}/modules/{moduleId}/posts/{postId}/{mediaType}
+
+// Blog Content
+POST /api/upload/content/blog/posts/{postId}/featured
+POST /api/upload/content/blog/posts/{postId}/{mediaType}
+
+// Library Content
+POST /api/upload/content/library/resources/{resourceId}/cover
+POST /api/upload/content/library/resources/{resourceId}/{mediaType}
+
+// Events Content
+POST /api/upload/content/events/{eventId}/poster
+POST /api/upload/content/events/{eventId}/gallery
+
+// User Content
+POST /api/upload/user-content/profiles/{userId}/avatar
+
+// System Cleanup
+POST /api/cleanup/media
+```
+
+#### **File Serving**
+```typescript
+GET /media/{path}  // Universal file serving for all content types
+```
+
+### 🔒 **CRITICAL IMPLEMENTATION RULES**
+
+#### **Rule 1: Context Validation**
+```typescript
+// ALWAYS validate that the content exists before allowing upload
+if (!await validateContentExists(contentType, contentId)) {
+    throw new Error('Content does not exist');
+}
+```
+
+#### **Rule 2: Automatic Cleanup**
+```typescript
+// ALWAYS clean up old files when uploading new ones
+if (oldFilePath) {
+    await cleanupOldFile(oldFilePath);
+}
+```
+
+#### **Rule 3: Path Construction**
+```typescript
+// ALWAYS use this pattern for path construction
+const relativePath = `content/${contentType}/${contentId}/${mediaType}/${filename}`;
+```
+
+#### **Rule 4: File Naming**
+```typescript
+// ALWAYS use timestamp + sanitized original name
+const filename = `${sanitizedName}_${timestamp}${extension}`;
 ```
 
 ### 📋 **File Format Validation**
@@ -273,4 +421,135 @@ import { deleteMediaFile, deleteMediaFiles, replaceMediaFile } from '$lib/server
 - **Primary**: Drizzle schema (lowercase, snake_case)
 - **Secondary**: .NET schema (PascalCase) - legacy compatibility only
 
-**⚠️ Current Status**: Core functionality is now working after fixing schema conflicts and role inconsistencies.
+**⚠️ Current Status**: COURSES module corrected, other modules need identical fixes.
+
+---
+
+## 🏗️ **COURSE SYSTEM HIERARCHICAL RELATIONSHIP**
+
+### **Data Model Hierarchy**
+```
+Course (1) ─── has many ──→ Module (n) ─── has many ──→ WorkItem/Post (n)
+   │                           │                          │
+   │                           │                          ├── ImagePath (media file)
+   │                           │                          ├── VideoPath (media file)
+   │                           │                          └── AudioPath (media file)
+   │                           │
+   │                           └── (no media in current schema)
+   │
+   └── ImagePath (media file)
+```
+
+### **Critical Relationship Rules**
+1. **Each Course** can have multiple Modules
+2. **Each Module** belongs to exactly one Course and can have multiple Posts
+3. **Each Post** belongs to exactly one Module and can have multiple media files
+4. **Media Files** are tied to specific content (Course banners, Post multimedia)
+
+### **DELETE Operation Requirements (IMPLEMENTED)**
+- **DELETE Course**: Must delete all its Modules, all Posts in those Modules, and ALL multimedia files
+- **DELETE Module**: Must delete all its Posts and ALL multimedia files in those Posts
+- **DELETE Post**: Must delete ALL its multimedia files
+
+### **Database Tables Used**
+- **Primary**: `course` (Drizzle schema - snake_case)
+- **Secondary**: `module` (Drizzle schema - snake_case)
+- **Posts**: `ModulePosts` (Entity Framework mapping to work_item table)
+- **Legacy**: `Course`, `Module`, `WorkItem` (.NET schema - PascalCase) - available but not primary
+
+---
+
+## 🔧 **SPECIFIC CORRECTIONS APPLIED TO COURSES (September 2025)**
+
+### **Pattern to Replicate in Other Modules**
+
+#### **1. Entity Mapping Issues Fixed**
+```csharp
+// BEFORE (broken):
+public class Course
+{
+    public string Id { get; set; }    // Missing mapping attributes
+    public string Title { get; set; } // No database column mapping
+}
+
+// AFTER (fixed):
+[Table("course")]
+public class Course
+{
+    [Column("id")]
+    public string Id { get; set; }
+
+    [Column("title")]
+    public string Title { get; set; }
+
+    [Column("created_at")]
+    public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+}
+```
+
+#### **2. Service Date Conversion Issues Fixed**
+```csharp
+// BEFORE (broken):
+CreatedAt = DateTime.FromBinary(course.CreatedAt),  // INCORRECT
+
+// AFTER (fixed):
+CreatedAt = DateTimeOffset.FromUnixTimeSeconds(course.CreatedAt).DateTime,
+UpdatedAt = course.UpdatedAt.HasValue
+    ? DateTimeOffset.FromUnixTimeSeconds(course.UpdatedAt.Value).DateTime
+    : null,
+```
+
+#### **3. Data Type Inconsistencies Fixed**
+```csharp
+// BEFORE (broken):
+public DateTime? UpdatedAt { get; set; }  // Should be unix timestamp
+public int AuthorId { get; set; }         // Should be string
+
+// AFTER (fixed):
+[Column("updated_at")]
+public long? UpdatedAt { get; set; }      // Unix timestamp
+
+[Column("author_id")]
+public string AuthorId { get; set; }      // Matches user.id type
+```
+
+#### **4. Service DateTime Usage Fixed**
+```csharp
+// BEFORE (broken):
+post.UpdatedAt = DateTime.UtcNow;  // Should be unix timestamp
+
+// AFTER (fixed):
+post.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+```
+
+### **🚨 Critical Files to Fix in Other Modules**
+
+#### **Blog System Files**
+- `Back/CentroCultural.Domain/Entities/BlogPost.cs` - Add mapping attributes
+- `Back/CentroCultural.Application/Services/BlogService.cs` - Fix date conversions
+- `Back/CentroCultural.Application/DTOs/Blog*.cs` - Fix DTO conversions
+
+#### **Events System Files**
+- `Back/CentroCultural.Domain/Entities/Event.cs` - Add mapping attributes
+- `Back/CentroCultural.Application/Services/EventService.cs` - Fix date conversions
+- `Back/CentroCultural.Application/DTOs/Event*.cs` - Fix DTO conversions
+
+#### **Media System Files**
+- `Back/CentroCultural.Domain/Entities/MediaFile.cs` - Check mapping attributes
+- `Back/CentroCultural.Application/Services/MediaService.cs` - Fix date conversions
+- `Back/CentroCultural.Application/DTOs/Media*.cs` - Fix DTO conversions
+
+### **✅ Verification Commands After Corrections**
+```bash
+# Test backend build
+cd Back && dotnet build
+
+# Check database consistency
+sqlite3 Data/ccpvj.db "PRAGMA foreign_key_check;"
+
+# Verify API responses
+curl http://localhost:5251/api/blog
+curl http://localhost:5251/api/events
+```
+
+**⚠️ Current Status**: COURSES module fully corrected, others need identical pattern applied.

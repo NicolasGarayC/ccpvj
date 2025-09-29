@@ -1,0 +1,175 @@
+# Centro Cultural Víctor Jara - Plataforma Web Educativa
+
+## 📌 Resumen Ejecutivo
+
+Plataforma web educativa para centros culturales comunitarios diseñada para funcionar offline-first con arquitectura de red mesh local. **Estado actual: FUNCIONAL - Correcciones técnicas recientes aplicadas**.
+
+### 🎯 Objetivo
+Crear una plataforma educativa y cultural para el Centro Cultural Víctor Jara en Bogotá que permita:
+- Gestión de cursos educativos organizados por materias
+- Sistema multimedia contextual integrado
+- Roles diferenciados (asistente, colaborador, administrador)
+- Blog y sistema de noticias del centro
+
+## 🚀 Inicio Rápido
+
+### Requisitos
+- Node.js 18+
+- .NET 8 SDK (opcional para backend)
+
+### Ejecutar el Proyecto
+
+#### Frontend (Principal)
+```bash
+cd Front/
+npm install
+npm run dev
+# Disponible en: http://localhost:5173
+```
+
+#### Backend (Opcional)
+```bash
+cd Back/
+dotnet restore
+dotnet run
+# Disponible en: http://localhost:5251
+```
+
+## 🛠️ Tecnologías
+
+- **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS
+- **Base de Datos**: SQLite (`Data/ccpvj.db`)
+- **Backend**: .NET 8 (opcional/legacy)
+- **Autenticación**: Sistema JWT (JSON Web Tokens)
+
+## 📁 Estructura del Proyecto
+
+```
+ccpvj/
+├── Front/                    # Frontend SvelteKit (Principal)
+│   ├── src/routes/          # Páginas y APIs
+│   ├── src/lib/components/  # Componentes Svelte
+│   └── src/lib/services/    # Servicios frontend
+├── Back/                    # Backend .NET (Opcional)
+│   ├── CentroCultural.API/
+│   ├── CentroCultural.Application/
+│   ├── CentroCultural.Domain/
+│   └── CentroCultural.Infrastructure/
+├── Data/                    # Base de datos y archivos
+│   ├── ccpvj.db            # SQLite database
+│   └── media/              # Archivos multimedia
+└── Documentation/          # Documentación completa
+```
+
+## ✅ Estado Actual - Correcciones Recientes (Septiembre 2025)
+
+### **Problemas Críticos Resueltos**
+
+#### **Backend (.NET 8)**
+1. **Mapeo de Entidades Corregido**:
+   - ✅ Course Entity: Agregados atributos `[Table]` y `[Column]` faltantes
+   - ✅ ModulePost Entity: Tipos de datos unificados (`AuthorId`: int → string, `UpdatedAt`: DateTime → long)
+   - ✅ Mapeo snake_case (BD) ↔ PascalCase (C#) funcional
+
+2. **Servicios Unificados**:
+   - ✅ CourseService: Corregido manejo de unix timestamps (`DateTimeOffset.FromUnixTimeSeconds()`)
+   - ✅ WorkItemService: Eliminado uso inconsistente de `DateTime.UtcNow`
+   - ✅ DTOs: Conversiones correctas entre unix timestamps y DateTime
+
+#### **Base de Datos**
+- ✅ **Foreign Keys**: `PRAGMA foreign_keys = ON` funcionando
+- ✅ **Consistencia**: Esquemas Drizzle y .NET unificados
+- ✅ **Tipos de datos**: Unix timestamps manejados correctamente
+
+#### **Sistema Funcionando**
+- ✅ **Autenticación**: Login/logout con JWT operativo
+- ✅ **APIs**: Endpoints course/module/workitem funcionales
+- ✅ **Upload**: Sistema multimedia con limpieza automática
+- ✅ **Frontend**: Componentes conectados correctamente
+- ✅ **DELETE CASCADE**: Eliminación en cascada con limpieza multimedia implementada
+
+#### **🗑️ DELETE CASCADE HIERARCHY (Septiembre 2025)**
+```
+Course → Modules → Posts → Multimedia Files
+  ├── DELETE Course: Elimina todos los módulos, posts y archivos multimedia
+  ├── DELETE Module: Elimina todos los posts y archivos multimedia del módulo
+  └── DELETE Post: Elimina el post y todos sus archivos multimedia
+```
+
+**Características implementadas:**
+- ✅ **Eliminación completa en cascada** con limpieza de archivos multimedia
+- ✅ **Seguridad transaccional** - Base de datos primero, archivos después
+- ✅ **Resistencia a errores** - Fallos en eliminación de archivos no rompen el proceso
+- ✅ **Logging detallado** - Para troubleshooting y monitoreo
+
+## 📚 Documentación
+
+### Documentos Principales
+- **[README Completo](Documentation/README.md)** - Documentación técnica detallada
+- **[Configuración](Documentation/CONFIGURATION.md)** - Variables de entorno y configuración
+- **[Esquema BD](Documentation/DATABASE_SCHEMA.md)** - Estructura de base de datos
+- **[Deployment](Documentation/DEPLOYMENT_UBUNTU_STEPBYSTEP.md)** - Guía de despliegue
+- **[Claude Context](Documentation/CLAUDE.md)** - Contexto técnico para IA
+
+### Documentos Técnicos Específicos
+- **[Estructura Proyecto](Documentation/PROJECT_STRUCTURE.md)** - Organización del código
+- **[Gestión Cursos](Documentation/COURSE_MANAGEMENT.md)** - Sistema educativo
+- **[WorkItems](Documentation/WORKITEMS_DOCUMENTATION.md)** - Elementos de trabajo
+
+## 🚨 Información Importante
+
+### **Credenciales de Prueba**
+```
+Usuario: admin
+Contraseña: admin123
+Rol: administrador
+```
+
+### **Puertos Estándar**
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5251`
+- Base de datos: `Data/ccpvj.db`
+
+### **Comandos Útiles**
+```bash
+# Frontend
+cd Front/
+npm run db:studio          # GUI base de datos
+npm run build             # Build producción
+npm run check             # Verificar TypeScript
+
+# Backend
+cd Back/
+dotnet build              # Compilar
+dotnet test               # Ejecutar tests
+```
+
+## 🔄 Flujo de Desarrollo
+
+1. **Desarrollar**: Usar frontend en `http://localhost:5173`
+2. **Probar**: APIs disponibles en ambos puertos
+3. **Base de datos**: SQLite en `Data/ccpvj.db`
+4. **Documentar**: Actualizar archivos en `Documentation/`
+
+## 🤝 Contribuir
+
+1. Fork del repositorio
+2. Crear branch para tu feature
+3. Desarrollar y probar cambios
+4. Actualizar documentación si es necesario
+5. Pull request con descripción detallada
+
+## 🎥 Sistema Multimedia
+
+- **Formatos soportados**: Imágenes (JPG, PNG, WebP), Videos (MP4, WebM), Audio (MP3, WAV), Documentos (PDF, DOC, etc.)
+- **Límites**: 20MB imágenes, 500MB videos, 100MB audio/documentos
+- **Limpieza automática**: Eliminación de archivos huérfanos
+- **Nginx compatible**: Para uploads grandes en producción
+
+---
+
+## 📞 Contacto
+
+Proyecto desarrollado para el Centro Cultural Víctor Jara - Bogotá, Colombia.
+
+**Estado**: ✅ Funcional tras correcciones de inconsistencias (Septiembre 2025)

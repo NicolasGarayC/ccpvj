@@ -1,4 +1,6 @@
-// Local type definitions to replace schema imports
+import { goto } from '$app/navigation';
+
+// Type definitions for PostElement
 export interface PostElement {
 	id: string;
 	postId: string;
@@ -42,6 +44,7 @@ export interface CreateElementDto {
 
 export interface UpdateElementDto {
 	id: string;
+	elementType?: ElementType;
 	content?: string;
 	filePath?: string;
 	fileName?: string;
@@ -56,81 +59,271 @@ export interface ElementWithFile {
 	file?: File;
 }
 
-// Stub implementation to replace deleted post-elements functionality
-// This allows the frontend to work while we transition to the simplified WorkItem structure
+export interface CreateElementsBatchDto {
+	postId: string;
+	elements: CreateElementDto[];
+}
+
 class PostElementService {
-	// Stub implementation - returns empty array
-	async getElementsByPostId(postId: string): Promise<PostElement[]> {
-		return [];
+	private apiUrl = 'http://localhost:5251/api/postelement';
+	private backendUrl = 'http://localhost:5251';
+
+	// Helper to convert relative file paths to absolute backend URLs
+	getFileUrl(relativePath: string): string {
+		if (!relativePath) return '';
+		// If it's already an absolute URL, return as is
+		if (relativePath.startsWith('http')) return relativePath;
+		// If it's already a frontend media path, return as is
+		if (relativePath.startsWith('/media/')) return relativePath;
+		// Convert relative path to frontend media URL
+		return `/media/${relativePath}`;
 	}
 
-	// Stub implementation - returns a fake element
+	async getElementsByPostId(postId: string): Promise<PostElement[]> {
+		try {
+			const response = await fetch(`${this.apiUrl}/by-post/${postId}`, {
+				method: 'GET',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error(`Error getting post elements: ${response.statusText}`);
+			}
+
+			const elements = await response.json();
+			return elements.map((element: any) => ({
+				...element,
+				createdAt: new Date(element.createdAt),
+				updatedAt: element.updatedAt ? new Date(element.updatedAt) : undefined
+			}));
+		} catch (error) {
+			console.error('Error loading post elements:', error);
+			return [];
+		}
+	}
+
 	async createElement(elementData: CreateElementDto): Promise<PostElement> {
+		const response = await fetch(this.apiUrl, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(elementData)
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para crear elementos de post');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error creating post element: ${errorText}`);
+		}
+
+		const element = await response.json();
 		return {
-			id: `stub-${Date.now()}`,
-			postId: elementData.postId,
-			elementType: elementData.elementType,
-			content: elementData.content || '',
-			filePath: null,
-			fileName: null,
-			fileSize: 0,
-			mimeType: 'text/plain',
-			orderNumber: elementData.orderNumber,
-			metadata: elementData.metadata || null,
-			createdAt: new Date(),
-			updatedAt: null
+			...element,
+			createdAt: new Date(element.createdAt),
+			updatedAt: element.updatedAt ? new Date(element.updatedAt) : undefined
 		};
 	}
 
-	// Stub implementation - returns the same element data
 	async updateElement(elementData: UpdateElementDto): Promise<PostElement> {
+		const { id, ...updatePayload } = elementData;
+
+		const response = await fetch(`${this.apiUrl}/${id}`, {
+			method: 'PUT',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(updatePayload)
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para editar este elemento');
+		}
+
+		if (response.status === 404) {
+			throw new Error('Elemento no encontrado');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error updating post element: ${errorText}`);
+		}
+
+		// Return updated element - in a real scenario you might want to fetch it
+		// For now, return a constructed object
 		return {
-			id: elementData.id,
-			postId: 'unknown',
-			elementType: 'text',
-			content: elementData.content || '',
-			filePath: elementData.filePath || null,
-			fileName: elementData.fileName || null,
-			fileSize: elementData.fileSize || 0,
-			mimeType: elementData.mimeType || 'text/plain',
-			orderNumber: elementData.orderNumber || 0,
-			metadata: elementData.metadata || null,
-			createdAt: new Date(),
+			id: id,
+			postId: 'unknown', // This should be fetched or provided
+			elementType: 'text', // This should be fetched or provided
+			content: updatePayload.content,
+			filePath: updatePayload.filePath,
+			fileName: updatePayload.fileName,
+			fileSize: updatePayload.fileSize,
+			mimeType: updatePayload.mimeType,
+			orderNumber: updatePayload.orderNumber || 0,
+			metadata: updatePayload.metadata,
+			createdAt: new Date(), // This should be fetched
 			updatedAt: new Date()
 		};
 	}
 
-	// Stub implementation - does nothing
 	async deleteElement(elementId: string): Promise<void> {
-		// Do nothing in stub
+		const response = await fetch(`${this.apiUrl}/${elementId}`, {
+			method: 'DELETE',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para eliminar este elemento');
+		}
+
+		if (response.status === 404) {
+			throw new Error('Elemento no encontrado');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error deleting post element: ${errorText}`);
+		}
 	}
 
-	// Stub implementation - does nothing
 	async reorderElements(postId: string, elementOrders: Array<{ id: string; orderNumber: number }>): Promise<void> {
-		// Do nothing in stub
+		// Reorder elements one by one
+		for (const elementOrder of elementOrders) {
+			const response = await fetch(`${this.apiUrl}/${elementOrder.id}/reorder`, {
+				method: 'PATCH',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					newOrderNumber: elementOrder.orderNumber
+				})
+			});
+
+			if (response.status === 401) {
+				goto('/auth/login');
+				throw new Error('Authentication required');
+			}
+
+			if (response.status === 403) {
+				throw new Error('No tienes permisos para reordenar elementos en este post');
+			}
+
+			if (response.status === 404) {
+				throw new Error('Elemento no encontrado');
+			}
+
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`Error reordering post elements: ${errorText}`);
+			}
+		}
 	}
 
-	// Stub implementation - returns fake file path
-	async uploadElementFile(elementId: string, file: File, elementType: 'image' | 'video' | 'audio'): Promise<string> {
-		return `/uploads/stub-${elementType}s/${file.name}`;
-	}
+	// Note: File upload is now handled by ContextualMediaUploader
+	// This function is deprecated - use ContextualMediaUploader instead
 
-	// Stub implementation - returns fake elements
 	async createElementsInBatch(postId: string, elements: ElementWithFile[]): Promise<PostElement[]> {
-		return elements.map((elem, index) => ({
-			id: `stub-${Date.now()}-${index}`,
+		// Prepare the elements for batch creation
+		// Note: Files should already be uploaded via ContextualMediaUploader before this point
+		const elementsData: CreateElementDto[] = elements.map(elementWithFile => {
+			const elementData = { ...elementWithFile.element };
+
+			// Validate that media elements have the required file information
+			if (['image', 'video', 'audio'].includes(elementData.elementType)) {
+				if (!elementData.filePath) {
+					console.warn(`Media element ${elementData.elementType} missing filePath. Files should be uploaded via ContextualMediaUploader first.`);
+				}
+			}
+
+			return elementData;
+		});
+
+		const batchData: CreateElementsBatchDto = {
 			postId: postId,
-			elementType: elem.element.elementType,
-			content: elem.element.content || '',
-			filePath: elem.file ? `/uploads/stub-${elem.element.elementType}s/${elem.file.name}` : null,
-			fileName: elem.file?.name || null,
-			fileSize: elem.file?.size || 0,
-			mimeType: elem.file?.type || 'text/plain',
-			orderNumber: elem.element.orderNumber,
-			metadata: elem.element.metadata || null,
-			createdAt: new Date(),
-			updatedAt: null
+			elements: elementsData
+		};
+
+		const response = await fetch(`${this.apiUrl}/batch`, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(batchData)
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para crear elementos de post');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error creating post elements in batch: ${errorText}`);
+		}
+
+		const responseElements = await response.json();
+		return responseElements.map((element: any) => ({
+			...element,
+			createdAt: new Date(element.createdAt),
+			updatedAt: element.updatedAt ? new Date(element.updatedAt) : undefined
 		}));
+	}
+
+	async deleteElementsByPostId(postId: string): Promise<void> {
+		const response = await fetch(`${this.apiUrl}/by-post/${postId}`, {
+			method: 'DELETE',
+			credentials: 'include',
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		if (response.status === 401) {
+			goto('/auth/login');
+			throw new Error('Authentication required');
+		}
+
+		if (response.status === 403) {
+			throw new Error('No tienes permisos para eliminar elementos de este post');
+		}
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`Error deleting elements by post ID: ${errorText}`);
+		}
 	}
 }
 

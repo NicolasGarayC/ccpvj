@@ -77,3 +77,7 @@ tests/Back.Tests/bin/Debug/
 tests/Back.Tests/obj/
 tests/Back.Tests/obj
 tests/Back.Tests/obj/Debug/net9.0/ref/Back.Tests.dll
+Back/Data/media/
+Back/Data/media
+Back/wwwroot/
+Front/Data/media/content/

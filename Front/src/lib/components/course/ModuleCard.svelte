@@ -53,7 +53,7 @@
 						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 						<polyline points="14,2 14,8 20,8"></polyline>
 					</svg>
-					{module.workItemCount}
+					{module.postCount}
 				</span>
 			</div>
 		</div>
@@ -66,7 +66,7 @@
 	</div>
 
 	<div class="module-actions">
-		<button 
+		<button
 			class="btn btn-outline btn-sm"
 			on:click={handleView}
 			title="Ver contenidos del módulo"
@@ -117,10 +117,13 @@
 	.module-card {
 		display: flex;
 		align-items: center;
-		gap: 1.5rem;
-		padding: 1.5rem 2rem;
+		gap: 1rem;
+		padding: 1rem 1.5rem;
 		transition: background-color 0.2s ease;
 		flex: 1;
+		min-height: 80px;
+		overflow: hidden;
+		width: 100%;
 	}
 
 	.module-card:hover {
@@ -130,6 +133,7 @@
 	.module-content {
 		flex: 1;
 		min-width: 0;
+		overflow: hidden;
 	}
 
 	.module-header {
@@ -222,11 +226,18 @@
 		align-items: center;
 		gap: 0.5rem;
 		flex-shrink: 0;
+		flex-wrap: nowrap;
+		max-width: 250px;
+		min-width: 200px;
+		justify-content: flex-end;
 	}
 
 	.btn-sm {
-		padding: 0.5rem 0.75rem;
-		font-size: 0.85rem;
+		padding: 0.4rem 0.6rem;
+		font-size: 0.8rem;
+		white-space: nowrap;
+		min-width: fit-content;
+		height: 32px;
 	}
 
 	.btn-sm svg {
@@ -258,12 +269,16 @@
 		.module-actions {
 			justify-content: center;
 			flex-wrap: wrap;
+			max-width: none;
+			min-width: auto;
 		}
 	}
 
-	@media (max-width: 480px) {
+	@media (max-width: 640px) {
 		.module-actions {
 			flex-direction: column;
+			align-items: stretch;
+			gap: 0.75rem;
 		}
 
 		.module-actions .btn {

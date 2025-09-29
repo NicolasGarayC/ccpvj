@@ -40,10 +40,12 @@
 	<div
 		class="modal-backdrop"
 		on:click={handleBackdropClick}
+		on:keydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"
 		aria-describedby="modal-message"
+		tabindex="-1"
 	>
 		<div class="modal-container">
 			<!-- Modal Header -->
@@ -144,6 +146,9 @@
 		max-height: 90vh;
 		overflow: hidden;
 		animation: slideIn 0.3s ease-out;
+		transform: translateZ(0); /* Force hardware acceleration */
+		will-change: transform; /* Optimize for animations */
+		position: relative;
 	}
 
 	.modal-header {

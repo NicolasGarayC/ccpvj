@@ -1,464 +1,576 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { libraryService } from '$lib/services/library/libraryService';
-	import type { CreateLibraryResourceDto, MediaType, ResourceCategory } from '$lib/data/models/library';
-	import { MEDIA_TYPE_LABELS, CATEGORY_LABELS, SUPPORTED_MEDIA_TYPES, MAX_FILE_SIZES } from '$lib/data/models/library';
+	import { onMount } from 'svelte';
+	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
+	import type { CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
 
 	// Estado del formulario
-	let formData: CreateLibraryResourceDto = {
-		name: '',
+	// Campo separado para el input de tags como string
+	let tagsInput = '';
+
+	let formData: CreateLibraryItemDto = {
+		title: '',
 		description: '',
-		authors: [],
-		category: 'educacion',
-		mediaType: 'pdf',
-		downloadable: true,
-		language: 'es',
+		author: '',
+		fileType: 'document',
+		filePath: '',
+		fileName: '',
+		fileSize: 0,
+		mimeType: '',
 		tags: [],
-		isFeatured: false
+		language: 'es',
+		year: new Date().getFullYear(),
+		category: '',
+		subcategory: '',
+		isFeatured: false,
+		collectionIds: []
 	};
 
 	let selectedFile: File | null = null;
-	let authorsInput = '';
-	let tagsInput = '';
+	let isUploading = false;
+	let uploadProgress = 0;
 	let loading = false;
 	let errors: Record<string, string> = {};
+	let success = false;
+	let availableCategories: string[] = [];
+	let categoryOptions: Array<{value: string, label: string, description: string}> = [];
 
 	// Opciones para formulario
 	const languageOptions = [
-		{ value: 'es', label: 'Español' },
-		{ value: 'en', label: 'Inglés' },
-		{ value: 'fr', label: 'Francés' },
-		{ value: 'pt', label: 'Portugués' }
+		'Español',
+		'Inglés',
+		'Francés',
+		'Portugués',
+		'Catalán',
+		'Quechua',
+		'Mapuche'
 	];
+
+	// Función para obtener icono según categoría
+	function getCategoryIcon(category: string): string {
+		const iconMap: Record<string, string> = {
+			'Literatura': '📚',
+			'Historia': '🏛️',
+			'Arte y Música': '🎨',
+			'Ciencias Sociales': '🧠',
+			'Ciencias Exactas': '🔬',
+			'Educación': '🎓',
+			'Filosofía': '🤔',
+			'Medio Ambiente': '🌱',
+			'Política': '🗳️',
+			'Cultura Popular': '🎭',
+			'Derechos Humanos': '⚖️',
+			'Tecnología': '💻',
+			'Salud': '🏥',
+			'Economía': '💰',
+			'Documentales': '🎬'
+		};
+		return iconMap[category] || '📂';
+	}
+
+	// Función para obtener descripción según categoría
+	function getCategoryDescription(category: string): string {
+		const descriptionMap: Record<string, string> = {
+			'Literatura': 'Novelas, ensayos, poesía y textos literarios',
+			'Ciencias Sociales': 'Sociología, política, estudios culturales y antropología',
+			'Arte y Música': 'Música, arte visual, performance y expresiones culturales',
+			'Ciencias Exactas': 'Física, matemáticas, química y ciencias naturales',
+			'Educación': 'Pedagogía, metodologías educativas y formación docente',
+			'Medio Ambiente': 'Ecología, sostenibilidad y agricultura urbana',
+			'Historia': 'Historia contemporánea, memoria histórica y derechos humanos'
+		};
+		return descriptionMap[category] || 'Recursos de la biblioteca';
+	}
+
+	// Cargar categorías dinámicamente
+	onMount(async () => {
+		try {
+			availableCategories = await digitalLibraryService.getAvailableCategories();
+			categoryOptions = availableCategories.map(category => ({
+				value: category,
+				label: `${getCategoryIcon(category)} ${category}`,
+				description: getCategoryDescription(category)
+			}));
+
+			// Si hay categorías disponibles, usar la primera como default
+			if (categoryOptions.length > 0 && !formData.category) {
+				formData.category = categoryOptions[0].value;
+			}
+		} catch (error) {
+			console.error('Error loading categories:', error);
+			// Fallback si no se pueden cargar las categorías
+			categoryOptions = [
+				{ value: 'Literatura', label: '📚 Literatura', description: 'Recursos literarios' }
+			];
+		}
+	});
 
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
-		
+
 		if (file) {
 			selectedFile = file;
-			
-			// Auto-detectar tipo de archivo
-			const mimeType = file.type;
-			Object.entries(SUPPORTED_MEDIA_TYPES).forEach(([type, types]) => {
-				if (types.includes(mimeType)) {
-					formData.mediaType = type as MediaType;
-				}
-			});
-			
-			// Si no hay nombre, usar el nombre del archivo
-			if (!formData.name) {
-				formData.name = file.name.replace(/\.[^/.]+$/, '');
+
+			// Validar archivo usando el servicio de upload
+			const validation = digitalLibraryService.validateFile(file);
+			if (!validation.isValid) {
+				errors.file = validation.error || 'Archivo no válido';
+				return;
+			} else {
+				delete errors.file;
 			}
+
+			// Auto-detectar tipo de archivo
+			if (validation.fileType) {
+				formData.fileType = validation.fileType;
+			}
+
+			// Si no hay título, usar el nombre del archivo
+			if (!formData.title) {
+				formData.title = file.name.replace(/\.[^/.]+$/, "");
+			}
+
+			formData.fileSize = file.size;
+			formData.fileName = file.name;
 		}
-		
-		validateField('file');
 	}
 
-	function updateAuthors() {
-		formData.authors = authorsInput
-			.split(',')
-			.map(author => author.trim())
-			.filter(author => author.length > 0);
-	}
+	async function handleSubmit() {
+		if (!validateForm()) return;
 
-	function updateTags() {
-		formData.tags = tagsInput
-			.split(',')
-			.map(tag => tag.trim())
-			.filter(tag => tag.length > 0);
-	}
+		loading = true;
+		errors = {};
 
-	function validateField(field: string) {
-		delete errors[field];
+		try {
+			// Convertir tags string a array
+			formData.tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [];
 
-		switch (field) {
-			case 'name':
-				if (!formData.name.trim()) {
-					errors.name = 'El nombre es requerido';
-				}
-				break;
-			
-			case 'authors':
-				if (formData.authors.length === 0) {
-					errors.authors = 'Al menos un autor es requerido';
-				}
-				break;
-			
-			case 'file':
-				if (!selectedFile) {
-					errors.file = 'Debe seleccionar un archivo';
-					break;
-				}
-				
-				// Validar tipo de archivo
-				const supportedTypes = Object.values(SUPPORTED_MEDIA_TYPES).flat();
-				if (!supportedTypes.includes(selectedFile.type)) {
-					errors.file = 'Tipo de archivo no soportado';
-					break;
-				}
-				
-				// Validar tamaño
-				const maxSize = MAX_FILE_SIZES[formData.mediaType];
-				if (selectedFile.size > maxSize) {
-					const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-					errors.file = `El archivo es demasiado grande. Máximo ${maxSizeMB}MB`;
-				}
-				break;
+			// Primero subir el archivo
+			if (selectedFile) {
+				isUploading = true;
+
+				// Generar un ID temporal para el upload
+				const tempId = crypto.randomUUID();
+
+				const uploadResult = await digitalLibraryService.uploadLibraryFile({
+					itemId: tempId,
+					file: selectedFile,
+					category: formData.category
+				});
+
+				formData.filePath = uploadResult.url;
+				formData.fileType = uploadResult.fileType;
+				formData.fileSize = uploadResult.size;
+				formData.mimeType = selectedFile.type;
+
+				isUploading = false;
+			}
+
+			// Crear el recurso en la base de datos
+			const newItem = await digitalLibraryService.createItem(formData);
+
+			success = true;
+			setTimeout(() => {
+				goto('/library');
+			}, 2000);
+
+		} catch (error) {
+			console.error('Error creating library item:', error);
+			errors.general = 'Error al crear el recurso. Por favor, inténtalo de nuevo.';
+		} finally {
+			loading = false;
+			isUploading = false;
 		}
 	}
 
 	function validateForm(): boolean {
 		errors = {};
-		
-		validateField('name');
-		validateField('authors');
-		validateField('file');
-		
+
+		if (!formData.title.trim()) {
+			errors.title = 'El título es obligatorio';
+		}
+
+		if (!selectedFile) {
+			errors.file = 'Debes seleccionar un archivo';
+		}
+
+		if (!formData.author?.trim()) {
+			errors.author = 'El autor es obligatorio';
+		}
+
+		if (!formData.category) {
+			errors.category = 'La categoría es obligatoria';
+		}
+
 		return Object.keys(errors).length === 0;
 	}
 
-	async function handleSubmit() {
-		if (!validateForm()) {
-			return;
-		}
-		
-		loading = true;
-		
-		try {
-			await libraryService.createResource(formData, selectedFile!);
-			goto('/library');
-		} catch (error) {
-			console.error('Error creating resource:', error);
-			errors.submit = error instanceof Error ? error.message : 'Error al crear el recurso';
-		} finally {
-			loading = false;
-		}
+	function resetForm() {
+		tagsInput = '';
+		formData = {
+			title: '',
+			description: '',
+			author: '',
+			fileType: 'document',
+			filePath: '',
+			fileName: '',
+			fileSize: 0,
+			mimeType: '',
+			tags: [],
+			language: 'es',
+			year: new Date().getFullYear(),
+			category: categoryOptions.length > 0 ? categoryOptions[0].value : 'Literatura',
+			subcategory: '',
+			isFeatured: false,
+			collectionIds: []
+		};
+		selectedFile = null;
+		errors = {};
+		success = false;
 	}
 
-	function handleCancel() {
-		goto('/library');
+	function formatFileSize(bytes: number): string {
+		return digitalLibraryService.formatFileSize(bytes);
+	}
+
+	function getFileTypeIcon(fileType: string): string {
+		return digitalLibraryService.getFileTypeIcon(fileType);
 	}
 </script>
 
 <svelte:head>
-	<title>Crear Recurso - Biblioteca</title>
+	<title>Crear Recurso - Biblioteca Digital</title>
 </svelte:head>
 
-<div class="max-w-4xl mx-auto p-6">
-	<!-- Header -->
-	<div class="mb-8">
-		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-3xl font-bold text-gray-900">Crear Recurso</h1>
-				<p class="mt-2 text-gray-600">Agrega un nuevo recurso a la biblioteca</p>
-			</div>
-			<button
-				on:click={handleCancel}
-				class="text-gray-600 hover:text-gray-800"
-				title="Volver a la biblioteca"
-				aria-label="Volver a la biblioteca"
-			>
-				<i class="fas fa-times text-xl"></i>
-			</button>
-		</div>
-	</div>
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+	<div class="container mx-auto px-4 py-8 max-w-4xl">
+		<!-- Header -->
+		<div class="relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 mb-8 border-2 border-indigo-100 overflow-hidden">
+			<div class="absolute top-4 right-6 text-6xl opacity-20 animate-pulse">✨</div>
+			<div class="absolute -top-4 -left-4 w-20 h-20 bg-indigo-200/30 rounded-full animate-bounce" style="animation-duration: 3s;"></div>
 
-	<!-- Formulario -->
-	<form on:submit|preventDefault={handleSubmit} class="space-y-8">
-		<!-- Información básica -->
-		<div class="bg-white rounded-lg shadow-sm border p-6">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">Información Básica</h2>
-			
-			<div class="grid grid-cols-1 gap-6">
-				<!-- Nombre -->
-				<div>
-					<label for="resource-name" class="block text-sm font-medium text-gray-700 mb-2">
-						Nombre del recurso *
-					</label>
-					<input
-						id="resource-name"
-						type="text"
-						bind:value={formData.name}
-						on:blur={() => validateField('name')}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-						class:border-red-300={errors.name}
-						placeholder="Ingresa el nombre del recurso"
-					>
-					{#if errors.name}
-						<p class="mt-1 text-sm text-red-600">{errors.name}</p>
-					{/if}
-				</div>
-
-				<!-- Descripción -->
-				<div>
-					<label for="resource-description" class="block text-sm font-medium text-gray-700 mb-2">
-						Descripción
-					</label>
-					<textarea
-						id="resource-description"
-						bind:value={formData.description}
-						rows="4"
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-						placeholder="Descripción del recurso (opcional)"
-					></textarea>
-				</div>
-
-				<!-- Autores -->
-				<div>
-					<label for="resource-authors" class="block text-sm font-medium text-gray-700 mb-2">
-						Autores *
-					</label>
-					<input
-						id="resource-authors"
-						type="text"
-						bind:value={authorsInput}
-						on:input={updateAuthors}
-						on:blur={() => validateField('authors')}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-						class:border-red-300={errors.authors}
-						placeholder="Ingresa los autores separados por comas"
-					>
-					{#if errors.authors}
-						<p class="mt-1 text-sm text-red-600">{errors.authors}</p>
-					{/if}
-					{#if formData.authors.length > 0}
-						<div class="mt-2 flex flex-wrap gap-2">
-							{#each formData.authors as author}
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-									{author}
-								</span>
-							{/each}
-						</div>
-					{/if}
-				</div>
+			<div class="relative z-10">
+				<h1 class="text-3xl md:text-4xl font-black mb-4">
+					<span class="text-3xl mr-3">📝</span>
+					<span class="bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-800 bg-clip-text text-transparent">
+						Agregar Recurso Genial
+					</span>
+				</h1>
+				<p class="text-lg text-gray-700 max-w-2xl leading-relaxed font-medium">
+					🌟 ¡Comparte conocimiento increíble! Agrega libros, videos, audios y documentos súper geniales para que otros puedan aprender y crear cosas asombrosas.
+				</p>
 			</div>
 		</div>
 
-		<!-- Archivo -->
-		<div class="bg-white rounded-lg shadow-sm border p-6">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">Archivo</h2>
-			
-			<div>
-				<label for="resource-file" class="block text-sm font-medium text-gray-700 mb-2">
-					Seleccionar archivo *
-				</label>
-				<input
-					id="resource-file"
-					type="file"
-					on:change={handleFileChange}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-					class:border-red-300={errors.file}
-					accept=".pdf,.mp4,.webm,.mov,.avi,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.ogg,.m4a,.doc,.docx,.txt"
-				>
-				{#if errors.file}
-					<p class="mt-1 text-sm text-red-600">{errors.file}</p>
-				{/if}
-				
-				{#if selectedFile}
-					<div class="mt-3 p-3 bg-gray-50 rounded-md">
-						<div class="flex items-center gap-3">
-							<i class="fas fa-file text-gray-400"></i>
-							<div class="flex-1">
-								<p class="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-								<p class="text-xs text-gray-500">
-									{Math.round(selectedFile.size / 1024)} KB • {selectedFile.type}
+		{#if success}
+			<!-- Mensaje de éxito -->
+			<div class="relative bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl shadow-xl border-2 border-green-200 p-8 mb-8 overflow-hidden">
+				<div class="absolute top-4 right-6 text-6xl opacity-20 animate-bounce">🎉</div>
+
+				<div class="relative z-10 text-center">
+					<div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center animate-pulse">
+						<span class="text-3xl text-white">✅</span>
+					</div>
+					<h2 class="text-2xl md:text-3xl font-black text-green-800 mb-4">
+						¡Recurso Creado con Éxito! 🎊
+					</h2>
+					<p class="text-lg text-green-700 mb-6 font-medium">
+						Tu recurso súper genial ha sido agregado a la biblioteca. ¡Ahora otros pueden disfrutar de tu contenido increíble!
+					</p>
+					<p class="text-sm text-green-600">Redirigiendo a la biblioteca en unos segundos...</p>
+				</div>
+			</div>
+		{:else}
+			<!-- Formulario -->
+			<form on:submit|preventDefault={handleSubmit} class="space-y-8">
+				<!-- Información básica -->
+				<div class="bg-gradient-to-br from-white/95 to-indigo-50/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-indigo-100 p-8 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-indigo-200/20 rounded-full animate-pulse"></div>
+
+					<h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+						<span class="text-2xl">📋</span>
+						Información Básica
+					</h2>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<!-- Título -->
+						<div class="md:col-span-2">
+							<label for="title" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>📝</span>
+								Título *
+							</label>
+							<input
+								id="title"
+								type="text"
+								bind:value={formData.title}
+								placeholder="Ingresa un título súper genial..."
+								class="w-full p-4 border-2 border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-medium {errors.title ? 'border-red-400 ring-red-300/20' : ''}"
+								required
+							>
+							{#if errors.title}
+								<p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+									<span>⚠️</span>
+									{errors.title}
 								</p>
+							{/if}
+						</div>
+
+						<!-- Autor -->
+						<div>
+							<label for="author" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>👤</span>
+								Autor *
+							</label>
+							<input
+								id="author"
+								type="text"
+								bind:value={formData.author}
+								placeholder="Nombre del autor..."
+								class="w-full p-4 border-2 border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-medium {errors.author ? 'border-red-400 ring-red-300/20' : ''}"
+								required
+							>
+							{#if errors.author}
+								<p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+									<span>⚠️</span>
+									{errors.author}
+								</p>
+							{/if}
+						</div>
+
+						<!-- Año de publicación -->
+						<div>
+							<label for="publishYear" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>📅</span>
+								Año de Publicación
+							</label>
+							<input
+								id="publishYear"
+								type="number"
+								bind:value={formData.year}
+								min="1800"
+								max={new Date().getFullYear() + 1}
+								class="w-full p-4 border-2 border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-medium"
+							>
+						</div>
+
+						<!-- Descripción -->
+						<div class="md:col-span-2">
+							<label for="description" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>📄</span>
+								Descripción
+							</label>
+							<textarea
+								id="description"
+								bind:value={formData.description}
+								placeholder="Describe tu recurso súper genial..."
+								rows="4"
+								class="w-full p-4 border-2 border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-medium resize-none"
+							></textarea>
+						</div>
+					</div>
+				</div>
+
+				<!-- Archivo -->
+				<div class="bg-gradient-to-br from-white/95 to-purple-50/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-purple-100 p-8 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-purple-200/20 rounded-full animate-pulse"></div>
+
+					<h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+						<span class="text-2xl">📁</span>
+						Archivo
+					</h2>
+
+					<div class="space-y-6">
+						<!-- Upload de archivo -->
+						<div>
+							<label class="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+								<span>📎</span>
+								Seleccionar Archivo *
+							</label>
+
+							<div class="relative">
+								<input
+									type="file"
+									on:change={handleFileChange}
+									accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.avi,.mov,.mp3,.wav,.ogg,.m4a"
+									class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+									required
+								>
+
+								<div class="border-2 border-dashed border-purple-300 rounded-2xl p-8 text-center hover:border-purple-400 hover:bg-purple-50/50 transition-all duration-300 {errors.file ? 'border-red-400 bg-red-50/30' : ''}">
+									{#if selectedFile}
+										<div class="flex items-center justify-center gap-4">
+											<div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center">
+												<span class="text-2xl text-white">{getFileTypeIcon(formData.fileType)}</span>
+											</div>
+											<div class="text-left">
+												<p class="font-bold text-gray-800">{selectedFile.name}</p>
+												<p class="text-sm text-gray-600">{formatFileSize(selectedFile.size)}</p>
+												<p class="text-xs text-purple-600 font-semibold">Tipo: {formData.fileType}</p>
+											</div>
+										</div>
+									{:else}
+										<div class="space-y-4">
+											<div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center">
+												<span class="text-3xl">📁</span>
+											</div>
+											<div>
+												<p class="text-lg font-bold text-gray-700 mb-2">🚀 Arrastra tu archivo aquí o haz clic para seleccionar</p>
+												<p class="text-sm text-gray-500">Soportamos: PDF, Word, Excel, PowerPoint, imágenes, videos y audio</p>
+											</div>
+										</div>
+									{/if}
+								</div>
 							</div>
+
+							{#if errors.file}
+								<p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+									<span>⚠️</span>
+									{errors.file}
+								</p>
+							{/if}
+						</div>
+					</div>
+				</div>
+
+				<!-- Categorización -->
+				<div class="bg-gradient-to-br from-white/95 to-green-50/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-green-100 p-8 overflow-hidden">
+					<div class="absolute -top-4 -right-4 w-16 h-16 bg-green-200/20 rounded-full animate-pulse"></div>
+
+					<h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+						<span class="text-2xl">🏷️</span>
+						Categorización
+					</h2>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<!-- Categoría -->
+						<div class="md:col-span-2">
+							<label for="category" class="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+								<span>📂</span>
+								Categoría *
+							</label>
+							<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+								{#each categoryOptions as option}
+									<label class="cursor-pointer">
+										<input
+											type="radio"
+											bind:group={formData.category}
+											value={option.value}
+											class="sr-only"
+										>
+										<div class="p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 transition-all duration-300 hover:shadow-md {formData.category === option.value ? 'bg-gradient-to-r from-green-400 to-green-600 text-white border-transparent shadow-lg' : 'bg-white hover:bg-green-50'}">
+											<div class="text-sm font-bold {formData.category === option.value ? 'text-white' : 'text-gray-800'}">{option.label}</div>
+											<div class="text-xs {formData.category === option.value ? 'text-green-100' : 'text-gray-600'} mt-1">{option.description}</div>
+										</div>
+									</label>
+								{/each}
+							</div>
+							{#if errors.category}
+								<p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+									<span>⚠️</span>
+									{errors.category}
+								</p>
+							{/if}
+						</div>
+
+						<!-- Idioma -->
+						<div>
+							<label for="language" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>🌐</span>
+								Idioma
+							</label>
+							<select
+								id="language"
+								bind:value={formData.language}
+								class="w-full p-4 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-300/20 focus:border-green-400 transition-all duration-300 bg-white font-medium"
+							>
+								{#each languageOptions as language}
+									<option value={language}>{language}</option>
+								{/each}
+							</select>
+						</div>
+
+						<!-- ISBN -->
+						<div>
+							<label for="isbn" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>📚</span>
+								ISBN (opcional)
+							</label>
+							<input
+								id="isbn"
+								type="text"
+								bind:value={formData.isbn}
+								placeholder="978-3-16-148410-0"
+								class="w-full p-4 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-300/20 focus:border-green-400 transition-all duration-300 bg-white font-medium"
+							>
+						</div>
+
+						<!-- Tags -->
+						<div class="md:col-span-2">
+							<label for="tags" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>🏷️</span>
+								Etiquetas
+							</label>
+							<input
+								id="tags"
+								type="text"
+								bind:value={tagsInput}
+								placeholder="música, educación, historia (separadas por comas)"
+								class="w-full p-4 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-300/20 focus:border-green-400 transition-all duration-300 bg-white font-medium"
+							>
+							<p class="text-xs text-gray-500 mt-2">💡 Usa etiquetas para que otros puedan encontrar tu recurso más fácilmente</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Error general -->
+				{#if errors.general}
+					<div class="bg-red-50 border-2 border-red-200 rounded-2xl p-6">
+						<div class="flex items-center gap-3">
+							<span class="text-2xl">❌</span>
+							<p class="text-red-700 font-semibold">{errors.general}</p>
 						</div>
 					</div>
 				{/if}
-			</div>
-		</div>
 
-		<!-- Metadatos -->
-		<div class="bg-white rounded-lg shadow-sm border p-6">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">Metadatos</h2>
-			
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<!-- Categoría -->
-				<div>
-					<label for="resource-category" class="block text-sm font-medium text-gray-700 mb-2">
-						Categoría *
-					</label>
-					<select
-						id="resource-category"
-						bind:value={formData.category}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+				<!-- Botones de acción -->
+				<div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+					<button
+						type="button"
+						on:click={() => goto('/library')}
+						class="group inline-flex items-center gap-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white px-8 py-4 rounded-2xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-lg font-bold"
 					>
-						{#each Object.entries(CATEGORY_LABELS) as [value, label]}
-							<option {value}>{label}</option>
-						{/each}
-					</select>
-				</div>
+						<span class="text-xl group-hover:-translate-x-1 transition-transform duration-300">⬅️</span>
+						Volver a la Biblioteca
+					</button>
 
-				<!-- Tipo de archivo -->
-				<div>
-					<label for="resource-media-type" class="block text-sm font-medium text-gray-700 mb-2">
-						Tipo de archivo *
-					</label>
-					<select
-						id="resource-media-type"
-						bind:value={formData.mediaType}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-					>
-						{#each Object.entries(MEDIA_TYPE_LABELS) as [value, label]}
-							<option {value}>{label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<!-- Año de publicación -->
-				<div>
-					<label for="resource-publish-year" class="block text-sm font-medium text-gray-700 mb-2">
-						Año de publicación
-					</label>
-					<input
-						id="resource-publish-year"
-						type="number"
-						bind:value={formData.publishYear}
-						min="1900"
-						max={new Date().getFullYear()}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-						placeholder="YYYY"
-					>
-				</div>
-
-				<!-- Idioma -->
-				<div>
-					<label for="resource-language" class="block text-sm font-medium text-gray-700 mb-2">
-						Idioma *
-					</label>
-					<select
-						id="resource-language"
-						bind:value={formData.language}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-					>
-						{#each languageOptions as option}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<!-- ISBN (para documentos) -->
-				{#if formData.mediaType === 'pdf' || formData.mediaType === 'document'}
-					<div>
-						<label for="resource-isbn" class="block text-sm font-medium text-gray-700 mb-2">
-							ISBN
-						</label>
-						<input
-							id="resource-isbn"
-							type="text"
-							bind:value={formData.isbn}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							placeholder="978-3-16-148410-0"
+					<div class="flex gap-4">
+						<button
+							type="button"
+							on:click={resetForm}
+							disabled={loading || isUploading}
+							class="group inline-flex items-center gap-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-4 rounded-2xl hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-					</div>
-				{/if}
+							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
+							Limpiar
+						</button>
 
-				<!-- Duración (para videos/audio) -->
-				{#if formData.mediaType === 'video' || formData.mediaType === 'audio'}
-					<div>
-						<label for="resource-duration" class="block text-sm font-medium text-gray-700 mb-2">
-							Duración (segundos)
-						</label>
-						<input
-							id="resource-duration"
-							type="number"
-							bind:value={formData.duration}
-							min="1"
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							placeholder="Duración en segundos"
+						<button
+							type="submit"
+							disabled={loading || isUploading || !selectedFile}
+							class="group inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed"
 						>
+							{#if loading || isUploading}
+								<div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+								{isUploading ? 'Subiendo...' : 'Creando...'}
+							{:else}
+								<span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
+								Crear Recurso Genial
+							{/if}
+						</button>
 					</div>
-				{/if}
-			</div>
-
-			<!-- Tags -->
-			<div class="mt-6">
-				<label for="resource-tags" class="block text-sm font-medium text-gray-700 mb-2">
-					Tags
-				</label>
-				<input
-					id="resource-tags"
-					type="text"
-					bind:value={tagsInput}
-					on:input={updateTags}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-					placeholder="Ingresa los tags separados por comas"
-				>
-				{#if formData.tags && formData.tags.length > 0}
-					<div class="mt-2 flex flex-wrap gap-2">
-						{#each formData.tags as tag}
-							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-								#{tag}
-							</span>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Opciones -->
-		<div class="bg-white rounded-lg shadow-sm border p-6">
-			<h2 class="text-lg font-medium text-gray-900 mb-4">Opciones</h2>
-			
-			<div class="space-y-4">
-				<label class="flex items-center">
-					<input
-						type="checkbox"
-						bind:checked={formData.downloadable}
-						class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-					>
-					<span class="ml-2 text-sm text-gray-700">Permitir descarga</span>
-				</label>
-				
-				<label class="flex items-center">
-					<input
-						type="checkbox"
-						bind:checked={formData.isFeatured}
-						class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-					>
-					<span class="ml-2 text-sm text-gray-700">Destacar recurso</span>
-				</label>
-			</div>
-		</div>
-
-		<!-- Error general -->
-		{#if errors.submit}
-			<div class="bg-red-50 border border-red-200 rounded-md p-4">
-				<div class="flex">
-					<i class="fas fa-exclamation-circle text-red-400 mr-2 mt-0.5"></i>
-					<p class="text-sm text-red-800">{errors.submit}</p>
 				</div>
-			</div>
+			</form>
 		{/if}
-
-		<!-- Botones -->
-		<div class="flex justify-end gap-4 pt-6 border-t border-gray-200">
-			<button
-				type="button"
-				on:click={handleCancel}
-				class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-				disabled={loading}
-			>
-				Cancelar
-			</button>
-			
-			<button
-				type="submit"
-				class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-				disabled={loading}
-			>
-				{#if loading}
-					<i class="fas fa-spinner fa-spin mr-2"></i>
-					Creando...
-				{:else}
-					<i class="fas fa-save mr-2"></i>
-					Crear Recurso
-				{/if}
-			</button>
-		</div>
-	</form>
+	</div>
 </div>

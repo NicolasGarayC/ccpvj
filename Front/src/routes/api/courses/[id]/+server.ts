@@ -7,7 +7,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 	try {
 		const courseId = params.id;
 
-		const response = await fetch(`${BACKEND_URL}/courses/${courseId}`, {
+		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -36,7 +36,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		const courseId = params.id;
 		const body = await request.json();
 
-		const response = await fetch(`${BACKEND_URL}/courses/${courseId}`, {
+		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -65,7 +65,8 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 	try {
 		const courseId = params.id;
 
-		const response = await fetch(`${BACKEND_URL}/courses/${courseId}`, {
+		// Call backend to delete course (this will handle DB cleanup and file deletion)
+		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
@@ -80,8 +81,8 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 			return error(response.status, errorText || 'Backend error');
 		}
 
-		const data = await response.json();
-		return json(data);
+		// Return success without body (204 No Content from backend)
+		return new Response(null, { status: 204 });
 
 	} catch (err) {
 		console.error('Error deleting course:', err);

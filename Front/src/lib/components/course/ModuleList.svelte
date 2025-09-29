@@ -144,7 +144,7 @@
 	{:else}
 		<div class="modules-container">
 			{#each modules.sort((a, b) => a.orderNumber - b.orderNumber) as module (module.id)}
-				<div 
+				<div
 					class="module-item"
 					class:draggable={allowReorder}
 					class:dragging={draggedModule?.id === module.id}
@@ -170,7 +170,7 @@
 
 					<ModuleCard
 						{module}
-						showActions={true}
+						showActions={showActions}
 						on:edit={handleEditModule}
 						on:delete={handleDeleteModule}
 						on:view={handleViewModule}
@@ -277,6 +277,8 @@
 		align-items: stretch;
 		border-bottom: 1px solid var(--color-border);
 		transition: background-color 0.2s ease;
+		overflow: hidden;
+		width: 100%;
 	}
 
 	.module-item:last-child {

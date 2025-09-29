@@ -12,7 +12,7 @@ namespace CentroCultural.Infrastructure.Services
         public FileStorageService(ILogger<FileStorageService> logger)
         {
             _logger = logger;
-            _uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            _uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Data", "media");
             
             // Crear directorio si no existe
             if (!Directory.Exists(_uploadsPath))
@@ -83,7 +83,7 @@ namespace CentroCultural.Infrastructure.Services
                 }
 
                 // Retornar path relativo para almacenar en BD
-                var relativePath = Path.Combine("uploads", folder, uniqueFileName).Replace("\\", "/");
+                var relativePath = Path.Combine("media", folder, uniqueFileName).Replace("\\", "/");
 
                 return new FileStorageResult
                 {

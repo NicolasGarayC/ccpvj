@@ -18,12 +18,17 @@ builder.Services.AddInfrastructureServices(
     builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
 builder.Services.AddApplicationServices();
 
-// CORS - Update to allow SvelteKit
+// CORS - Update to allow SvelteKit on multiple ports
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSvelteKit", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // SvelteKit dev server
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://localhost:5176"
+              ) // SvelteKit dev server - multiple ports
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials(); // Important for cookies
@@ -67,14 +72,25 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Servicios de biblioteca
-builder.Services.AddScoped<CentroCultural.Application.Services.ILibraryService, CentroCultural.Application.Services.LibraryService>();
+// Servicios de almacenamiento de archivos
 builder.Services.AddScoped<CentroCultural.Application.Services.IFileStorageService, CentroCultural.Infrastructure.Services.FileStorageService>();
 
-// Configuración de archivos grandes
+// Configuración de archivos grandes (hasta 5GB para películas completas)
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 500_000_000;
+    options.MultipartBodyLengthLimit = 5_368_709_120; // 5GB
+    options.ValueLengthLimit = int.MaxValue;
+    options.ValueCountLimit = int.MaxValue;
+    options.KeyLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
+// Configurar Kestrel para archivos grandes
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 5_368_709_120; // 5GB
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(30);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(30);
 });
 
 var app = builder.Build();
@@ -86,11 +102,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Ensure database is created and configure foreign keys
+// Configure foreign keys for SQLite (database already exists)
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+    // NOTE: Database already exists - do not recreate to preserve existing structure
+    // context.Database.EnsureCreated(); // COMMENTED OUT to preserve existing database
 
     // Enable foreign key constraints for SQLite
     context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON");

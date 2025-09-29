@@ -1,43 +1,35 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { libraryService } from '$lib/services/library/libraryService';
+	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import LibraryResourceCard from '$lib/components/library/LibraryResourceCard.svelte';
-	import LibraryFilters from '$lib/components/library/LibraryFilters.svelte';
-	import type { LibraryResource, LibrarySearchFilters, LibraryStats } from '$lib/data/models/library';
-	import { MEDIA_TYPE_LABELS, CATEGORY_LABELS } from '$lib/data/models/library';
-	
+	import DigitalLibraryCard from '$lib/components/library/DigitalLibraryCard.svelte';
+	import DigitalLibraryFilters from '$lib/components/library/DigitalLibraryFilters.svelte';
+	import type {
+		LibraryItemDto,
+		LibrarySearchDto,
+		LibraryStatsDto,
+		LibraryItemPagedResultDto
+	} from '$lib/services/digitalLibraryService';
+
 	// Estado de la aplicación
-	let resources: LibraryResource[] = [];
-	let filteredResources: LibraryResource[] = [];
-	let stats: LibraryStats | null = null;
+	let pagedResult: LibraryItemPagedResultDto | null = null;
+	let stats: LibraryStatsDto | null = null;
 	let isLoading = true;
 	let error: string | null = null;
-	
+
 	// Permisos de usuario
 	let isAuthenticated = false;
 	let canManage = false;
-	
-	// Filtros activos
-	let currentFilters: LibrarySearchFilters = {};
+
+	// Filtros y búsqueda
+	let currentFilters: LibrarySearchDto = {};
 	let viewMode: 'grid' | 'list' = 'grid';
-	let sortBy: 'name' | 'uploadedAt' | 'downloadCount' | 'publishYear' = 'uploadedAt';
-	let sortOrder: 'asc' | 'desc' = 'desc';
-	
-	// Variables para búsqueda y paginación
 	let searchTerm = '';
+	let sortBy = 'created_at';
+	let sortOrder: 'asc' | 'desc' = 'desc';
 	let currentPage = 1;
 	let itemsPerPage = 12;
-	
-	// Calcular recursos filtrados y paginados
-	$: {
-		filteredResources = filterResources(resources, currentFilters, searchTerm);
-		filteredResources = sortResources(filteredResources, sortBy, sortOrder);
-	}
-	
-	$: paginatedResources = paginateResources(filteredResources, currentPage, itemsPerPage);
-	$: totalPages = Math.ceil(filteredResources.length / itemsPerPage);
-	
+
 	onMount(async () => {
 		// Verificar permisos de usuario
 		isAuthenticated = jwtService.isAuthenticated();
@@ -45,17 +37,27 @@
 			const user = jwtService.getUser();
 			canManage = user?.role === 'colaborador' || user?.role === 'administrador';
 		}
-		
-		// Cargar datos
-		await loadResources();
+
+		// Cargar datos iniciales
+		await loadLibraryData();
 		await loadStats();
 	});
-	
-	async function loadResources() {
+
+	async function loadLibraryData() {
 		try {
 			isLoading = true;
 			error = null;
-			resources = await libraryService.getAllResources();
+
+			const searchDto: LibrarySearchDto = {
+				...currentFilters,
+				query: searchTerm || undefined,
+				sortBy,
+				sortOrder,
+				page: currentPage,
+				pageSize: itemsPerPage
+			};
+
+			pagedResult = await digitalLibraryService.getItems(searchDto);
 		} catch (e) {
 			error = 'Error al cargar recursos de la biblioteca';
 			console.error(error, e);
@@ -63,113 +65,62 @@
 			isLoading = false;
 		}
 	}
-	
+
 	async function loadStats() {
 		try {
-			stats = await libraryService.getStats();
+			stats = await digitalLibraryService.getStats();
 		} catch (e) {
 			console.error('Error loading stats:', e);
 		}
 	}
-	
-	function filterResources(resources: LibraryResource[], filters: LibrarySearchFilters, search: string): LibraryResource[] {
-		return resources.filter(resource => {
-			// Filtro por búsqueda de texto
-			if (search) {
-				const searchLower = search.toLowerCase();
-				const matchesName = resource.name.toLowerCase().includes(searchLower);
-				const matchesAuthors = resource.authors.some(author => author.toLowerCase().includes(searchLower));
-				const matchesTags = resource.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
-				const matchesDescription = resource.description?.toLowerCase().includes(searchLower) || false;
-				
-				if (!matchesName && !matchesAuthors && !matchesTags && !matchesDescription) {
-					return false;
-				}
-			}
-			
-			// Filtros específicos
-			if (filters.category && resource.category !== filters.category) return false;
-			if (filters.mediaType && resource.mediaType !== filters.mediaType) return false;
-			if (filters.language && resource.language !== filters.language) return false;
-			if (filters.publishYear && resource.publishYear !== filters.publishYear) return false;
-			if (filters.downloadable !== undefined && resource.downloadable !== filters.downloadable) return false;
-			if (filters.isFeatured !== undefined && resource.isFeatured !== filters.isFeatured) return false;
-			
-			// Filtro por autor específico
-			if (filters.authors) {
-				const authorSearch = filters.authors.toLowerCase();
-				if (!resource.authors.some(author => author.toLowerCase().includes(authorSearch))) {
-					return false;
-				}
-			}
-			
-			// Filtro por tags
-			if (filters.tags && filters.tags.length > 0) {
-				if (!resource.tags || !filters.tags.some(tag => resource.tags!.includes(tag))) {
-					return false;
-				}
-			}
-			
-			return true;
-		});
+
+	function handleFiltersChange(event: CustomEvent<LibrarySearchDto>) {
+		currentFilters = event.detail;
+		currentPage = 1;
+		loadLibraryData();
 	}
-	
-	function sortResources(resources: LibraryResource[], sortBy: string, order: 'asc' | 'desc'): LibraryResource[] {
-		return [...resources].sort((a, b) => {
-			let comparison = 0;
-			
-			switch (sortBy) {
-				case 'name':
-					comparison = a.name.localeCompare(b.name);
-					break;
-				case 'uploadedAt':
-					comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
-					break;
-				case 'downloadCount':
-					comparison = a.downloadCount - b.downloadCount;
-					break;
-				case 'publishYear':
-					comparison = (a.publishYear || 0) - (b.publishYear || 0);
-					break;
-			}
-			
-			return order === 'asc' ? comparison : -comparison;
-		});
-	}
-	
-	function paginateResources(resources: LibraryResource[], page: number, perPage: number): LibraryResource[] {
-		const start = (page - 1) * perPage;
-		return resources.slice(start, start + perPage);
-	}
-	
-	function handleFiltersChange(filters: LibrarySearchFilters) {
-		currentFilters = filters;
-		currentPage = 1; // Reset a primera página cuando cambian los filtros
-	}
-	
+
 	function handleSearch() {
-		currentPage = 1; // Reset a primera página cuando se busca
+		currentPage = 1;
+		loadLibraryData();
 	}
-	
-	async function handleDownload(resource: LibraryResource) {
+
+	function handleSortChange() {
+		currentPage = 1;
+		loadLibraryData();
+	}
+
+	function handlePageChange(page: number) {
+		currentPage = page;
+		loadLibraryData();
+	}
+
+	async function handleDownload(item: LibraryItemDto) {
 		try {
-			await libraryService.downloadResource(resource.id);
-			// Actualizar contador de descargas localmente
-			resource.downloadCount++;
+			await digitalLibraryService.downloadFile(item);
+			// Recargar stats para actualizar contador
+			await loadStats();
 		} catch (e) {
 			error = 'Error al descargar el archivo';
 		}
 	}
-	
-	async function handleDelete(resourceId: string) {
+
+	async function handleView(item: LibraryItemDto) {
+		// El incremento de view count se maneja en el componente
+		await loadStats();
+	}
+
+	function handleEdit(item: LibraryItemDto) {
+		window.location.href = `/library/edit/${item.id}`;
+	}
+
+	async function handleDelete(item: LibraryItemDto) {
 		if (!confirm('¿Estás seguro de que quieres eliminar este recurso?')) return;
-		
+
 		try {
-			const success = await libraryService.deleteResource(resourceId);
-			if (success) {
-				resources = resources.filter(r => r.id !== resourceId);
-				await loadStats(); // Actualizar estadísticas
-			}
+			await digitalLibraryService.deleteItem(item.id);
+			await loadLibraryData();
+			await loadStats();
 		} catch (e) {
 			error = 'Error al eliminar el recurso';
 		}
@@ -236,7 +187,7 @@
 							<span class="text-2xl">📁</span>
 						</div>
 						<p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Total Recursos</p>
-						<p class="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.totalResources}</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.totalItems}</p>
 						<p class="text-xs text-blue-600 font-semibold">¡Recursos geniales! 🚀</p>
 					</div>
 				</div>
@@ -248,8 +199,8 @@
 						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
 							<span class="text-2xl">📄</span>
 						</div>
-						<p class="text-sm font-bold text-red-700 mb-2 uppercase tracking-wide">PDFs</p>
-						<p class="text-4xl font-black bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">{stats.resourcesByType.pdf || 0}</p>
+						<p class="text-sm font-bold text-red-700 mb-2 uppercase tracking-wide">Documentos</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">{stats.fileTypeDistribution.document || 0}</p>
 						<p class="text-xs text-red-600 font-semibold">¡Documentos épicos! 📚</p>
 					</div>
 				</div>
@@ -262,7 +213,7 @@
 							<span class="text-2xl">🎬</span>
 						</div>
 						<p class="text-sm font-bold text-purple-700 mb-2 uppercase tracking-wide">Videos</p>
-						<p class="text-4xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.resourcesByType.video || 0}</p>
+						<p class="text-4xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.fileTypeDistribution.video || 0}</p>
 						<p class="text-xs text-purple-600 font-semibold">¡Videos increíbles! 🎥</p>
 					</div>
 				</div>
@@ -283,8 +234,8 @@
 		{/if}
 
 	<!-- Componente de filtros -->
-	<LibraryFilters 
-		on:filtersChange={(e) => handleFiltersChange(e.detail)}
+	<DigitalLibraryFilters
+		on:filtersChange={handleFiltersChange}
 		{currentFilters}
 	/>
 
@@ -352,11 +303,12 @@
 
 						<!-- Ordenamiento mejorado -->
 						<div class="relative">
-							<select bind:value={sortBy} class="appearance-none px-6 py-3 pr-10 border-2 border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
-								<option value="uploadedAt">✨ Más recientes</option>
-								<option value="name">🔤 Nombre A-Z</option>
-								<option value="downloadCount">🔥 Más populares</option>
-								<option value="publishYear">📅 Por año</option>
+							<select bind:value={sortBy} on:change={handleSortChange} class="appearance-none px-6 py-3 pr-10 border-2 border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
+								<option value="created_at">✨ Más recientes</option>
+								<option value="title">🔤 Nombre A-Z</option>
+								<option value="download_count">🔥 Más populares</option>
+								<option value="view_count">👁️ Más vistos</option>
+								<option value="publish_year">📅 Por año</option>
 							</select>
 							<div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-indigo-400 pointer-events-none">
 								<i class="fas fa-chevron-down"></i>
@@ -364,7 +316,7 @@
 						</div>
 
 						<button
-							on:click={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
+							on:click={() => { sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; handleSortChange(); }}
 							class="group p-3 border-2 border-indigo-200 bg-white/80 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
 							title={sortOrder === 'asc' ? '⬆️ Orden ascendente' : '⬇️ Orden descendente'}
 						>
@@ -378,20 +330,17 @@
 				<!-- Resultados info juvenil -->
 				<div class="mt-8 pt-6 border-t-2 border-indigo-100">
 					<div class="text-center">
-						{#if filteredResources.length === 0}
+						{#if pagedResult && pagedResult.totalCount === 0}
 							<p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
 								<span class="text-2xl">😔</span>
 								No encontramos nada súper genial
 							</p>
-						{:else}
+						{:else if pagedResult}
 							<div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl px-6 py-3">
 								<span class="text-xl">🎯</span>
 								<p class="font-bold text-gray-700">
-									Mostrando <span class="text-indigo-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredResources.length)}</span>
-									de <span class="text-purple-600 font-black">{filteredResources.length}</span> recursos súper geniales
-									{#if searchTerm || Object.keys(currentFilters).length > 0}
-										<span class="text-gray-500">(de {resources.length} totales)</span>
-									{/if}
+									Mostrando <span class="text-indigo-600 font-black">{((pagedResult.page - 1) * pagedResult.pageSize) + 1} - {Math.min(pagedResult.page * pagedResult.pageSize, pagedResult.totalCount)}</span>
+									de <span class="text-purple-600 font-black">{pagedResult.totalCount}</span> recursos súper geniales
 								</p>
 							</div>
 						{/if}
@@ -448,7 +397,7 @@
 					</div>
 				</div>
 			</div>
-		{:else if paginatedResources.length === 0}
+		{:else if pagedResult && pagedResult.items.length === 0}
 			<!-- Estado vacío súper juvenil -->
 			<div class="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-gray-200 p-16 overflow-hidden">
 				<!-- Elementos decorativos -->
@@ -461,7 +410,7 @@
 						<div class="relative inline-block">
 							<div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto shadow-lg mb-4">
 								<span class="text-6xl">
-									{#if filteredResources.length === 0 && resources.length > 0}
+									{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
 										😅
 									{:else}
 										📚
@@ -476,7 +425,7 @@
 					</div>
 
 					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
-						{#if filteredResources.length === 0 && resources.length > 0}
+						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
 							🤔 ¡Oops! No encontramos nada súper genial
 						{:else}
 							📖 Biblioteca esperando contenido increíble
@@ -484,7 +433,7 @@
 					</h3>
 
 					<p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
-						{#if filteredResources.length === 0 && resources.length > 0}
+						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
 							🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar algo súper genial.
 						{:else if canManage}
 							🌟 ¡Sé el primero en compartir conocimiento increíble! Agrega el primer recurso y dale vida a esta biblioteca.
@@ -493,9 +442,9 @@
 						{/if}
 					</p>
 
-					{#if filteredResources.length === 0 && resources.length > 0}
+					{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
 						<button
-							on:click={() => { currentFilters = {}; searchTerm = ''; }}
+							on:click={() => { currentFilters = {}; searchTerm = ''; loadLibraryData(); }}
 							class="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
 						>
 							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
@@ -514,54 +463,55 @@
 					{/if}
 				</div>
 			</div>
-		{:else}
+		{:else if pagedResult}
 			<!-- Lista/Grid de recursos mejorada -->
 			<div class="mb-8">
 				<div class="{viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8' : 'space-y-6'}">
-					{#each paginatedResources as resource (resource.id)}
-						<LibraryResourceCard 
-							{resource}
+					{#each pagedResult.items as item (item.id)}
+						<DigitalLibraryCard
+							{item}
 							{viewMode}
 							{canManage}
-							on:download={() => handleDownload(resource)}
-							on:delete={() => handleDelete(resource.id)}
-							on:edit={() => window.location.href = `/library/edit/${resource.id}`}
+							on:download={() => handleDownload(item)}
+							on:view={() => handleView(item)}
+							on:edit={() => handleEdit(item)}
+							on:delete={() => handleDelete(item)}
 						/>
 					{/each}
 				</div>
 			</div>
 
 			<!-- Paginación mejorada -->
-			{#if totalPages > 1}
+			{#if pagedResult.totalPages > 1}
 				<div class="flex items-center justify-center space-x-3 mt-12">
 					<button
-						on:click={() => currentPage = 1}
-						disabled={currentPage === 1}
+						on:click={() => handlePageChange(1)}
+						disabled={pagedResult.page === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="Ir a la primera página"
 					>
 						<i class="fas fa-angle-double-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
-					
+
 					<button
-						on:click={() => currentPage = Math.max(1, currentPage - 1)}
-						disabled={currentPage === 1}
+						on:click={() => handlePageChange(Math.max(1, pagedResult.page - 1))}
+						disabled={pagedResult.page === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="Página anterior"
 					>
 						<i class="fas fa-angle-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
 
-					{#each Array.from({length: Math.min(5, totalPages)}, (_, i) => {
-						const start = Math.max(1, currentPage - 2);
-						const end = Math.min(totalPages, start + 4);
+					{#each Array.from({length: Math.min(5, pagedResult.totalPages)}, (_, i) => {
+						const start = Math.max(1, pagedResult.page - 2);
+						const end = Math.min(pagedResult.totalPages, start + 4);
 						return start + i;
-					}).filter(page => page <= totalPages) as page}
-						<button 
-							on:click={() => currentPage = page}
+					}).filter(page => page <= pagedResult.totalPages) as page}
+						<button
+							on:click={() => handlePageChange(page)}
 							class="px-4 py-3 border-2 rounded-xl transition-all duration-300 font-semibold text-lg min-w-[3rem] {
-								currentPage === page 
-									? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-lg' 
+								pagedResult.page === page
+									? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-lg'
 									: 'bg-white border-gray-200 hover:bg-gray-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-600'
 							}"
 						>
@@ -570,17 +520,17 @@
 					{/each}
 
 					<button
-						on:click={() => currentPage = Math.min(totalPages, currentPage + 1)}
-						disabled={currentPage === totalPages}
+						on:click={() => handlePageChange(Math.min(pagedResult.totalPages, pagedResult.page + 1))}
+						disabled={pagedResult.page === pagedResult.totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="Página siguiente"
 					>
 						<i class="fas fa-angle-right text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
-					
+
 					<button
-						on:click={() => currentPage = totalPages}
-						disabled={currentPage === totalPages}
+						on:click={() => handlePageChange(pagedResult.totalPages)}
+						disabled={pagedResult.page === pagedResult.totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="Ir a la última página"
 					>

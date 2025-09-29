@@ -6,6 +6,7 @@
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
 
 	export let moduleId: string;
+	export let courseId: string;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
@@ -64,6 +65,9 @@
 		const newPost = event.detail;
 		posts = [...posts, newPost].sort((a, b) => a.orderNumber - b.orderNumber);
 		dispatch('postCreated', newPost);
+
+		// Close the form modal after successful creation
+		handleFormClose();
 	}
 
 	function handlePostUpdated(event: CustomEvent<{postId: string}>) {
@@ -286,6 +290,7 @@
 <PostForm
 	visible={showPostForm}
 	{moduleId}
+	{courseId}
 	post={editingPost}
 	{nextOrderNumber}
 	on:created={handlePostCreated}

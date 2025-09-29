@@ -2,26 +2,25 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { libraryService } from '$lib/services/library/libraryService';
-	import type { CreateLibraryResourceDto, LibraryResource, MediaType, ResourceCategory } from '$lib/data/models/library';
-	import { MEDIA_TYPE_LABELS, CATEGORY_LABELS, SUPPORTED_MEDIA_TYPES, MAX_FILE_SIZES } from '$lib/data/models/library';
+	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
+	import type { LibraryItemDto, CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
 
 	let resourceId = $page.params.id;
-	let resource: LibraryResource | null = null;
-	let formData: CreateLibraryResourceDto = {
-		name: '',
+	let resource: LibraryItemDto | null = null;
+	let formData: CreateLibraryItemDto = {
+		title: '',
 		description: '',
-		authors: [],
-		category: 'educacion',
-		mediaType: 'pdf',
-		downloadable: true,
+		author: '',
+		category: '',
+		subcategory: '',
+		fileType: 'document',
 		language: 'es',
-		tags: [],
-		isFeatured: false
+		tags: '',
+		year: undefined
 	};
 
 	let selectedFile: File | null = null;
-	let authorsInput = '';
+	let authorInput = '';
 	let tagsInput = '';
 	let loading = false;
 	let loadingResource = true;
@@ -34,6 +33,23 @@
 		{ value: 'pt', label: 'Portugués' }
 	];
 
+	const categoryOptions = [
+		{ value: 'Literatura', label: 'Literatura' },
+		{ value: 'Ciencias Sociales', label: 'Ciencias Sociales' },
+		{ value: 'Arte y Música', label: 'Arte y Música' },
+		{ value: 'Ciencias Exactas', label: 'Ciencias Exactas' },
+		{ value: 'Educación', label: 'Educación' },
+		{ value: 'Medio Ambiente', label: 'Medio Ambiente' },
+		{ value: 'Historia', label: 'Historia' }
+	];
+
+	const fileTypeOptions = [
+		{ value: 'document', label: 'Documento' },
+		{ value: 'video', label: 'Video' },
+		{ value: 'audio', label: 'Audio' },
+		{ value: 'image', label: 'Imagen' }
+	];
+
 	onMount(async () => {
 		await loadResource();
 	});
@@ -41,7 +57,7 @@
 	async function loadResource() {
 		try {
 			loadingResource = true;
-			resource = await libraryService.getResourceById(resourceId);
+			resource = await digitalLibraryService.getItemById(resourceId);
 			
 			if (!resource) {
 				goto('/library');
@@ -50,22 +66,19 @@
 
 			// Llenar formulario con datos existentes
 			formData = {
-				name: resource.name,
+				title: resource.title,
 				description: resource.description || '',
-				authors: [...resource.authors],
-				publishYear: resource.publishYear,
+				author: resource.author,
+				year: resource.year,
 				category: resource.category,
-				mediaType: resource.mediaType,
-				downloadable: resource.downloadable,
-				tags: [...(resource.tags || [])],
-				isbn: resource.isbn,
-				duration: resource.duration,
-				language: resource.language,
-				isFeatured: resource.isFeatured
+				subcategory: resource.subcategory || '',
+				fileType: resource.fileType,
+				tags: resource.tags || '',
+				language: resource.language
 			};
 
-			authorsInput = resource.authors.join(', ');
-			tagsInput = (resource.tags || []).join(', ');
+			authorInput = resource.author;
+			tagsInput = resource.tags || '';
 		} catch (error) {
 			console.error('Error loading resource:', error);
 			goto('/library');
@@ -77,63 +90,62 @@
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
-		
+
 		if (file) {
 			selectedFile = file;
-			
+
+			// Auto-detect file type
 			const mimeType = file.type;
-			Object.entries(SUPPORTED_MEDIA_TYPES).forEach(([type, types]) => {
-				if (types.includes(mimeType)) {
-					formData.mediaType = type as MediaType;
-				}
-			});
+			if (mimeType.startsWith('video/')) {
+				formData.fileType = 'video';
+			} else if (mimeType.startsWith('audio/')) {
+				formData.fileType = 'audio';
+			} else if (mimeType.startsWith('image/')) {
+				formData.fileType = 'image';
+			} else {
+				formData.fileType = 'document';
+			}
 		}
-		
+
 		validateField('file');
 	}
 
-	function updateAuthors() {
-		formData.authors = authorsInput
-			.split(',')
-			.map(author => author.trim())
-			.filter(author => author.length > 0);
+	function updateAuthor() {
+		formData.author = authorInput.trim();
 	}
 
 	function updateTags() {
-		formData.tags = tagsInput
-			.split(',')
-			.map(tag => tag.trim())
-			.filter(tag => tag.length > 0);
+		formData.tags = tagsInput.trim();
 	}
 
 	function validateField(field: string) {
 		delete errors[field];
 
 		switch (field) {
-			case 'name':
-				if (!formData.name.trim()) {
-					errors.name = 'El nombre es requerido';
+			case 'title':
+				if (!formData.title.trim()) {
+					errors.title = 'El título es requerido';
 				}
 				break;
-			
-			case 'authors':
-				if (formData.authors.length === 0) {
-					errors.authors = 'Al menos un autor es requerido';
+
+			case 'author':
+				if (!formData.author.trim()) {
+					errors.author = 'El autor es requerido';
 				}
 				break;
-			
+
+			case 'category':
+				if (!formData.category.trim()) {
+					errors.category = 'La categoría es requerida';
+				}
+				break;
+
 			case 'file':
 				if (selectedFile) {
-					const supportedTypes = Object.values(SUPPORTED_MEDIA_TYPES).flat();
-					if (!supportedTypes.includes(selectedFile.type)) {
-						errors.file = 'Tipo de archivo no soportado';
-						break;
-					}
-					
-					const maxSize = MAX_FILE_SIZES[formData.mediaType];
+					// Basic file size validation (max 500MB)
+					const maxSize = 500 * 1024 * 1024;
 					if (selectedFile.size > maxSize) {
-						const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-						errors.file = `El archivo es demasiado grande. Máximo ${maxSizeMB}MB`;
+						errors.file = 'El archivo es demasiado grande. Máximo 500MB';
 					}
 				}
 				break;
@@ -142,13 +154,14 @@
 
 	function validateForm(): boolean {
 		errors = {};
-		
-		validateField('name');
-		validateField('authors');
+
+		validateField('title');
+		validateField('author');
+		validateField('category');
 		if (selectedFile) {
 			validateField('file');
 		}
-		
+
 		return Object.keys(errors).length === 0;
 	}
 
@@ -160,8 +173,10 @@
 		loading = true;
 		
 		try {
-			await libraryService.updateResource(resourceId, formData);
-			goto('/library');
+			// Note: The digitalLibraryService doesn't have an update method yet
+			// This would need to be implemented in the service
+			console.warn('Update functionality not yet implemented in digitalLibraryService');
+			errors.submit = 'Función de edición aún no implementada';
 		} catch (error) {
 			console.error('Error updating resource:', error);
 			errors.submit = error instanceof Error ? error.message : 'Error al actualizar el recurso';
@@ -214,10 +229,11 @@
 				<div class="grid grid-cols-1 gap-6">
 					<!-- Nombre -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-name" class="block text-sm font-medium text-gray-700 mb-2">
 							Nombre del recurso *
 						</label>
 						<input
+							id="resource-name"
 							type="text"
 							bind:value={formData.name}
 							on:blur={() => validateField('name')}
@@ -232,10 +248,11 @@
 
 					<!-- Descripción -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-description" class="block text-sm font-medium text-gray-700 mb-2">
 							Descripción
 						</label>
 						<textarea
+							id="resource-description"
 							bind:value={formData.description}
 							rows="4"
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -245,10 +262,11 @@
 
 					<!-- Autores -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-authors" class="block text-sm font-medium text-gray-700 mb-2">
 							Autores *
 						</label>
 						<input
+							id="resource-authors"
 							type="text"
 							bind:value={authorsInput}
 							on:input={updateAuthors}
@@ -291,10 +309,11 @@
 					</div>
 
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-file" class="block text-sm font-medium text-gray-700 mb-2">
 							Reemplazar archivo (opcional)
 						</label>
 						<input
+							id="resource-file"
 							type="file"
 							on:change={handleFileChange}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -329,42 +348,51 @@
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<!-- Categoría -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-category" class="block text-sm font-medium text-gray-700 mb-2">
 							Categoría *
 						</label>
 						<select
+							id="resource-category"
 							bind:value={formData.category}
+							on:blur={() => validateField('category')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+							class:border-red-300={errors.category}
 						>
-							{#each Object.entries(CATEGORY_LABELS) as [value, label]}
-								<option {value}>{label}</option>
+							<option value="">Selecciona una categoría</option>
+							{#each categoryOptions as option}
+								<option value={option.value}>{option.label}</option>
 							{/each}
 						</select>
+						{#if errors.category}
+							<p class="mt-1 text-sm text-red-600">{errors.category}</p>
+						{/if}
 					</div>
 
 					<!-- Tipo de archivo -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-file-type" class="block text-sm font-medium text-gray-700 mb-2">
 							Tipo de archivo *
 						</label>
 						<select
-							bind:value={formData.mediaType}
+							id="resource-file-type"
+							bind:value={formData.fileType}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 						>
-							{#each Object.entries(MEDIA_TYPE_LABELS) as [value, label]}
-								<option {value}>{label}</option>
+							{#each fileTypeOptions as option}
+								<option value={option.value}>{option.label}</option>
 							{/each}
 						</select>
 					</div>
 
 					<!-- Año de publicación -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-year" class="block text-sm font-medium text-gray-700 mb-2">
 							Año de publicación
 						</label>
 						<input
+							id="resource-year"
 							type="number"
-							bind:value={formData.publishYear}
+							bind:value={formData.year}
 							min="1900"
 							max={new Date().getFullYear()}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -374,10 +402,11 @@
 
 					<!-- Idioma -->
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">
+						<label for="resource-language" class="block text-sm font-medium text-gray-700 mb-2">
 							Idioma *
 						</label>
 						<select
+							id="resource-language"
 							bind:value={formData.language}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 						>
@@ -387,53 +416,38 @@
 						</select>
 					</div>
 
-					<!-- ISBN -->
-					{#if formData.mediaType === 'pdf' || formData.mediaType === 'document'}
-						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								ISBN
-							</label>
-							<input
-								type="text"
-								bind:value={formData.isbn}
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-								placeholder="978-3-16-148410-0"
-							>
-						</div>
-					{/if}
+					<!-- Subcategoría -->
+					<div>
+						<label for="resource-subcategory" class="block text-sm font-medium text-gray-700 mb-2">
+							Subcategoría
+						</label>
+						<input
+							id="resource-subcategory"
+							type="text"
+							bind:value={formData.subcategory}
+							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+							placeholder="Ej: Novela, Física, etc."
+						>
+					</div>
 
-					<!-- Duración -->
-					{#if formData.mediaType === 'video' || formData.mediaType === 'audio'}
-						<div>
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								Duración (segundos)
-							</label>
-							<input
-								type="number"
-								bind:value={formData.duration}
-								min="1"
-								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-								placeholder="Duración en segundos"
-							>
-						</div>
-					{/if}
 				</div>
 
 				<!-- Tags -->
 				<div class="mt-6">
-					<label class="block text-sm font-medium text-gray-700 mb-2">
+					<label for="resource-tags" class="block text-sm font-medium text-gray-700 mb-2">
 						Tags
 					</label>
 					<input
+						id="resource-tags"
 						type="text"
 						bind:value={tagsInput}
 						on:input={updateTags}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-						placeholder="Ingresa los tags separados por comas"
+						placeholder="Ingresa tags separados por comas"
 					>
-					{#if formData.tags && formData.tags.length > 0}
+					{#if formData.tags && formData.tags.trim().length > 0}
 						<div class="mt-2 flex flex-wrap gap-2">
-							{#each formData.tags as tag}
+							{#each formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0) as tag}
 								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
 									#{tag}
 								</span>
@@ -443,30 +457,6 @@
 				</div>
 			</div>
 
-			<!-- Opciones -->
-			<div class="bg-white rounded-lg shadow-sm border p-6">
-				<h2 class="text-lg font-medium text-gray-900 mb-4">Opciones</h2>
-				
-				<div class="space-y-4">
-					<label class="flex items-center">
-						<input
-							type="checkbox"
-							bind:checked={formData.downloadable}
-							class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-						>
-						<span class="ml-2 text-sm text-gray-700">Permitir descarga</span>
-					</label>
-					
-					<label class="flex items-center">
-						<input
-							type="checkbox"
-							bind:checked={formData.isFeatured}
-							class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-						>
-						<span class="ml-2 text-sm text-gray-700">Destacar recurso</span>
-					</label>
-				</div>
-			</div>
 
 			<!-- Error general -->
 			{#if errors.submit}

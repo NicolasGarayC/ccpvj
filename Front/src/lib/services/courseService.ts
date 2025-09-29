@@ -9,9 +9,9 @@ import type {
 	ModuleSummaryDto,
 	CreateModuleDto,
 	UpdateModuleDto,
-	WorkItemDto,
-	CreateWorkItemDto,
-	UpdateWorkItemDto,
+	PostDto,
+	CreatePostDto,
+	UpdatePostDto,
 	CoursePagedResultDto,
 	CourseSearchDto,
 	ReorderDto
@@ -116,10 +116,10 @@ class CourseService extends BaseHttpService {
 		return this.patch(`/course/modules/${id}/reorder`, reorderData);
 	}
 
-	// WorkItem methods
-	async getWorkItem(id: string): Promise<WorkItemDto | null> {
+	// Post methods
+	async getPost(id: string): Promise<PostDto | null> {
 		try {
-			return await this.get<WorkItemDto>(`/workitem/${id}`);
+			return await this.get<PostDto>(`/workitem/${id}`);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes('404')) {
 				return null;
@@ -128,25 +128,50 @@ class CourseService extends BaseHttpService {
 		}
 	}
 
-	async getModuleWorkItems(moduleId: string): Promise<WorkItemDto[]> {
-		return this.get<WorkItemDto[]>(`/workitem/module/${moduleId}`);
+	async getModulePosts(moduleId: string): Promise<PostDto[]> {
+		return this.get<PostDto[]>(`/workitem/module/${moduleId}`);
 	}
 
-	async createWorkItem(workItemData: CreateWorkItemDto): Promise<WorkItemDto> {
-		return this.post<WorkItemDto>('/workitem', workItemData);
+	async createPost(postData: CreatePostDto): Promise<PostDto> {
+		return this.post<PostDto>('/workitem', postData);
 	}
 
-	async updateWorkItem(id: string, workItemData: UpdateWorkItemDto): Promise<void> {
-		return this.put(`/workitem/${id}`, workItemData);
+	async updatePost(id: string, postData: UpdatePostDto): Promise<void> {
+		return this.put(`/workitem/${id}`, postData);
 	}
 
-	async deleteWorkItem(id: string): Promise<void> {
+	async deletePost(id: string): Promise<void> {
 		return this.delete(`/workitem/${id}`);
 	}
 
-	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
+	async reorderPost(id: string, newOrderNumber: number): Promise<void> {
 		const reorderData: ReorderDto = { newOrderNumber };
 		return this.post(`/workitem/${id}/reorder`, reorderData);
+	}
+
+	// Legacy compatibility methods (DEPRECATED - use Post methods instead)
+	async getWorkItem(id: string): Promise<PostDto | null> {
+		return this.getPost(id);
+	}
+
+	async getModuleWorkItems(moduleId: string): Promise<PostDto[]> {
+		return this.getModulePosts(moduleId);
+	}
+
+	async createWorkItem(workItemData: CreatePostDto): Promise<PostDto> {
+		return this.createPost(workItemData);
+	}
+
+	async updateWorkItem(id: string, workItemData: UpdatePostDto): Promise<void> {
+		return this.updatePost(id, workItemData);
+	}
+
+	async deleteWorkItem(id: string): Promise<void> {
+		return this.deletePost(id);
+	}
+
+	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
+		return this.reorderPost(id, newOrderNumber);
 	}
 
 	/**
@@ -159,3 +184,19 @@ class CourseService extends BaseHttpService {
 }
 
 export const courseService = new CourseService();
+
+// Re-export types for convenience
+export type {
+	CourseDto as Course,
+	CourseDetailDto as CourseDetail,
+	ModuleDto as Module,
+	ModuleSummaryDto as ModuleSummary,
+	PostDto as Post,
+	CreatePostDto as CreatePost,
+	UpdatePostDto as UpdatePost,
+	// Legacy compatibility
+	PostDto as WorkItem,
+	CreatePostDto as CreateWorkItem,
+	UpdatePostDto as UpdateWorkItem,
+	CoursePagedResultDto as CoursePagedResult
+} from '$lib/types/api/course.types';

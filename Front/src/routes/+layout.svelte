@@ -238,6 +238,8 @@
 				<button
 					class="lg:hidden flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-lg text-white rounded-xl"
 					on:click={() => mobileMenuOpen = !mobileMenuOpen}
+					aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+					aria-expanded={mobileMenuOpen}
 				>
 					<i class="fas {mobileMenuOpen ? 'fa-times' : 'fa-bars'} text-lg"></i>
 				</button>
@@ -346,7 +348,16 @@
 	{/if}
 
 	<!-- Contenido principal -->
-	<main class="flex-grow" on:click={() => mobileMenuOpen = false}>
+	<main
+		class="flex-grow"
+		on:click={() => mobileMenuOpen = false}
+		on:keydown={(e) => {
+			if (e.key === 'Escape' && mobileMenuOpen) {
+				mobileMenuOpen = false;
+			}
+		}}
+		role="main"
+	>
 		<slot />
 	</main>
 

@@ -19,11 +19,13 @@ export interface LoginResponse {
 class JwtService {
     private readonly TOKEN_KEY = 'jwt_token';
     private readonly USER_KEY = 'jwt_user';
+    private isUnloadListenerAdded = false;
 
     // Store token in localStorage
     setToken(token: string): void {
         if (browser) {
             localStorage.setItem(this.TOKEN_KEY, token);
+            this.setupUnloadListeners(); // Setup cleanup on browser close
         }
     }
 
@@ -66,9 +68,66 @@ class JwtService {
         return !!(token && user);
     }
 
-    // Check if user is authenticated
+    // Parse JWT token to get payload
+    private parseJwtPayload(token: string): any {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+            return JSON.parse(jsonPayload);
+        } catch (error) {
+            console.error('Error parsing JWT token:', error);
+            return null;
+        }
+    }
+
+    // Check if token is expired
+    private isTokenExpired(token: string): boolean {
+        try {
+            const payload = this.parseJwtPayload(token);
+            if (!payload || !payload.exp) {
+                return true; // If we can't read expiration, consider it expired
+            }
+
+            const expirationTime = payload.exp * 1000; // Convert to milliseconds
+            const currentTime = Date.now();
+
+            console.log('[DEBUG] Token expiration check:', {
+                expirationTime: new Date(expirationTime).toISOString(),
+                currentTime: new Date(currentTime).toISOString(),
+                isExpired: currentTime >= expirationTime
+            });
+
+            return currentTime >= expirationTime;
+        } catch (error) {
+            console.error('Error checking token expiration:', error);
+            return true; // If there's an error, consider it expired
+        }
+    }
+
+    // Check if user is authenticated and token is not expired
     isAuthenticated(): boolean {
-        return this.hasValidTokenData();
+        if (!this.hasValidTokenData()) {
+            return false;
+        }
+
+        const token = this.getToken();
+        if (!token) {
+            return false;
+        }
+
+        if (this.isTokenExpired(token)) {
+            console.log('[DEBUG] Token expired, logging out automatically');
+            this.removeToken(); // Auto-logout if token is expired
+            return false;
+        }
+
+        return true;
     }
 
     // Get authorization header
@@ -185,6 +244,91 @@ class JwtService {
     // Check if user can manage content (admin or collaborator)
     canManageContent(): boolean {
         return this.isAdmin() || this.isCollaborator();
+    }
+
+    // Get token expiration time
+    getTokenExpiration(): Date | null {
+        const token = this.getToken();
+        if (!token) return null;
+
+        const payload = this.parseJwtPayload(token);
+        if (!payload || !payload.exp) return null;
+
+        return new Date(payload.exp * 1000);
+    }
+
+    // Get time remaining until token expires (in minutes)
+    getTimeUntilExpiration(): number | null {
+        const expiration = this.getTokenExpiration();
+        if (!expiration) return null;
+
+        const now = new Date();
+        const diffMs = expiration.getTime() - now.getTime();
+        return Math.floor(diffMs / (1000 * 60)); // Convert to minutes
+    }
+
+    // Check if token will expire soon (within 5 minutes)
+    isTokenExpiringSoon(): boolean {
+        const timeRemaining = this.getTimeUntilExpiration();
+        return timeRemaining !== null && timeRemaining <= 5;
+    }
+
+    // Setup listeners to clean token only on browser close (not tab close)
+    private setupUnloadListeners(): void {
+        if (!browser || this.isUnloadListenerAdded) return;
+
+        const handleBrowserClose = () => {
+            // Only clean token if all tabs are being closed (browser closing)
+            // We detect this by checking if sessionStorage persists across tabs
+            if (!sessionStorage.getItem('app_session_active')) {
+                console.log('[DEBUG] Browser closing, cleaning up authentication tokens');
+                this.removeToken();
+            }
+        };
+
+        // Set a session marker to detect if browser is still open
+        sessionStorage.setItem('app_session_active', 'true');
+
+        // Listen for beforeunload to detect browser close (not tab close)
+        window.addEventListener('beforeunload', (event) => {
+            // Check if this is the last tab by testing sessionStorage availability
+            // in a short timeout (sessionStorage is shared across tabs)
+            setTimeout(() => {
+                try {
+                    // If sessionStorage is still accessible and we can't set items,
+                    // it means the browser is closing
+                    sessionStorage.setItem('test_browser_close', 'true');
+                    sessionStorage.removeItem('test_browser_close');
+                } catch (e) {
+                    // Browser is closing, sessionStorage is being destroyed
+                    console.log('[DEBUG] Browser closing detected, cleaning up authentication tokens');
+                    this.removeToken();
+                }
+            }, 10);
+        });
+
+        this.isUnloadListenerAdded = true;
+        console.log('[DEBUG] Browser close listeners setup successfully (tab-close safe)');
+    }
+
+    // Remove unload listeners (useful for testing or cleanup)
+    private removeUnloadListeners(): void {
+        if (!browser || !this.isUnloadListenerAdded) return;
+
+        // Remove session marker
+        sessionStorage.removeItem('app_session_active');
+
+        // Note: beforeunload listeners are automatically removed when page unloads
+        // We don't need to manually remove them in this case
+
+        this.isUnloadListenerAdded = false;
+        console.log('[DEBUG] Browser close listeners removed');
+    }
+
+    // Public method to manually clean token and remove listeners
+    public cleanup(): void {
+        this.removeToken();
+        this.removeUnloadListeners();
     }
 }
 

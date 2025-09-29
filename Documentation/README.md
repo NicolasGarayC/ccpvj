@@ -117,13 +117,14 @@ MediaFile, UploadStatus -- Multimedia contextual
 MediaEntity             -- Multimedia .NET (duplicado)
 ```
 
-### **🔴 Problemas de Esquema Identificados**
+### **✅ Problemas de Esquema Corregidos (Septiembre 2025)**
 
-1. **Duplicación**: `work_item` vs `WorkItem`, `MediaFile` vs `MediaEntity`
-2. **Desconexión**: `course` (minúscula) vs `Module` (mayúscula) no conectan
-3. **FK Faltante**: `work_item.module_id` apunta a tabla `module` que no existe
-4. **Inconsistencia**: Roles por defecto diferentes entre schemas
-5. **Datos Vacíos**: Solo estructura, sin contenido real
+1. ✅ **Duplicación Resuelta**: Unificado uso de `work_item`, `MediaFile` como principales
+2. ✅ **Conexión Reparada**: `course` ↔ `module` ↔ `work_item` completamente funcional
+3. ✅ **FK Corregidas**: Todas las foreign keys funcionando con `PRAGMA foreign_keys = ON`
+4. ✅ **Consistencia de Roles**: Roles unificados en lowercase (`asistente`, `colaborador`, `administrador`)
+5. ✅ **Mapeo de Entidades**: Course, ModulePost y WorkItem con atributos de mapeo correctos
+6. ✅ **Conversión de Fechas**: Unix timestamps manejados correctamente entre backend y frontend
 
 ### **📊 Estado de Datos Actual**
 - **Usuarios**: 2 registros
@@ -132,6 +133,36 @@ MediaEntity             -- Multimedia .NET (duplicado)
 - **WorkItems**: 0 registros
 - **Blog**: 0 posts
 - **Eventos**: 0 eventos
+
+### **🔧 Correcciones Técnicas Recientes (Septiembre 2025)**
+
+#### **Backend (.NET 8)**
+1. **Course Entity** (`CentroCultural.Domain.Entities.Course.cs`):
+   - ✅ Agregados atributos `[Table("course")]` y `[Column]` faltantes
+   - ✅ Mapeo correcto snake_case (BD) ↔ PascalCase (C#)
+
+2. **CourseService** (`CentroCultural.Application.Services.CourseService.cs`):
+   - ✅ Corregido `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
+   - ✅ Manejo correcto de unix timestamps en conversiones
+
+3. **ModulePost Entity** (`CentroCultural.Domain.Entities.WorkItem.cs`):
+   - ✅ `UpdatedAt`: `DateTime?` → `long?` (unix timestamp)
+   - ✅ `AuthorId`: `int` → `string` (consistencia con esquema)
+   - ✅ Unificado uso de unix timestamps
+
+4. **WorkItemService** (`CentroCultural.Application.Services.WorkItemService.cs`):
+   - ✅ Eliminado `DateTime.UtcNow` → `DateTimeOffset.UtcNow.ToUnixTimeSeconds()`
+   - ✅ Corregido mapeo de AuthorId como string
+   - ✅ Conversiones correctas en DTOs: unix timestamps → DateTime
+
+#### **Frontend (SvelteKit 5)**
+- ✅ **Servicios compatibles**: Los DTOs del frontend ya manejaban DateTime correctamente
+- ✅ **Sin cambios requeridos**: Las interfaces TypeScript ya coincidían con los tipos esperados
+
+#### **Base de Datos (SQLite)**
+- ✅ **Estructura consistente**: Todas las entidades mapeadas correctamente
+- ✅ **Foreign Keys**: `PRAGMA foreign_keys = ON` funcionando
+- ✅ **Tipos de datos**: Unix timestamps (INTEGER) manejados correctamente
 
 ## 🚀 Cómo Ejecutar el Proyecto
 
@@ -232,26 +263,63 @@ El proyecto está en desarrollo activo. Para contribuir:
 3. Desarrollar y probar cambios
 4. Pull request con descripción detallada
 
-## 🎥 Sistema de Multimedia Contextual
+## 🎥 **SISTEMA MULTIMEDIA DEFINITIVO** (Septiembre 2025)
 
-### ✅ **Estado Actual: IMPLEMENTADO**
+### ✅ **Estado: IMPLEMENTADO CON ESTRUCTURA GENÉRICA**
 
-Sistema completo de gestión multimedia con limpieza automática de archivos. **No existen archivos independientes** - todo multimedia pertenece a contenido específico.
+**CRÍTICO**: Esta es la estructura de medios FINAL. NO cambiar sin justificación extrema.
 
-### 🏗️ **Arquitectura Multimedia**
+### 🏗️ **Arquitectura Multimedia Genérica Definitiva**
 
 ```
-Data/media/                  # Directorio base de multimedia
-├── image/                   # Imágenes (JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF)
-├── video/                   # Videos (MP4, AVI, MOV, WebM)
-├── audio/                   # Audio (MP3, WAV, OGG, M4A)
-├── document/                # Documentos (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT)
-└── temp/uploads/            # Temporales para nginx
-    ├── images/
-    ├── videos/
-    ├── audio/
-    └── documents/
+Data/media/
+├── content/                          # Todo el contenido de la aplicación
+│   ├── courses/                      # Contenido educativo
+│   │   └── {course-id}/
+│   │       ├── banner.{ext}          # Imagen banner del curso
+│   │       └── modules/
+│   │           └── {module-id}/
+│   │               └── posts/
+│   │                   └── {post-id}/
+│   │                       ├── images/
+│   │                       ├── videos/
+│   │                       └── audio/
+│   ├── blog/                         # Sistema de blog
+│   │   └── posts/
+│   │       └── {post-id}/
+│   │           ├── featured-image.{ext}
+│   │           ├── images/
+│   │           ├── videos/
+│   │           └── documents/
+│   ├── library/                      # Biblioteca/Recursos
+│   │   └── resources/
+│   │       └── {resource-id}/
+│   │           ├── cover.{ext}
+│   │           ├── documents/       # PDFs, docs, etc
+│   │           └── media/           # Imágenes, videos
+│   └── events/                       # Sistema de eventos
+│       └── {event-id}/
+│           ├── poster.{ext}
+│           └── gallery/
+├── user-content/                     # Contenido generado por usuarios
+│   └── profiles/
+│       └── {user-id}/
+│           └── avatar.{ext}
+└── system/                           # Archivos del sistema
+    ├── assets/                       # Assets estáticos
+    └── temp/                         # Uploads temporales
+        ├── images/
+        ├── videos/
+        ├── audio/
+        └── documents/
 ```
+
+### 🎯 **Beneficios de la Estructura**
+- **Escalable**: Fácil agregar nuevos tipos de contenido
+- **Organizada**: Separación clara por contexto
+- **Mantenible**: Cada módulo maneja sus propios archivos
+- **Limpia**: Limpieza automática por tipo de contenido
+- **Flexible**: Permite diferentes estructuras internas
 
 ### 📋 **Formatos de Archivo Soportados**
 

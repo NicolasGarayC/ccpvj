@@ -320,6 +320,7 @@
 			<PostList
 				bind:this={postListComponent}
 				moduleId={module.id}
+				courseId={module.courseId}
 				showActions={canManagePosts}
 				on:viewPost={handleViewPost}
 				on:editPost={handleEditPost}
@@ -346,6 +347,7 @@
 	<PostForm
 		visible={showPostEditor}
 		moduleId={module.id}
+		courseId={module.courseId}
 		post={editingPost}
 		nextOrderNumber={postCount + 1}
 		on:created={handlePostCreated}
@@ -362,7 +364,7 @@
 	confirmText="Eliminar"
 	type="danger"
 	on:confirm={confirmDeletePost}
-	on:cancel={cancelDeleteModal}
+	on:cancel={cancelDeletePost}
 />
 
 <!-- Success Toast -->

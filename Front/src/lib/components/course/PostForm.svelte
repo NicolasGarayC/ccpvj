@@ -4,9 +4,12 @@
 	import { postElementService, type ElementType, type ElementWithFile } from '$lib/services/postElementService';
 	import type { PostDetail } from '$lib/services/modulePostService';
 	import type { PostElement } from '$lib/services/postElementService';
+	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
+	import type { UploadResult } from '$lib/services/contextualUploadService';
 
 	export let visible = false;
 	export let moduleId: string;
+	export let courseId: string;
 	export let post: PostDetail | null = null;
 	export let nextOrderNumber = 1;
 
@@ -237,10 +240,11 @@
 						};
 						const createdElements = await postElementService.createElementsInBatch(post.id, [newElementData]);
 						updatedElements.push(...createdElements);
-					} else if (elem.id) {
-						// Existing element - update only content/order if needed
+					} else if (elem.id && existingElements.some(existing => existing.id === elem.id)) {
+						// Existing element (verified to exist in database) - update only content/order if needed
 						const updatedElement = await postElementService.updateElement({
 							id: elem.id,
+							elementType: elem.elementType,
 							content: elem.content,
 							orderNumber: elem.orderNumber,
 							// Preserve existing file information
@@ -250,7 +254,7 @@
 						updatedElements.push(updatedElement);
 						usedElementIds.add(elem.id);
 					} else {
-						// New element without file (title, text)
+						// New element without file (title, text) or element with temporary ID
 						const newElementData: ElementWithFile = {
 							element: {
 								postId: post.id,
@@ -312,7 +316,9 @@
 						postId: newPost.id,
 						elementType: elem.elementType,
 						content: elem.content,
-						orderNumber: elem.orderNumber
+						orderNumber: elem.orderNumber,
+						filePath: elem.filePath,
+						fileName: elem.fileName
 					},
 					file: elem.file
 				}));
@@ -379,7 +385,22 @@
 		elements = [...elements, newElement];
 	}
 
-	function removeElement(index: number) {
+	async function removeElement(index: number) {
+		const elementToRemove = elements[index];
+
+		// If the element has an ID, it exists in the database and needs to be deleted via API
+		if (elementToRemove.id && elementToRemove.id !== 'temp') {
+			try {
+				await postElementService.deleteElement(elementToRemove.id);
+				console.log(`✅ Element ${elementToRemove.id} deleted from database and filesystem`);
+			} catch (error) {
+				console.error('Error deleting element from database:', error);
+				// You might want to show an error message to the user here
+				return; // Don't remove from local array if database deletion failed
+			}
+		}
+
+		// Remove from local array
 		elements = elements.filter((_, i) => i !== index);
 		// Reorder remaining elements
 		elements = elements.map((elem, i) => ({ ...elem, orderNumber: i + 1 }));
@@ -395,22 +416,25 @@
 		elements = [...elements];
 	}
 
-	function handleFileSelect(event: Event, index: number) {
-		const input = event.target as HTMLInputElement;
-		const file = input.files?.[0];
+	function handleMediaUpload(index: number, event: CustomEvent<UploadResult>) {
+		const result = event.detail;
 
-		if (file && elements[index]) {
-			elements[index].file = file;
+		if (elements[index]) {
+			// Update element with uploaded file information
+			elements[index].filePath = result.relativePath;
+			elements[index].fileName = result.filename;
+			elements[index].previewUrl = result.url;
+			elements[index].file = undefined; // Clear the file object since it's uploaded
+			elements = [...elements];
 
-			// Create preview URL
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				const result = e.target?.result as string;
-				elements[index].previewUrl = result;
-				elements = [...elements];
-			};
-			reader.readAsDataURL(file);
+			console.log(`✅ Media uploaded for element ${index}:`, result);
 		}
+	}
+
+	function handleMediaUploadError(index: number, event: CustomEvent<string>) {
+		const error = event.detail;
+		console.error(`Media upload error for element ${index}:`, error);
+		// You might want to show this error to the user
 	}
 
 	function handleRemoveMedia(index: number) {
@@ -667,43 +691,26 @@
 													</div>
 												{/if}
 											{:else if ['image', 'video', 'audio'].includes(element.elementType)}
-												{#if element.previewUrl || element.filePath}
-													<div class="media-container">
-														<div class="media-preview {element.elementType}-preview">
-															{#if element.elementType === 'image'}
-																<img src={element.previewUrl || element.filePath} alt="Preview" />
-															{:else if element.elementType === 'video'}
-																<video src={element.previewUrl || element.filePath} controls></video>
-															{:else if element.elementType === 'audio'}
-																<audio src={element.previewUrl || element.filePath} controls></audio>
-															{/if}
-															<button type="button" class="remove-media" on:click={() => handleRemoveMedia(index)}>
-																<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																	<line x1="18" y1="6" x2="6" y2="18"></line>
-																	<line x1="6" y1="6" x2="18" y2="18"></line>
-																</svg>
-															</button>
-														</div>
-														{#if element.fileName}
-															<div class="file-info">
-																<span class="file-name">{element.fileName}</span>
-																{#if element.id}
-																	<span class="file-status">Archivo existente</span>
-																{:else}
-																	<span class="file-status">Archivo nuevo</span>
-																{/if}
-															</div>
-														{/if}
-													</div>
-												{:else}
-													<input
-														type="file"
-														accept="{element.elementType}/*"
-														on:change={(e) => handleFileSelect(e, index)}
+												<div class="media-uploader-container">
+													<ContextualMediaUploader
+														context="post"
+														mediaType={element.elementType}
+														courseId={courseId}
+														moduleId={moduleId}
+														postId={post?.id || 'temp'}
+														currentMedia={element.filePath || ''}
 														disabled={isLoading}
-														class="element-file-input"
+														label=""
+														on:uploadSuccess={(e) => handleMediaUpload(index, e)}
+														on:uploadError={(e) => handleMediaUploadError(index, e)}
+														on:mediaRemoved={() => handleRemoveMedia(index)}
 													/>
-												{/if}
+													{#if !post?.id}
+														<p class="media-upload-hint">
+															💡 Los archivos se organizarán automáticamente cuando guardes el post.
+														</p>
+													{/if}
+												</div>
 											{/if}
 										</div>
 									</div>
@@ -1322,6 +1329,21 @@
 	.element-file-input:hover:not(:disabled) {
 		border-color: var(--color-primary);
 		background: var(--color-primary-light);
+	}
+
+	.media-uploader-container {
+		width: 100%;
+	}
+
+	.media-upload-hint {
+		font-size: 0.8rem;
+		color: var(--color-text-muted);
+		font-style: italic;
+		margin-top: 0.5rem;
+		padding: 0.5rem;
+		background: var(--color-background-muted);
+		border-radius: 6px;
+		text-align: center;
 	}
 
 	@media (max-width: 768px) {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
 
-  export let contentType: string; // 'blog', 'course', 'workitem', 'event'
+  export let contentType: string; // 'blog', 'course', 'post', 'event' (legacy: 'workitem')
   export let contentId: string;
   export let mediaType: string; // 'image', 'video', 'audio', 'pdf'
   export let onUploadComplete: ((mediaUrl: string) => void) | null = null;

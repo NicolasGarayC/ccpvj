@@ -15,6 +15,17 @@ export default defineConfig({
 		// })
 	],
 	server: {
+		port: 5173, // Force specific port
+		strictPort: true, // Fail if port is not available
+		proxy: {
+			'/api': {
+				target: 'http://localhost:5251',
+				changeOrigin: true,
+				secure: false,
+				timeout: 3600000, // 60 minutes for movie uploads
+				proxyTimeout: 3600000 // 60 minutes for movie uploads
+			}
+		},
 		watch: {
 			ignored: [
 				'**/project.inlang/cache/**',

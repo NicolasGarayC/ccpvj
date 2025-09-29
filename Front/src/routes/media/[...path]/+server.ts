@@ -1,97 +1,86 @@
-import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getMediaBasePath } from '$lib/server/utils/paths';
-import fs from 'fs';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
+import { error } from '@sveltejs/kit';
+// Use process.cwd() to get current working directory, then navigate to Back/Data/media
+const MEDIA_DIR = path.resolve(process.cwd(), '../Back/Data/media');
 
-// Static file serving for media files (development only)
-// In production, nginx serves these files directly
-export const GET: RequestHandler = async ({ params }) => {
-	try {
-		// Get the full path from the URL parameters
-		const mediaPath = params.path;
-
-		if (!mediaPath) {
-			throw error(404, 'File not found');
-		}
-
-		// Construct full file path
-		const baseDir = getMediaBasePath();
-		const filePath = path.join(baseDir, mediaPath);
-
-		// Security check: ensure the path is within the media directory
-		const resolvedPath = path.resolve(filePath);
-		const resolvedBaseDir = path.resolve(baseDir);
-
-		if (!resolvedPath.startsWith(resolvedBaseDir)) {
-			throw error(403, 'Access denied');
-		}
-
-		// Check if file exists
-		if (!fs.existsSync(filePath)) {
-			throw error(404, 'File not found');
-		}
-
-		// Get file stats
-		const stats = fs.statSync(filePath);
-		if (!stats.isFile()) {
-			throw error(404, 'Not a file');
-		}
-
-		// Determine content type
-		const ext = path.extname(filePath).toLowerCase();
-		const contentType = getContentType(ext);
-
-		// Read and return file
-		const fileBuffer = fs.readFileSync(filePath);
-
-		return new Response(fileBuffer, {
-			headers: {
-				'Content-Type': contentType,
-				'Content-Length': stats.size.toString(),
-				'Cache-Control': 'public, max-age=3600', // 1 hour cache for development
-				'ETag': `"${stats.mtime.getTime()}-${stats.size}"`,
-				'Last-Modified': stats.mtime.toUTCString(),
-				// Add CORS headers for development
-				'Access-Control-Allow-Origin': '*',
-				'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS'
-			}
-		});
-
-	} catch (err) {
-		console.error('Error serving media file:', err);
-		if (err instanceof Error && 'status' in err) {
-			throw err;
-		}
-		throw error(500, 'Internal server error');
-	}
+// MIME type mapping
+const MIME_TYPES: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.avif': 'image/avif',
+    '.bmp': 'image/bmp',
+    '.tiff': 'image/tiff',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.avi': 'video/avi',
+    '.mov': 'video/mov',
+    '.mp3': 'audio/mp3',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.m4a': 'audio/m4a',
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.txt': 'text/plain'
 };
 
-function getContentType(extension: string): string {
-	const contentTypes: Record<string, string> = {
-		// Images
-		'.jpg': 'image/jpeg',
-		'.jpeg': 'image/jpeg',
-		'.png': 'image/png',
-		'.gif': 'image/gif',
-		'.webp': 'image/webp',
-		'.svg': 'image/svg+xml',
+export const GET: RequestHandler = async ({ params }) => {
+    try {
+        const { path: mediaPath } = params;
 
-		// Videos
-		'.mp4': 'video/mp4',
-		'.webm': 'video/webm',
-		'.avi': 'video/avi',
-		'.mov': 'video/quicktime',
-		'.wmv': 'video/x-ms-wmv',
+        if (!mediaPath) {
+            throw error(400, 'No file path provided');
+        }
 
-		// Audio
-		'.mp3': 'audio/mpeg',
-		'.wav': 'audio/wav',
-		'.ogg': 'audio/ogg',
-		'.m4a': 'audio/mp4',
-		'.aac': 'audio/aac',
-		'.flac': 'audio/flac'
-	};
+        // Security: prevent directory traversal
+        if (mediaPath.includes('..') || mediaPath.includes('\\..')) {
+            throw error(403, 'Access denied');
+        }
 
-	return contentTypes[extension] || 'application/octet-stream';
-}
+        // Decode URI to handle special characters properly
+        const decodedPath = decodeURIComponent(mediaPath);
+        const filePath = path.join(MEDIA_DIR, decodedPath);
+        const normalizedPath = path.resolve(filePath);
+
+        // Check if file exists
+        if (!existsSync(normalizedPath)) {
+            throw error(404, 'File not found');
+        }
+
+        // Read file
+        const fileBuffer = await readFile(normalizedPath);
+
+        // Determine MIME type
+        const extension = path.extname(filePath).toLowerCase();
+        const mimeType = MIME_TYPES[extension] || 'application/octet-stream';
+
+        // Set appropriate headers
+        const headers: Record<string, string> = {
+            'Content-Type': mimeType,
+            'Cache-Control': 'public, max-age=31536000', // 1 year cache
+        };
+
+        // For images, add additional headers
+        if (mimeType.startsWith('image/')) {
+            headers['Accept-Ranges'] = 'bytes';
+        }
+
+        return new Response(fileBuffer, {
+            headers
+        });
+
+    } catch (err: any) {
+        console.error('Media serving error:', err);
+        if (err.status) {
+            throw err;
+        }
+        throw error(500, 'Internal server error');
+    }
+};

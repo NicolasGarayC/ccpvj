@@ -17,6 +17,7 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Course> Course { get; set; }
         public DbSet<Module> Module { get; set; }
         public DbSet<ModulePost> ModulePosts { get; set; }
+        public DbSet<PostElement> PostElements { get; set; }
         public DbSet<MediaEntity> MediaEntity { get; set; }
         public DbSet<UploadStatus> UploadStatus { get; set; }
         
@@ -31,6 +32,9 @@ namespace CentroCultural.Infrastructure.Data
 
         // Library system entities
         public DbSet<LibraryResource> LibraryResources { get; set; }
+        public DbSet<LibraryItem> LibraryItems { get; set; }
+        public DbSet<LibraryCollection> LibraryCollections { get; set; }
+        public DbSet<LibraryItemCollection> LibraryItemCollections { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -128,6 +132,25 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => new { e.ModuleId, e.OrderNumber });
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.AuthorId);
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // Configuración de PostElement
+            modelBuilder.Entity<PostElement>(entity =>
+            {
+                entity.ToTable("post_element");
+                entity.HasKey(e => e.Id);
+
+                // Configure foreign key relationship
+                entity.HasOne(pe => pe.Post)
+                      .WithMany()
+                      .HasForeignKey(pe => pe.PostId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Índices para búsquedas y ordenamiento
+                entity.HasIndex(e => new { e.PostId, e.OrderNumber });
+                entity.HasIndex(e => e.ElementType);
+                entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.CreatedAt);
             });
 
@@ -311,6 +334,106 @@ namespace CentroCultural.Infrastructure.Data
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.IsFeatured);
                 entity.HasIndex(e => e.Downloadable);
+            });
+
+            // Configuración de LibraryItem (nueva biblioteca mejorada)
+            modelBuilder.Entity<LibraryItem>(entity =>
+            {
+                entity.ToTable("library_item");
+                entity.HasKey(e => e.Id);
+
+                // Configurar propiedades con validaciones
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.Description).HasMaxLength(2000);
+                entity.Property(e => e.Author).HasMaxLength(200);
+                entity.Property(e => e.UploadedBy).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.FileType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.FilePath).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.MimeType).HasMaxLength(100);
+                entity.Property(e => e.Tags).HasMaxLength(1000);
+                entity.Property(e => e.Language).HasMaxLength(10);
+                entity.Property(e => e.Category).HasMaxLength(100);
+                entity.Property(e => e.Subcategory).HasMaxLength(100);
+
+                // Valores por defecto
+                entity.Property(e => e.DownloadCount).HasDefaultValue(0);
+                entity.Property(e => e.ViewCount).HasDefaultValue(0);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
+
+                // Índices para filtros y búsqueda
+                entity.HasIndex(e => e.Title);
+                entity.HasIndex(e => e.Author);
+                entity.HasIndex(e => e.FileType);
+                entity.HasIndex(e => e.Category);
+                entity.HasIndex(e => e.Subcategory);
+                entity.HasIndex(e => e.Language);
+                entity.HasIndex(e => e.Year);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.UploadedBy);
+                entity.HasIndex(e => e.DownloadCount);
+                entity.HasIndex(e => e.ViewCount);
+            });
+
+            // Configuración de LibraryCollection
+            modelBuilder.Entity<LibraryCollection>(entity =>
+            {
+                entity.ToTable("library_collection");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.CoverImage).HasMaxLength(500);
+                entity.Property(e => e.ColorTheme).HasMaxLength(7);
+                entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(100);
+
+                // Valores por defecto
+                entity.Property(e => e.OrderNumber).HasDefaultValue(0);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsFeatured).HasDefaultValue(false);
+
+                // Índices
+                entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.OrderNumber);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // Configuración de LibraryItemCollection (relación many-to-many)
+            modelBuilder.Entity<LibraryItemCollection>(entity =>
+            {
+                entity.ToTable("library_item_collection");
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.LibraryItemId).IsRequired();
+                entity.Property(e => e.LibraryCollectionId).IsRequired();
+                entity.Property(e => e.AddedBy).HasMaxLength(100);
+
+                // Valores por defecto
+                entity.Property(e => e.OrderNumber).HasDefaultValue(0);
+
+                // Configurar relaciones
+                entity.HasOne(lic => lic.LibraryItem)
+                      .WithMany(li => li.ItemCollections)
+                      .HasForeignKey(lic => lic.LibraryItemId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(lic => lic.LibraryCollection)
+                      .WithMany(lc => lc.ItemCollections)
+                      .HasForeignKey(lic => lic.LibraryCollectionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Índices
+                entity.HasIndex(e => e.LibraryItemId);
+                entity.HasIndex(e => e.LibraryCollectionId);
+                entity.HasIndex(e => new { e.LibraryItemId, e.LibraryCollectionId }).IsUnique();
+                entity.HasIndex(e => e.OrderNumber);
+                entity.HasIndex(e => e.AddedAt);
             });
 
             // Datos semilla para Rol

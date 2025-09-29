@@ -28,10 +28,10 @@ namespace CentroCultural.Domain.Entities
         public bool IsActive { get; set; } = true;
 
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
+        public long? UpdatedAt { get; set; }
 
         [Required]
         [Column("module_id")]
@@ -39,7 +39,7 @@ namespace CentroCultural.Domain.Entities
 
         [Required]
         [Column("author_id")]
-        public int AuthorId { get; set; }
+        public string AuthorId { get; set; } = string.Empty;
 
         // Contextual multimedia paths
         [MaxLength(500)]

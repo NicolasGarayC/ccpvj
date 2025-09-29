@@ -2,6 +2,25 @@
 
 Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural Víctor Jara. Proporciona APIs REST seguras con autenticación JWT completamente **offline en Red MESH autónoma** sin acceso a Internet.
 
+## ✅ Estado Actual - Correcciones Aplicadas (Septiembre 2025)
+
+### **Problemas Críticos Resueltos**
+
+#### **1. Mapeo de Entidades**
+- ✅ **Course Entity**: Agregados atributos `[Table("course")]` y `[Column]` faltantes
+- ✅ **ModulePost Entity**: Tipos de datos corregidos (`AuthorId`: int → string, `UpdatedAt`: DateTime → long)
+- ✅ **Mapeo consistente**: snake_case (BD) ↔ PascalCase (C#) funcional
+
+#### **2. Servicios de Aplicación**
+- ✅ **CourseService**: Corregido `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
+- ✅ **WorkItemService**: Eliminado uso inconsistente de `DateTime.UtcNow`
+- ✅ **Conversiones de fecha**: Unix timestamps manejados correctamente en DTOs
+
+#### **3. Base de Datos**
+- ✅ **Foreign Keys**: `PRAGMA foreign_keys = ON` funcionando
+- ✅ **Consistencia**: Esquemas unificados entre Drizzle y Entity Framework
+- ✅ **Tipos de datos**: Unix timestamps (long) vs DateTime correctamente manejados
+
 ## 🏗️ Arquitectura
 
 ### Stack Tecnológico

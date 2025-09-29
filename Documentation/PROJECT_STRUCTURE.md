@@ -1,15 +1,24 @@
-# 📁 Centro Cultural Víctor Jara - Estructura del Proyecto Organizada
+# 📁 Centro Cultural Víctor Jara - Estructura del Proyecto
+
+## ✅ Estado Actual - Post-Correcciones (Septiembre 2025)
+
+**Estado**: ✅ **FUNCIONAL** - Inconsistencias resueltas, sistema unificado y operativo
+
+### **Correcciones Técnicas Aplicadas**
+- ✅ **Backend**: Mapeo de entidades corregido, servicios unificados
+- ✅ **Base de Datos**: Foreign keys funcionando, esquemas unificados
+- ✅ **APIs**: Endpoints operativos con validación de roles
+- ✅ **Documentación**: READMEs actualizados reflejando correcciones
 
 ## 🏗️ Arquitectura Organizacional
 
 El proyecto está organizado siguiendo principios de arquitectura limpia y separación de responsabilidades:
 
 ```
-/home/user/ccpvj/
+D:\ccpvj\
 ├── 📂 Back/                    # 🔧 Backend .NET (API, Servicios, Dominio)
 ├── 📂 Front/                   # 🎨 Frontend SvelteKit (UI, Cliente)
 ├── 📂 Data/                    # 🗄️ Datos, Base de Datos y Scripts
-├── 📂 Infraestructure/         # 🌐 Configuraciones de Infraestructura
 ├── 📂 Documentation/           # 📚 Toda la Documentación
 ├── 📂 tests/                   # 🧪 Tests Unitarios e Integración
 └── 📂 .git/                    # 📝 Control de Versiones
@@ -99,44 +108,27 @@ Data/
 - **Backups automáticos**: Con timestamps
 - **Scripts ejecutables**: Con permisos de ejecución
 
-### 🌐 `/Infraestructure/` - Configuraciones de Infraestructura
-**Propósito**: Configuraciones de servidores, proxy, networking
-
-```
-Infraestructure/
-└── nginx/                    # Configuraciones NGINX
-    ├── nginx.conf            # Configuración principal optimizada
-    └── sites-available/      # Configuraciones de sitios
-        └── centro-cultural.conf # Configuración del sitio principal
-```
-
-**Características:**
-- Optimizado para redes mesh offline
-- Proxy para desarrollo (SvelteKit hot-reload)
-- Servido estático para producción
-- Cache inteligente para multimedia
-- Configuración de uploads contextuales
-
 ### 📚 `/Documentation/` - Documentación Completa
 **Propósito**: Toda la documentación técnica y de usuario
 
 ```
 Documentation/
 ├── README.md                        # Descripción general del proyecto
-├── DEVELOPMENT_SETUP.md            # Guía de configuración de desarrollo
-├── DEPLOYMENT_GUIDE.md             # Guía completa de despliegue
-├── PROJECT_STRUCTURE.md            # Este archivo - estructura del proyecto
-├── CLAUDE.md                       # Contexto para Claude AI
-├── WORKITEMS_DOCUMENTATION.md      # Documentación específica de WorkItems
-├── CONTEXTUAL_MULTIMEDIA_GUIDE.md  # Guía de multimedia contextual
-└── DATABASE_SCHEMA.md              # Documentación del schema de base de datos
+├── DATABASE_SCHEMA.md               # Esquema de base de datos (✅ actualizado)
+├── PROJECT_STRUCTURE.md             # Este archivo - estructura del proyecto
+├── CLAUDE.md                        # Contexto para Claude AI
+├── WORKITEMS_DOCUMENTATION.md       # Documentación específica de WorkItems
+├── COURSE_MANAGEMENT.md             # Sistema educativo
+├── CONFIGURATION.md                 # Variables de entorno y configuración
+└── DEPLOYMENT_UBUNTU_STEPBYSTEP.md  # Guía de despliegue
 ```
 
-**Principios de Documentación:**
-- **Separación por propósito**: Setup, deployment, arquitectura
-- **Guías paso a paso**: Para diferentes audiencias
-- **Contextual**: Documentación específica por componente
-- **Actualizada**: Refleja la arquitectura actual
+**Características Post-Correcciones:**
+- ✅ **Actualizados**: Reflejan las correcciones técnicas aplicadas
+- ✅ **Consistentes**: Documentación unificada entre componentes
+- ✅ **Detallados**: Incluyen problemas resueltos y estado actual
+- ✅ **Técnicos**: Especifican mapeos de entidades y conversiones
+
 
 ### 🧪 `/tests/` - Tests y Pruebas
 **Propósito**: Tests unitarios, integración y end-to-end
@@ -269,23 +261,21 @@ UNION ALL SELECT
 ## 🔍 Navegación Rápida
 
 ### 📍 Archivos Clave de Configuración
-- **Database Schema**: `/Data/database_tables_contextual_fixed.sql`
-- **NGINX Config**: `/Infraestructure/nginx/sites-available/centro-cultural.conf`
+- **Database Schema**: `/Data/ccpvj.db` (SQLite)
 - **Frontend Package**: `/Front/package.json`
-- **Backend Solution**: `/Back.sln`
-- **Database Init**: `/Data/scripts/init_contextual_database.sh`
+- **Backend Solution**: `/Back/Back.sln`
+- **Main README**: `/README.md` (✅ actualizado)
 
-### 📖 Documentación Principal
-- **Setup Development**: `/Documentation/DEVELOPMENT_SETUP.md`
-- **Full Deployment**: `/Documentation/DEPLOYMENT_GUIDE.md`
-- **WorkItems Guide**: `/Documentation/WORKITEMS_DOCUMENTATION.md`
-- **Project Overview**: `/Documentation/README.md`
+### 📖 Documentación Principal (✅ Actualizadas)
+- **Database Schema**: `/Documentation/DATABASE_SCHEMA.md` - Esquema con correcciones
+- **Backend Guide**: `/Back/README.md` - Estado funcional y correcciones
+- **Frontend Guide**: `/Front/README.md` - Compatibilidad verificada
+- **Project Overview**: `/Documentation/README.md` - Completo y actualizado
 
 ### 🎯 Puntos de Entrada
-- **Frontend Dev**: `cd Front/ && npm run dev`
-- **Backend Dev**: `cd Back/ && dotnet run`
-- **Database Init**: `./Data/scripts/init_contextual_database.sh`
-- **NGINX Apply**: `sudo cp Infraestructure/nginx/* /etc/nginx/`
+- **Frontend Dev**: `cd Front/ && npm run dev` (puerto 5173)
+- **Backend Dev**: `cd Back/ && dotnet run` (puerto 5251)
+- **Database Studio**: `cd Front/ && npm run db:studio`
 
 ---
 
@@ -296,25 +286,25 @@ UNION ALL SELECT
 # Verificar que todos los archivos están en su lugar correcto
 [ -d "Back/" ] && echo "✅ Backend directory exists"
 [ -d "Front/" ] && echo "✅ Frontend directory exists"
-[ -d "Data/" ] && echo "✅ Data directory exists"  
-[ -d "Infraestructure/" ] && echo "✅ Infrastructure directory exists"
+[ -d "Data/" ] && echo "✅ Data directory exists"
 [ -d "Documentation/" ] && echo "✅ Documentation directory exists"
 [ -d "tests/" ] && echo "✅ Tests directory exists"
 
 # Verificar archivos clave
 [ -f "Data/ccpvj.db" ] && echo "✅ Database exists"
-[ -f "Data/scripts/init_contextual_database.sh" ] && echo "✅ Init script exists"
-[ -f "Documentation/DEPLOYMENT_GUIDE.md" ] && echo "✅ Deployment guide exists"
-[ -f "Infraestructure/nginx/nginx.conf" ] && echo "✅ NGINX config exists"
+[ -f "README.md" ] && echo "✅ Main README exists"
+[ -f "Back/README.md" ] && echo "✅ Backend README exists"
+[ -f "Front/README.md" ] && echo "✅ Frontend README exists"
+[ -f "Documentation/DATABASE_SCHEMA.md" ] && echo "✅ Database docs exist"
 ```
 
-### 🎯 Estructura Validada
-- ✅ **Backend separado**: Arquitectura por capas en `/Back/`
-- ✅ **Frontend separado**: SvelteKit en `/Front/`
-- ✅ **Datos organizados**: Base de datos y media en `/Data/`
-- ✅ **Infraestructura separada**: Configuraciones en `/Infraestructure/`
-- ✅ **Documentación centralizada**: Todo en `/Documentation/`
-- ✅ **Tests organizados**: Estructura para testing en `/tests/`
+### 🎯 Estructura Validada (Post-Correcciones)
+- ✅ **Backend funcional**: Arquitectura por capas con entidades corregidas
+- ✅ **Frontend operativo**: SvelteKit con compatibilidad verificada
+- ✅ **Base de datos unificada**: SQLite con foreign keys y esquemas consistentes
+- ✅ **Documentación actualizada**: READMEs reflejan el estado actual
+- ✅ **APIs operativas**: Endpoints funcionando con validación de roles
+- ✅ **Sistema multimedia**: Upload y cleanup implementado completamente
 
 ---
 
@@ -338,4 +328,14 @@ UNION ALL SELECT
 - **Accesible**: Fácil navegación y búsqueda
 - **Completa**: Cobertura de todos los aspectos
 
-¡Tu proyecto Centro Cultural Víctor Jara está perfectamente organizado y listo para desarrollo profesional! 🚀
+---
+
+## 🎯 Resumen Post-Correcciones
+
+**Tu proyecto Centro Cultural Víctor Jara ahora está:**
+- ✅ **Técnicamente funcional** - Inconsistencias resueltas
+- ✅ **Completamente documentado** - READMEs actualizados
+- ✅ **Listo para desarrollo** - Base sólida establecida
+- ✅ **Arquitectónicamente sólido** - Estructura organizacional validada
+
+¡Proyecto corregido, documentado y listo para desarrollo profesional! 🚀

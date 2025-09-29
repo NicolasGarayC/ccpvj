@@ -7,7 +7,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 	try {
 		// Forward all query parameters to the backend
 		const searchParams = url.searchParams.toString();
-		const backendUrl = `${BACKEND_URL}/courses${searchParams ? `?${searchParams}` : ''}`;
+		const backendUrl = `${BACKEND_URL}/course${searchParams ? `?${searchParams}` : ''}`;
 
 		const response = await fetch(backendUrl, {
 			method: 'GET',
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const body = await request.json();
 
 		// Forward the request to the backend
-		const response = await fetch(`${BACKEND_URL}/courses`, {
+		const response = await fetch(`${BACKEND_URL}/course`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

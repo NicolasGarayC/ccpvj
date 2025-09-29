@@ -15,7 +15,7 @@ export interface CourseDto {
 	educatorName: string;
 	imagePath?: string;
 	moduleCount: number;
-	workItemCount: number;
+	postCount: number;
 }
 
 export interface CourseDetailDto extends CourseDto {
@@ -57,7 +57,7 @@ export interface ModuleDto {
 	courseId: string;
 	createdAt: string;
 	updatedAt?: string;
-	workItemCount: number;
+	postCount: number;
 }
 
 export interface ModuleSummaryDto {
@@ -66,11 +66,11 @@ export interface ModuleSummaryDto {
 	description: string;
 	orderNumber: number;
 	isActive: boolean;
-	workItemCount: number;
+	postCount: number;
 }
 
 export interface ModuleDetailDto extends ModuleDto {
-	workItems: WorkItemDto[];
+	posts: PostDto[];
 }
 
 export interface CreateModuleDto {
@@ -86,7 +86,7 @@ export interface UpdateModuleDto {
 	orderNumber: number;
 }
 
-export interface WorkItemDto {
+export interface PostDto {
 	id: string;
 	title: string;
 	description: string;
@@ -98,25 +98,34 @@ export interface WorkItemDto {
 	updatedAt?: string;
 	imagePath?: string;
 	videoPath?: string;
+	audioPath?: string;
+	subtitle?: string;
+	content?: string;
 }
 
-export interface CreateWorkItemDto {
+export interface CreatePostDto {
 	title: string;
-	description: string;
+	description?: string;
 	longText?: string;
 	orderNumber: number;
 	moduleId: string;
 	imagePath?: string;
 	videoPath?: string;
+	audioPath?: string;
+	subtitle?: string;
+	content?: string;
 }
 
-export interface UpdateWorkItemDto {
+export interface UpdatePostDto {
 	title: string;
-	description: string;
+	description?: string;
 	longText?: string;
 	orderNumber: number;
 	imagePath?: string;
 	videoPath?: string;
+	audioPath?: string;
+	subtitle?: string;
+	content?: string;
 }
 
 // Search and filter DTOs
@@ -141,3 +150,8 @@ export interface CoursePagedResultDto {
 export interface ReorderDto {
 	newOrderNumber: number;
 }
+
+// Legacy compatibility types (DEPRECATED - use Post types instead)
+export type WorkItemDto = PostDto;
+export type CreateWorkItemDto = CreatePostDto;
+export type UpdateWorkItemDto = UpdatePostDto;

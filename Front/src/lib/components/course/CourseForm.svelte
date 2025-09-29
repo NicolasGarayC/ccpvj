@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { courseService, type CreateCourseDto, type UpdateCourseDto, type Course } from '$lib/services/courseService';
-	import MediaUploader from '../blog/MediaUploader.svelte';
+	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
+	import type { UploadResult } from '$lib/services/contextualUploadService';
 
 	export let course: Course | null = null; // null for create, Course for edit
 	export let loading = false;
@@ -91,24 +92,31 @@
 		dispatch('cancel');
 	}
 
-	function handleImageUpload(mediaUrl: string) {
-		formData.imagePath = mediaUrl;
-		// Auto-save when image is uploaded or removed
+	function handleImageUpload(event: CustomEvent<UploadResult>) {
+		const result = event.detail;
+		formData.imagePath = result.relativePath;
+
+		console.log('✅ Course image uploaded:', result);
+
+		// Auto-save when image is uploaded if editing
 		if (isEditing && course) {
-			autoSaveImagePath(mediaUrl);
+			autoSaveImagePath(result.relativePath);
 		}
 	}
 
 	function handleImageRemove() {
 		formData.imagePath = '';
-		// For course image removal, the MediaUploader will handle the server-side deletion
-		// and then reload the page to reflect the changes
+
+		// Auto-save removal if editing
 		if (isEditing && course) {
-			// Reload the page to show updated course data
-			setTimeout(() => {
-				window.location.reload();
-			}, 500); // Small delay to allow the deletion to complete
+			autoSaveImagePath('');
 		}
+	}
+
+	function handleUploadError(event: CustomEvent<string>) {
+		const error = event.detail;
+		formErrors.imagePath = error;
+		console.error('Course image upload error:', error);
 	}
 
 	async function autoSaveImagePath(imagePath: string) {
@@ -125,7 +133,7 @@
 			dispatch('success', { type: 'update', id: course!.id, silent: true });
 		} catch (error) {
 			console.error('Error auto-saving image path:', error);
-			// Don't show error to user for auto-save, just log it
+			formErrors.imagePath = 'Error guardando la imagen automáticamente';
 		}
 	}
 </script>
@@ -178,16 +186,25 @@
 		</div>
 
 		<div class="form-group">
-			<label>Imagen del curso</label>
-			<MediaUploader
-				contentType="course"
-				contentId={course?.id}
+			<ContextualMediaUploader
+				context="course"
 				mediaType="image"
+				courseId={course?.id || 'temp'}
 				currentMedia={formData.imagePath}
-				onUploadComplete={handleImageUpload}
-				onRemoveComplete={handleImageRemove}
-				disabled={submitting || loading}
+				disabled={submitting || loading || !isEditing}
+				label="Imagen del curso"
+				on:uploadSuccess={handleImageUpload}
+				on:uploadError={handleUploadError}
+				on:mediaRemoved={handleImageRemove}
 			/>
+			{#if formErrors.imagePath}
+				<span class="error-message">{formErrors.imagePath}</span>
+			{/if}
+			{#if !isEditing}
+				<p class="help-text">
+					💡 Guarda el curso primero para poder subir una imagen.
+				</p>
+			{/if}
 		</div>
 
 		<div class="form-group">
