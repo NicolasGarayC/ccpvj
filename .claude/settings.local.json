@@ -64,7 +64,11 @@
       "Bash(Data/sqlite3.exe Data/ccpvj.db \".schema module\")",
       "Bash(Data/sqlite3.exe Data/ccpvj.db \".schema library_item\")",
       "Bash(Data/sqlite3.exe Data/ccpvj.db \".schema library_collection\")",
-      "Bash(Data/sqlite3.exe Data/ccpvj.db \".schema library_item_collection\")"
+      "Bash(Data/sqlite3.exe Data/ccpvj.db \".schema library_item_collection\")",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(netstat:*)",
+      "Bash(Data/sqlite3.exe Data/ccpvj.db \"SELECT IdRol, NombreRol FROM Rol;\")"
     ],
     "deny": [],
     "ask": []

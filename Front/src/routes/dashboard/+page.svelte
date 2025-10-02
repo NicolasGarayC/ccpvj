@@ -3,9 +3,7 @@
   import { goto } from '$app/navigation';
   import { jwtService } from '$lib/services/auth/jwtService.js';
 
-  export let data;
-
-  let user = data.user;
+  let user = null;
   let loading = false;
 
   async function handleLogout() {
@@ -22,9 +20,17 @@
     }
   }
 
-  // Redireccionar si no está autenticado
-  onMount(() => {
-    if (!user && !jwtService.isAuthenticated()) {
+  // Cargar datos del usuario y verificar autenticación
+  onMount(async () => {
+    const isAuthenticated = await jwtService.isAuthenticated();
+    if (!isAuthenticated) {
+      goto('/auth/login');
+      return;
+    }
+
+    // Obtener datos del usuario desde el JWT
+    user = jwtService.getUser();
+    if (!user) {
       goto('/auth/login');
     }
   });
@@ -55,7 +61,7 @@
               <p class="text-sm font-medium text-gray-900">
                 {user.nombre} {user.apellido}
               </p>
-              <p class="text-xs text-gray-500">{user.nombreRol}</p>
+              <p class="text-xs text-gray-500">{user.role}</p>
             </div>
             <button
               on:click={handleLogout}
@@ -123,18 +129,54 @@
           </div>
         </a>
 
-        <a href="/media" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
+        <a href="/library" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
           <div class="flex items-center">
             <div class="bg-orange-100 rounded-lg p-3">
-              <i class="fas fa-photo-video text-orange-600 text-xl"></i>
+              <i class="fas fa-book text-orange-600 text-xl"></i>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-medium text-gray-900 group-hover:text-orange-600">Multimedia</h3>
-              <p class="text-gray-500 text-sm">Videos, fotos y audio</p>
+              <h3 class="text-lg font-medium text-gray-900 group-hover:text-orange-600">Biblioteca</h3>
+              <p class="text-gray-500 text-sm">Recursos y documentos</p>
             </div>
           </div>
         </a>
       </div>
+
+      <!-- Admin Panel - Solo para administradores -->
+      {#if user.role === 'administrador' || jwtService.isAdmin()}
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-cog text-red-600 mr-2"></i>
+            Panel de Administración
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="/dashboard/users" class="group bg-red-50 border border-red-200 rounded-lg shadow hover:shadow-md transition-shadow p-6">
+              <div class="flex items-center">
+                <div class="bg-red-100 rounded-lg p-3">
+                  <i class="fas fa-users text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h4 class="text-lg font-medium text-gray-900 group-hover:text-red-600">Gestión de Usuarios</h4>
+                  <p class="text-gray-500 text-sm">Crear, editar y administrar usuarios</p>
+                </div>
+              </div>
+            </a>
+
+
+            <a href="/admin/analytics" class="group bg-red-50 border border-red-200 rounded-lg shadow hover:shadow-md transition-shadow p-6">
+              <div class="flex items-center">
+                <div class="bg-red-100 rounded-lg p-3">
+                  <i class="fas fa-chart-bar text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <h4 class="text-lg font-medium text-gray-900 group-hover:text-red-600">Estadísticas</h4>
+                  <p class="text-gray-500 text-sm">Análisis de uso y métricas</p>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      {/if}
 
       <!-- User Info Card -->
       <div class="bg-white rounded-lg shadow p-6">
@@ -142,7 +184,7 @@
         <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <dt class="text-sm font-medium text-gray-500">Usuario</dt>
-            <dd class="text-sm text-gray-900">@{user.nombreUsuario}</dd>
+            <dd class="text-sm text-gray-900">@{user.username}</dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Nombre completo</dt>
@@ -150,7 +192,7 @@
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Rol</dt>
-            <dd class="text-sm text-gray-900">{user.nombreRol}</dd>
+            <dd class="text-sm text-gray-900">{user.role}</dd>
           </div>
           {#if user.telefono}
             <div>

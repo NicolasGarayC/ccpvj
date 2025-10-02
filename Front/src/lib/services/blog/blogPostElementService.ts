@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { jwtService } from '../auth/jwtService';
 
 // Type definitions for BlogPostElement
 export interface BlogPostElement {
@@ -87,9 +88,9 @@ class BlogPostElementService {
 		try {
 			const response = await fetch(`${this.apiUrl}/by-blog-post/${blogPostId}`, {
 				method: 'GET',
-				credentials: 'include',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
+					...jwtService.getAuthHeader()
 				}
 			});
 
@@ -114,9 +115,9 @@ class BlogPostElementService {
 	async createElement(elementData: CreateElementDto): Promise<BlogPostElement> {
 		const response = await fetch(this.apiUrl, {
 			method: 'POST',
-			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			},
 			body: JSON.stringify(elementData)
 		});
@@ -150,9 +151,9 @@ class BlogPostElementService {
 
 		const response = await fetch(`${this.apiUrl}/${id}`, {
 			method: 'PUT',
-			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			},
 			body: JSON.stringify(updatePayload)
 		});
@@ -188,9 +189,9 @@ class BlogPostElementService {
 	async deleteElement(elementId: string): Promise<void> {
 		const response = await fetch(`${this.apiUrl}/${elementId}`, {
 			method: 'DELETE',
-			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			}
 		});
 
@@ -218,9 +219,9 @@ class BlogPostElementService {
 		for (const elementOrder of elementOrders) {
 			const response = await fetch(`${this.apiUrl}/${elementOrder.id}/reorder`, {
 				method: 'PATCH',
-				credentials: 'include',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
+					...jwtService.getAuthHeader()
 				},
 				body: JSON.stringify({
 					newOrderNumber: elementOrder.orderNumber
@@ -270,9 +271,9 @@ class BlogPostElementService {
 
 		const response = await fetch(`${this.apiUrl}/batch`, {
 			method: 'POST',
-			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			},
 			body: JSON.stringify(batchData)
 		});
@@ -304,9 +305,9 @@ class BlogPostElementService {
 	async deleteElementsByBlogPostId(blogPostId: string): Promise<void> {
 		const response = await fetch(`${this.apiUrl}/by-blog-post/${blogPostId}`, {
 			method: 'DELETE',
-			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			}
 		});
 

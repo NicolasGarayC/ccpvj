@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import type { User, Role } from '$lib/services/users/userManagementService';
 	import { userManagementService } from '$lib/services/users/userManagementService';
 
@@ -18,6 +18,30 @@
 		changeRole: { user: User; newRole: string };
 		resetPassword: { user: User };
 	}>();
+
+	let loading = false;
+	let error = '';
+
+	// If no users are passed as props, fetch them
+	onMount(async () => {
+		if (users.length === 0) {
+			await refreshUsers();
+		}
+	});
+
+	export async function refreshUsers() {
+		loading = true;
+		error = '';
+		try {
+			const result = await userManagementService.getUsers();
+			users = result.users;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Error al cargar usuarios';
+			console.error('Error loading users:', err);
+		} finally {
+			loading = false;
+		}
+	}
 
 	let searchTerm = '';
 	let selectedRole = '';
@@ -130,18 +154,18 @@
 	}
 
 	function canEditUser(user: User): boolean {
-		if (currentUserRole === 'Administrador') return true;
-		if (currentUserRole === 'Colaborador' && user.role !== 'Administrador') return true;
+		if (currentUserRole === 'administrador') return true;
+		if (currentUserRole === 'colaborador' && user.role !== 'administrador') return true;
 		return false;
 	}
 
 	function canDeleteUser(user: User): boolean {
-		return currentUserRole === 'Administrador' && user.role !== 'Administrador';
+		return currentUserRole === 'administrador' && user.role !== 'administrador';
 	}
 
 	function canChangeRole(user: User, targetRole: string): boolean {
-		if (currentUserRole === 'Administrador') return true;
-		if (currentUserRole === 'Colaborador' && user.role !== 'Administrador' && targetRole !== 'Administrador') {
+		if (currentUserRole === 'administrador') return true;
+		if (currentUserRole === 'colaborador' && user.role !== 'administrador' && targetRole !== 'administrador') {
 			return true;
 		}
 		return false;
@@ -149,9 +173,9 @@
 
 	const roles = [
 		{ value: '', label: 'Todos los roles' },
-		{ value: 'Asistente', label: 'Asistentes' },
-		{ value: 'Colaborador', label: 'Colaboradores' },
-		{ value: 'Administrador', label: 'Administradores' }
+		{ value: 'asistente', label: 'Asistentes' },
+		{ value: 'colaborador', label: 'Colaboradores' },
+		{ value: 'administrador', label: 'Administradores' }
 	];
 
 	const statusOptions = [
@@ -240,7 +264,29 @@
 
 	<!-- Lista de usuarios -->
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-		{#if filteredUsers.length === 0}
+		{#if loading}
+			<div class="text-center py-12">
+				<svg class="animate-spin mx-auto h-8 w-8 text-blue-600 mb-4" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+				<p class="text-gray-600">Cargando usuarios...</p>
+			</div>
+		{:else if error}
+			<div class="text-center py-12">
+				<svg class="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+				</svg>
+				<h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar usuarios</h3>
+				<p class="text-gray-500 mb-4">{error}</p>
+				<button
+					on:click={refreshUsers}
+					class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+				>
+					Intentar de nuevo
+				</button>
+			</div>
+		{:else if filteredUsers.length === 0}
 			<div class="text-center py-12">
 				<svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>

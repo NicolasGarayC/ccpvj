@@ -67,7 +67,7 @@ export interface UserStats {
 }
 
 class UserManagementService {
-  private baseURL = 'https://localhost:5251/api';
+  private baseURL = 'http://localhost:5251/api';
 
   // Using JWT authentication headers
 

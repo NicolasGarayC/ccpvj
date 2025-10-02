@@ -185,13 +185,9 @@
 					{#if isLoggedIn}
 						<!-- Dashboard admin -->
 						{#if canManageUsers}
-							<a href="/dashboard/users" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
+							<a href="/dashboard" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
 								<i class="fas fa-users-cog text-lg"></i>
 								<span class="hidden lg:inline">Panel</span>
-							</a>
-							<a href="/admin/blog-event-relations" class="hidden md:flex items-center gap-2 px-4 py-2 bg-cyan-400 text-cyan-900 rounded-xl font-bold hover:bg-cyan-300 transition-all duration-300 shadow-lg hover:shadow-xl">
-								<i class="fas fa-link text-lg"></i>
-								<span class="hidden lg:inline">Relaciones</span>
 							</a>
 						{/if}
 						
@@ -299,16 +295,10 @@
 					{#if isLoggedIn}
 						<!-- Dashboard admin (mobile) -->
 						{#if canManageUsers}
-							<a href="/dashboard/users" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+							<a href="/dashboard" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 								<span class="flex items-center gap-3">
 									<i class="fas fa-users-cog text-lg"></i>
 									<span>Panel Admin</span>
-								</span>
-							</a>
-							<a href="/admin/blog-event-relations" class="block px-4 py-3 bg-cyan-400 text-cyan-900 font-bold rounded-xl hover:bg-cyan-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
-								<span class="flex items-center gap-3">
-									<i class="fas fa-link text-lg"></i>
-									<span>Relaciones Blog-Evento</span>
 								</span>
 							</a>
 						{/if}

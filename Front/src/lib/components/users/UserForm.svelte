@@ -20,7 +20,7 @@
 		nombre: '',
 		apellido: '',
 		telefono: '',
-		role: 'Asistente',
+		role: 'colaborador',
 		isActive: true,
 		newPassword: ''
 	};
@@ -448,17 +448,6 @@
 				{/if}
 			</div>
 
-			<!-- Descripción del rol -->
-			{#if formData.role}
-				<div class="mt-4 p-3 bg-gray-50 rounded-lg">
-					<div class="flex items-center space-x-2 mb-2">
-						<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getRoleColor(formData.role)}">
-							{formData.role}
-						</span>
-					</div>
-					<p class="text-sm text-gray-600">{getRoleDescription(formData.role)}</p>
-				</div>
-			{/if}
 		</div>
 
 		<!-- Botones -->

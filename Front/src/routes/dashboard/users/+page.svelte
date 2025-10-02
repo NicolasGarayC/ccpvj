@@ -5,12 +5,14 @@
   import UserList from '$lib/components/users/UserList.svelte';
   import UserForm from '$lib/components/users/UserForm.svelte';
   import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { userManagementService, type User } from '$lib/services/users/userManagementService';
+  import { userManagementService, type User, type Role } from '$lib/services/users/userManagementService';
 
   let canManageUsers = false;
   let showCreateForm = false;
   let editingUser: User | null = null;
   let userListComponent: UserList;
+  let currentUser: any = null;
+  let availableRoles: Role[] = [];
 
   onMount(async () => {
     if (!browser) return;
@@ -21,10 +23,24 @@
       return;
     }
 
+    currentUser = jwtService.getUser();
     canManageUsers = await userManagementService.canManageUsers();
     if (!canManageUsers) {
       goto('/dashboard');
       return;
+    }
+
+    // Load available roles (exclude 'asistente' as it shouldn't be created manually)
+    try {
+      const allRoles = await userManagementService.getAvailableRoles();
+      availableRoles = allRoles.filter(role => role.name !== 'asistente');
+    } catch (error) {
+      console.error('Error loading roles:', error);
+      // Fallback to hardcoded roles if API fails (excluding 'asistente' as it shouldn't be created manually)
+      availableRoles = [
+        { name: 'colaborador', displayName: 'Colaborador', description: 'Puede crear y editar contenido', permissions: [] },
+        { name: 'administrador', displayName: 'Administrador', description: 'Control total del sistema', permissions: [] }
+      ];
     }
   });
 
@@ -38,10 +54,25 @@
     showCreateForm = true;
   }
 
-  function handleUserSaved() {
-    showCreateForm = false;
-    editingUser = null;
-    userListComponent.refreshUsers();
+  async function handleUserSaved(event: CustomEvent<{ userData: any }>) {
+    try {
+      const { userData } = event.detail;
+
+      if (editingUser) {
+        // Update existing user
+        await userManagementService.updateUser(editingUser.id, userData);
+      } else {
+        // Create new user
+        await userManagementService.createUser(userData);
+      }
+
+      showCreateForm = false;
+      editingUser = null;
+      userListComponent.refreshUsers();
+    } catch (error) {
+      console.error('Error saving user:', error);
+      // You could show an error message to the user here
+    }
   }
 
   function handleCloseForm() {
@@ -74,8 +105,9 @@
 
     <!-- Lista de usuarios -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-      <UserList 
+      <UserList
         bind:this={userListComponent}
+        currentUserRole={currentUser?.role || ''}
         on:edit-user={handleEditUser}
       />
     </div>
@@ -101,7 +133,9 @@
           <div class="p-6">
             <UserForm
               user={editingUser}
-              on:user-saved={handleUserSaved}
+              availableRoles={availableRoles}
+              isEdit={editingUser !== null}
+              on:save={handleUserSaved}
               on:cancel={handleCloseForm}
             />
           </div>
