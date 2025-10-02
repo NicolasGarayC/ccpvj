@@ -70,8 +70,7 @@ namespace CentroCultural.Application.Services
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
-                IsActive = m.IsActive,
-                WorkItemCount = 0 // TODO: implementar conteo real
+                IsActive = m.IsActive
             }).ToList();
 
             return new CourseDetailDto
@@ -87,7 +86,6 @@ namespace CentroCultural.Application.Services
                 EducatorName = "Instructor",
                 ImagePath = course.ImagePath,
                 ModuleCount = modules.Count(),
-                WorkItemCount = 0, // TODO: implementar conteo real
                 Modules = modules
             };
         }
@@ -122,8 +120,7 @@ namespace CentroCultural.Application.Services
                 EducatorId = int.Parse(course.EducatorId),
                 EducatorName = "Instructor",
                 ImagePath = course.ImagePath,
-                ModuleCount = 0,
-                WorkItemCount = 0
+                ModuleCount = 0
             };
         }
 
@@ -248,8 +245,8 @@ namespace CentroCultural.Application.Services
             // Remove leading slash if present and normalize path
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
-            // Construct full path to media directory - files are in Front/Data/media
-            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..", "Front", "Data", "media");
+            // Construct full path to media directory - files are in Back/Data/media
+            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
 
             Console.WriteLine($"🔧 CourseService - Media directory: {mediaDirectory}");
@@ -285,8 +282,7 @@ namespace CentroCultural.Application.Services
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
-                IsActive = m.IsActive,
-                WorkItemCount = 0 // TODO: implementar conteo real de work items
+                IsActive = m.IsActive
             }).ToList();
         }
 
@@ -296,10 +292,6 @@ namespace CentroCultural.Application.Services
 
             if (module == null)
                 return null;
-
-            // Get work items for this module (when WorkItem functionality is implemented)
-            // For now, return empty list
-            var workItems = new List<WorkItemDto>();
 
             return new ModuleDetailDto
             {
@@ -311,9 +303,7 @@ namespace CentroCultural.Application.Services
                 CreatedAt = DateTimeOffset.FromUnixTimeSeconds(module.CreatedAt).DateTime,
                 UpdatedAt = module.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(module.UpdatedAt.Value).DateTime : null,
                 CourseId = module.CourseId,
-                CourseName = "", // TODO: Get course name if needed
-                WorkItemCount = 0,
-                WorkItems = workItems
+                CourseName = "" // TODO: Get course name if needed
             };
         }
 
@@ -343,8 +333,7 @@ namespace CentroCultural.Application.Services
                 IsActive = module.IsActive,
                 CourseId = module.CourseId,
                 CreatedAt = DateTimeOffset.FromUnixTimeSeconds(module.CreatedAt).DateTime,
-                UpdatedAt = module.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(module.UpdatedAt.Value).DateTime : null,
-                WorkItemCount = 0
+                UpdatedAt = module.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(module.UpdatedAt.Value).DateTime : null
             };
         }
 

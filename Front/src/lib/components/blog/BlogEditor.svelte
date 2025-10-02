@@ -2,10 +2,13 @@
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import { canCreateContent, canEditContent, requiresAuthentication, type UserRole } from '$lib/utils/roleUtils';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
+  import { blogHttpService } from '$lib/services/blog/blogHttpService';
+  import type { BlogPost } from '$lib/types/api';
   import MediaUploader from './MediaUploader.svelte';
 
-  export let post: any | null = null;
-  export let onSave: ((post: any) => void) | null = null;
+  export let post: BlogPost | null = null;
+  export let onSave: ((post: BlogPost) => void) | null = null;
   export let onCancel: (() => void) | null = null;
   export let currentUser: { role?: UserRole; id?: string } | null = null;
 
@@ -16,15 +19,13 @@
 
   // Formulario fields
   let title = '';
-  let summary = '';
+  let excerpt = '';
   let content = '';
   let slug = '';
-  let isPublished = false;
-  let isFeatured = false;
+  let status: 'draft' | 'published' = 'draft';
   let categoryId: string | null = null;
-  let featuredImagePath: string | null = null;
-  let pdfPath: string | null = null;
-  let videoPath: string | null = null;
+  let featuredMedia: string | null = null;
+  let tags: string[] = [];
 
   // Categories
   let categories: any[] = [];
@@ -48,14 +49,9 @@
   }
 
   onMount(async () => {
-    //await loadMessages();
-    
     // Load categories
     try {
-      const response = await fetch('/api/blogcategory');
-      if (response.ok) {
-        categories = await response.json();
-      }
+      categories = await blogHttpService.getCategories();
     } catch (err) {
       console.error('Error loading categories:', err);
     }
@@ -63,15 +59,13 @@
     // Load existing post data
     if (post) {
       title = post.title || '';
-      summary = post.summary || '';
+      excerpt = post.excerpt || '';
       content = post.content || '';
       slug = post.slug || '';
-      isPublished = post.isPublished || false;
-      isFeatured = post.isFeatured || false;
+      status = post.status || 'draft';
       categoryId = post.categoryId || null;
-      featuredImagePath = post.featuredImagePath || null;
-      pdfPath = post.pdfPath || null;
-      videoPath = post.videoPath || null;
+      featuredMedia = post.featuredMedia || null;
+      tags = post.tags || [];
     }
   });
 
@@ -99,50 +93,36 @@
     error = null;
 
     try {
-      const postData = {
+      const postData: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt' | 'publishDate' | 'authorId' | 'authorName' | 'categoryName' | 'viewCount'> = {
         title: title.trim(),
+        excerpt: excerpt.trim(),
         content: content.trim(),
-        summary: summary.trim() || null,
         slug: slug.trim(),
-        isPublished,
-        isFeatured,
-        categoryId: categoryId || null,
-        featuredImagePath,
-        pdfPath,
-        videoPath
+        status,
+        categoryId,
+        featuredMedia,
+        tags
       };
 
-      const url = post ? `/api/blog/${post.id}` : '/api/blog';
-      const method = post ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        // TODO: Add JWT Bearer token when implemented
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(postData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || t('error.saving_post'));
+      let result: BlogPost;
+      if (post) {
+        result = await blogHttpService.updatePost(post.id, postData);
+      } else {
+        result = await blogHttpService.createPost(postData);
       }
 
-      const result = await response.json();
-      
       success = true;
       setTimeout(() => success = false, 3000);
-      
+
       if (onSave) {
         onSave(result);
       }
-      
+
       if (!post) {
         resetForm();
       }
     } catch (err: any) {
-      error = err.message || t('error.saving_post');
+      error = err.message || 'Error al guardar el artículo';
       console.error('Error saving post:', err);
     } finally {
       isLoading = false;
@@ -151,15 +131,13 @@
 
   function resetForm() {
     title = '';
-    summary = '';
+    excerpt = '';
     content = '';
     slug = '';
-    isPublished = false;
-    isFeatured = false;
+    status = 'draft';
     categoryId = null;
-    featuredImagePath = null;
-    pdfPath = null;
-    videoPath = null;
+    featuredMedia = null;
+    tags = [];
   }
 
   function handleCancel() {
@@ -172,45 +150,18 @@
 
   // Handle contextual media uploads
   function handleImageUploaded(url: string) {
-    featuredImagePath = url;
-  }
-
-  function handleVideoUploaded(url: string) {
-    videoPath = url;
-  }
-
-  function handlePdfUploaded(url: string) {
-    pdfPath = url;
+    featuredMedia = url;
   }
 </script>
 
-<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <h2 class="text-2xl font-bold">
-      {post ? t('blog.edit_article') : t('blog.create_article')}
+<div class="blog-form">
+  <div class="form-header">
+    <h2 class="form-title">
+      📝 {post ? 'Editar Artículo' : 'Crear Nuevo Artículo'}
     </h2>
-    <div class="flex gap-2">
-      <button
-        type="button"
-        on:click={handleCancel}
-        class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-        disabled={isLoading}
-      >
-        Cancelar
-      </button>
-      <button
-        type="button"
-        on:click={handleSubmit}
-        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
-        disabled={isLoading || !title.trim() || !content.trim()}
-      >
-        {#if isLoading}
-          <i class="fas fa-spinner fa-spin mr-2"></i>
-        {/if}
-        {post ? t('action.update') : t('blog.create_post')}
-      </button>
-    </div>
+    <p class="form-subtitle">
+      {post ? 'Modifica el contenido de tu artículo' : 'Comparte tus ideas con la comunidad'}
+    </p>
   </div>
 
   <!-- Mensajes -->
@@ -232,179 +183,464 @@
     </div>
   {/if}
 
-  <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-    <!-- Título -->
-    <div>
-      <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
-        Título *
-      </label>
-      <input
-        id="title"
-        type="text"
-        bind:value={title}
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        placeholder="Ingresa el título del artículo"
-        disabled={isLoading}
-        required
-      />
-    </div>
+  <form on:submit|preventDefault={handleSubmit} class="form-content">
+    <!-- Información básica -->
+    <div class="form-section">
+      <h3 class="section-title">📝 Información Básica</h3>
 
-    <!-- Slug -->
-    <div>
-      <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">
-        Slug (URL)
-      </label>
-      <input
-        id="slug"
-        type="text"
-        bind:value={slug}
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        placeholder="url-del-articulo"
-        disabled={isLoading}
-      />
-      {#if slug}
-        <p class="mt-1 text-xs text-gray-500">URL: /blog/{slug}</p>
-      {/if}
-    </div>
-
-    <!-- Resumen -->
-    <div>
-      <label for="summary" class="block text-sm font-medium text-gray-700 mb-2">
-        Resumen
-      </label>
-      <textarea
-        id="summary"
-        bind:value={summary}
-        rows="3"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        placeholder="Resumen breve del artículo"
-        disabled={isLoading}
-      ></textarea>
-    </div>
-
-    <!-- Categoría -->
-    {#if categories.length > 0}
-      <div>
-        <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
-          Categoría
+      <div class="form-group full-width">
+        <label for="title" class="label">
+          Título del artículo <span class="required">*</span>
         </label>
-        <select
-          id="category"
-          bind:value={categoryId}
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          disabled={isLoading}
-        >
-          <option value={null}>Sin categoría</option>
-          {#each categories as category}
-            <option value={category.id}>{category.name}</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
-
-    <!-- Imagen Destacada -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Imagen Destacada
-      </label>
-      {#if post?.id}
-        <MediaUploader
-          contentType="blog"
-          contentId={post.id}
-          mediaType="image"
-          onUploadComplete={handleImageUploaded}
-          disabled={isLoading}
-        />
-      {:else}
-        <p class="text-sm text-gray-500 p-3 border border-gray-200 rounded-md">
-          Guarda el artículo primero para poder subir archivos
-        </p>
-      {/if}
-    </div>
-
-    <!-- Video -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Video
-      </label>
-      {#if post?.id}
-        <MediaUploader
-          contentType="blog"
-          contentId={post.id}
-          mediaType="video"
-          onUploadComplete={handleVideoUploaded}
-          disabled={isLoading}
-        />
-      {:else}
-        <p class="text-sm text-gray-500 p-3 border border-gray-200 rounded-md">
-          Guarda el artículo primero para poder subir archivos
-        </p>
-      {/if}
-    </div>
-
-    <!-- PDF -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Documento PDF
-      </label>
-      {#if post?.id}
-        <MediaUploader
-          contentType="blog"
-          contentId={post.id}
-          mediaType="pdf"
-          onUploadComplete={handlePdfUploaded}
-          disabled={isLoading}
-        />
-      {:else}
-        <p class="text-sm text-gray-500 p-3 border border-gray-200 rounded-md">
-          Guarda el artículo primero para poder subir archivos
-        </p>
-      {/if}
-    </div>
-
-    <!-- Contenido -->
-    <div>
-      <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
-        Contenido *
-      </label>
-      <textarea
-        id="content"
-        bind:value={content}
-        rows="12"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        placeholder="Escribe el contenido completo del artículo..."
-        disabled={isLoading}
-        required
-      ></textarea>
-    </div>
-
-    <!-- Opciones de publicación -->
-    <div class="flex items-center gap-6">
-      <div class="flex items-center">
         <input
-          id="published"
-          type="checkbox"
-          bind:checked={isPublished}
-          class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          id="title"
+          type="text"
+          bind:value={title}
+          class="input"
+          placeholder="Ej: Nueva exposición en el Centro Cultural"
+          maxlength="200"
           disabled={isLoading}
+          required
         />
-        <label for="published" class="ml-2 block text-sm text-gray-700">
-          Publicar inmediatamente
-        </label>
+        <div class="character-count">
+          {title.length}/200 caracteres
+        </div>
       </div>
-      
-      <div class="flex items-center">
-        <input
-          id="featured"
-          type="checkbox"
-          bind:checked={isFeatured}
-          class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+
+      <!-- Slug se genera automáticamente del título -->
+    </div>
+
+    <div class="form-section">
+      <div class="form-group full-width">
+        <label for="excerpt" class="label">
+          📄 Resumen
+        </label>
+        <textarea
+          id="excerpt"
+          bind:value={excerpt}
+          class="textarea"
+          placeholder="Escribe un resumen breve que capture la esencia del artículo..."
+          rows="4"
+          maxlength="500"
           disabled={isLoading}
-        />
-        <label for="featured" class="ml-2 block text-sm text-gray-700">
-          Artículo destacado
-        </label>
+        ></textarea>
+        <div class="character-count">
+          {excerpt.length}/500 caracteres
+        </div>
       </div>
+    </div>
+
+    <!-- Categoría y opciones -->
+    <div class="form-section">
+      <h3 class="section-title">🏷️ Categorización</h3>
+
+      {#if categories.length > 0}
+        <div class="form-group full-width">
+          <label for="category" class="label">
+            🗂️ Categoría
+          </label>
+          <select
+            id="category"
+            bind:value={categoryId}
+            class="input"
+            disabled={isLoading}
+          >
+            <option value={null}>Sin categoría</option>
+            {#each categories as category}
+              <option value={category.id}>{category.name}</option>
+            {/each}
+          </select>
+          <p class="help-text">💡 Ayuda a organizar el contenido para los lectores</p>
+        </div>
+      {/if}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="status" class="label">
+            📢 Estado de publicación
+          </label>
+          <select
+            id="status"
+            bind:value={status}
+            class="input"
+            disabled={isLoading}
+          >
+            <option value="draft">Borrador</option>
+            <option value="published">Publicado</option>
+          </select>
+          <p class="help-text">✨ Los artículos publicados serán visibles para todos los usuarios</p>
+        </div>
+
+        <div class="form-group">
+          <label for="tags" class="label">
+            🏷️ Etiquetas
+          </label>
+          <input
+            id="tags"
+            type="text"
+            value={tags.join(', ')}
+            on:input={(e) => {
+              const value = e.currentTarget.value;
+              tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+            }}
+            class="input"
+            placeholder="Ej: cultura, arte, exposición"
+            disabled={isLoading}
+          />
+          <p class="help-text">💡 Separa las etiquetas con comas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multimedia -->
+    <div class="form-section">
+      <h3 class="section-title">🎨 Imagen Destacada</h3>
+
+      <div class="form-group">
+        <label class="label">
+          🖼️ Imagen Destacada
+        </label>
+        {#if post?.id}
+          <MediaUploader
+            contentType="blog"
+            contentId={post.id}
+            mediaType="image"
+            onUploadComplete={handleImageUploaded}
+            disabled={isLoading}
+          />
+        {:else}
+          <div class="help-text">
+            💡 Guarda el artículo primero para poder subir archivos. Los demás elementos multimedia se pueden agregar al contenido usando el editor.
+          </div>
+        {/if}
+        {#if featuredMedia}
+          <div class="mt-2">
+            <p class="text-sm text-gray-600">Imagen actual: {featuredMedia}</p>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="form-section">
+      <h3 class="section-title">✍️ Contenido Principal</h3>
+
+      <div class="form-group full-width">
+        <label for="content" class="label">
+          Contenido del artículo <span class="required">*</span>
+        </label>
+        <textarea
+          id="content"
+          bind:value={content}
+          class="textarea"
+          placeholder="Escribe el contenido completo del artículo. Puedes usar markdown para formatear el texto..."
+          rows="15"
+          disabled={isLoading}
+          required
+        ></textarea>
+        <div class="character-count">
+          {content.length} caracteres
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="form-actions">
+      <button
+        type="button"
+        on:click={handleCancel}
+        class="btn btn-secondary"
+        disabled={isLoading}
+      >
+        ❌ Cancelar
+      </button>
+
+      <button
+        type="submit"
+        disabled={isLoading || !title.trim() || !content.trim()}
+        class="btn btn-primary"
+      >
+        {#if isLoading}
+          <div class="loading-spinner"></div>
+          ⏳ Guardando...
+        {:else}
+          ✨ {post ? 'Actualizar' : 'Crear'} Artículo
+        {/if}
+      </button>
     </div>
   </form>
 </div>
+
+<style>
+  .blog-form {
+    background: linear-gradient(to bottom right, #ffffff, #dbeafe, #ede9fe);
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+    border: 2px solid rgba(59, 130, 246, 0.1);
+  }
+
+  .form-header {
+    background: linear-gradient(to right, #2563eb, #9333ea);
+    color: white;
+    padding: 1.5rem 2rem;
+  }
+
+  .form-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-subtitle {
+    color: #dbeafe;
+    font-weight: 500;
+  }
+
+  .form-content {
+    padding: 2rem;
+  }
+
+  .form-content > * + * {
+    margin-top: 2rem;
+  }
+
+  .form-section {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #f3f4f6;
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .form-group > * + * {
+    margin-top: 0.5rem;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    color: #111827;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .input::placeholder {
+    color: #9ca3af;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .input:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    color: #111827;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    resize: none;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  .textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .textarea:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #2563eb;
+    background-color: white;
+    border: 2px solid #d1d5db;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .checkbox-label:hover {
+    color: #2563eb;
+  }
+
+  .required {
+    color: #ef4444;
+    font-weight: 700;
+  }
+
+  .character-count {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: right;
+  }
+
+  .help-text {
+    font-size: 0.875rem;
+    color: #4b5563;
+    background-color: #eff6ff;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dbeafe;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(to right, #2563eb, #9333ea);
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: scale(1);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(to right, #1d4ed8, #7c3aed);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(1.05);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.95);
+  }
+
+  .btn-primary:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.5);
+  }
+
+  .btn-secondary {
+    background-color: white;
+    color: #374151;
+    border: 2px solid #d1d5db;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-secondary:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .btn-secondary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.5);
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

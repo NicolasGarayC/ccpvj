@@ -8,7 +8,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
     const searchParams = url.searchParams;
     const queryString = searchParams.toString();
 
-    const response = await fetch(`${BACKEND_URL}/article?${queryString}`, {
+    const response = await fetch(`${BACKEND_URL}/blog?${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -33,10 +33,11 @@ export const POST: RequestHandler = async ({ request }) => {
   try {
     const postData = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/article`, {
+    const response = await fetch(`${BACKEND_URL}/blog`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': request.headers.get('authorization') || '',
         'Cookie': request.headers.get('cookie') || ''
       },
       body: JSON.stringify(postData),

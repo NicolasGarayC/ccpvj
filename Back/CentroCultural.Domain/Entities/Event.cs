@@ -3,114 +3,106 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    [Table("Event")]
+    [Table("event")]
     public class Event
     {
         [Key]
-        [Column("Id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        [Column("id")]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [Required]
         [MaxLength(200)]
-        [Column("Title")]
+        [Column("title")]
         public string Title { get; set; } = string.Empty;
 
         [MaxLength(1000)]
-        [Column("Description")]
+        [Column("description")]
         public string? Description { get; set; }
 
         [Required]
-        [Column("StartDateTime")]
-        public DateTime StartDateTime { get; set; }
+        [Column("start_date_time")]
+        public long StartDateTime { get; set; }
 
-        [Column("EndDateTime")]
-        public DateTime? EndDateTime { get; set; }
+        [Column("end_date_time")]
+        public long? EndDateTime { get; set; }
 
-        [Column("IsAllDay")]
+        [Column("is_all_day")]
         public bool IsAllDay { get; set; } = false;
 
         [MaxLength(200)]
-        [Column("Location")]
+        [Column("location")]
         public string? Location { get; set; }
 
         [Required]
-        [Column("EventType")]
+        [Column("event_type")]
         public string EventType { get; set; } = "General"; // Clase, Evento, Taller, Conferencia, etc.
 
-        [Column("IsActive")]
+        [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
-        [Column("IsFeatured")]
+        [Column("is_featured")]
         public bool IsFeatured { get; set; } = false;
 
-        [Column("MaxAttendees")]
+        [Column("max_attendees")]
         public int? MaxAttendees { get; set; }
 
-        [Column("CurrentAttendees")]
+        [Column("current_attendees")]
         public int CurrentAttendees { get; set; } = 0;
 
-        [Column("RequiresRegistration")]
+        [Column("requires_registration")]
         public bool RequiresRegistration { get; set; } = false;
 
-        [Column("RegistrationDeadline")]
-        public DateTime? RegistrationDeadline { get; set; }
+        [Column("registration_deadline")]
+        public long? RegistrationDeadline { get; set; }
 
         // Multimedia contextual
         [MaxLength(500)]
-        [Column("ImagePath")]
+        [Column("image_path")]
         public string? ImagePath { get; set; }
 
         [MaxLength(500)]
-        [Column("PdfPath")]
+        [Column("pdf_path")]
         public string? PdfPath { get; set; }
 
         // Eventos recurrentes
-        [Column("IsRecurring")]
+        [Column("is_recurring")]
         public bool IsRecurring { get; set; } = false;
 
         [MaxLength(50)]
-        [Column("RecurrencePattern")]
+        [Column("recurrence_pattern")]
         public string? RecurrencePattern { get; set; } // Daily, Weekly, Monthly, Yearly
 
-        [Column("RecurrenceInterval")]
+        [Column("recurrence_interval")]
         public int? RecurrenceInterval { get; set; } = 1; // cada cuanto se repite
 
-        [Column("RecurrenceEndDate")]
-        public DateTime? RecurrenceEndDate { get; set; }
+        [Column("recurrence_end_date")]
+        public long? RecurrenceEndDate { get; set; }
 
         [MaxLength(100)]
-        [Column("RecurrenceDaysOfWeek")]
+        [Column("recurrence_days_of_week")]
         public string? RecurrenceDaysOfWeek { get; set; } // "1,3,5" para Lun, Mie, Vie
 
         // Referencias opcionales a contenido relacionado
-        [Column("RelatedCourseId")]
+        [Column("related_course_id")]
         public string? RelatedCourseId { get; set; }
 
-        [Column("RelatedBlogPostId")]
-        public Guid? RelatedBlogPostId { get; set; }
+        [Column("related_blog_post_id")]
+        public string? RelatedBlogPostId { get; set; }
 
         // Información de creación y actualización
         [Required]
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Column("created_at")]
+        public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-        [Column("UpdatedAt")]
-        public DateTime? UpdatedAt { get; set; }
+        [Column("updated_at")]
+        public long? UpdatedAt { get; set; }
 
         [Required]
-        [Column("OrganizerId")]
-        public int OrganizerId { get; set; } = 0;
+        [Column("organizer_id")]
+        public string OrganizerId { get; set; } = string.Empty;
 
-        // Propiedades de navegación
-        [ForeignKey("OrganizerId")]
-        public virtual Usuario Organizer { get; set; } = null!;
+        // Navigation properties
+        public virtual ICollection<BlogPostEvent> BlogPostRelations { get; set; } = new List<BlogPostEvent>();
 
-        [ForeignKey("RelatedCourseId")]
-        public virtual Course? RelatedCourse { get; set; }
-
-        [ForeignKey("RelatedBlogPostId")]
-        public virtual BlogPost? RelatedBlogPost { get; set; }
-
-        public virtual ICollection<EventRegistration> Registrations { get; set; } = new List<EventRegistration>();
     }
 }

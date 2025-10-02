@@ -1,40 +1,14 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
-  import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
   import { t } from '$lib/i18n';
 
   export let post: BlogPost;
   export let showActions = false;
   export let canEdit = false;
   export let canDelete = false;
-  export let showRelatedEvents = true;
 
   const dispatch = createEventDispatcher();
-  
-  // Estado para eventos relacionados
-  let relatedEvents: EventSummary[] = [];
-  let loadingEvents = false;
-  
-
-  onMount(async () => {
-    // Cargar eventos relacionados si está habilitado
-    if (showRelatedEvents && post.id) {
-      await loadRelatedEvents();
-    }
-  });
-
-  async function loadRelatedEvents() {
-    try {
-      loadingEvents = true;
-      relatedEvents = await calendarService.getEventsByBlogPost(post.id);
-    } catch (error) {
-      console.error('Error al cargar eventos relacionados:', error);
-      relatedEvents = [];
-    } finally {
-      loadingEvents = false;
-    }
-  }
 
   // Función para obtener la URL completa del recurso desde nginx
   function getMediaUrl(path: string) {
@@ -207,72 +181,6 @@
           </div>
         {/if}
       </div>
-
-      <!-- Eventos relacionados con mejor legibilidad -->
-      {#if showRelatedEvents && (relatedEvents.length > 0 || loadingEvents)}
-        <div class="mt-6 pt-4 border-t border-gray-100">
-          <h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center">
-            <div class="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-              <i class="fas fa-calendar-alt text-blue-600 text-xs"></i>
-            </div>
-            📅 Eventos relacionados
-          </h4>
-
-          {#if loadingEvents}
-            <div class="flex items-center justify-center text-sm text-gray-600 py-4">
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mr-3"></div>
-              <span class="font-medium">Cargando eventos...</span>
-            </div>
-          {:else if relatedEvents.length > 0}
-            <div class="space-y-3">
-              {#each relatedEvents.slice(0, 3) as event}
-                <div
-                  class="group/event flex items-start justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 hover:shadow-sm"
-                  on:click={() => window.open(`/calendar/event/${event.id}`, '_blank')}
-                  role="button"
-                  tabindex="0"
-                  on:keydown={(e) => e.key === 'Enter' && window.open(`/calendar/event/${event.id}`, '_blank')}
-                >
-                  <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-900 truncate mb-1 group-hover/event:text-blue-800">
-                      {event.title}
-                    </p>
-                    <div class="flex items-center space-x-2 text-xs text-gray-600">
-                      <span class="bg-white px-2 py-1 rounded-full font-medium">
-                        {event.eventType}
-                      </span>
-                      <span class="text-gray-400">•</span>
-                      <span class="font-medium">
-                        {new Intl.DateTimeFormat('es-ES', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }).format(new Date(event.startDateTime))}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="ml-3 text-gray-400 group-hover/event:text-blue-500 transition-colors">
-                    <i class="fas fa-external-link-alt text-xs"></i>
-                  </div>
-                </div>
-              {/each}
-
-              {#if relatedEvents.length > 3}
-                <div class="text-center pt-2">
-                  <a
-                    href={`/calendar?relatedBlogPost=${post.id}`}
-                    class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-semibold hover:bg-blue-50 px-3 py-2 rounded-full transition-all duration-200"
-                  >
-                    <span>Ver todos ({relatedEvents.length})</span>
-                    <i class="fas fa-arrow-right ml-1.5 text-xs"></i>
-                  </a>
-                </div>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/if}
     </div>
   </div>
 </div>

@@ -223,7 +223,7 @@ export function mediaFileExists(filePath: string): boolean {
 // Helper functions
 
 function getMediaBaseDirectory(): string {
-	return process.env.MEDIA_BASE_PATH || path.join(process.cwd(), 'Data', 'media');
+	return process.env.MEDIA_BASE_PATH || path.resolve(process.cwd(), '..', 'Back', 'Data', 'media');
 }
 
 function getFullFilePath(webPath: string): string {

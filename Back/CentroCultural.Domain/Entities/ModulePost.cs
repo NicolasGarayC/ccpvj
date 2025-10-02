@@ -6,6 +6,7 @@ namespace CentroCultural.Domain.Entities
     [Table("module_post")]
     public class ModulePost
     {
+        [Key]
         [Column("id")]
         public string Id { get; set; } = string.Empty;
 
@@ -21,27 +22,6 @@ namespace CentroCultural.Domain.Entities
         [Column("content")]
         public string? Content { get; set; }
 
-        [Column("order_number")]
-        public int OrderNumber { get; set; } = 0;
-
-        [Column("is_active")]
-        public bool IsActive { get; set; } = true;
-
-        [Column("created_at")]
-        public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        [Column("updated_at")]
-        public long? UpdatedAt { get; set; }
-
-        [Required]
-        [Column("module_id")]
-        public string ModuleId { get; set; } = string.Empty;
-
-        [Required]
-        [Column("author_id")]
-        public string AuthorId { get; set; } = string.Empty;
-
-        // Contextual multimedia paths
         [MaxLength(500)]
         [Column("image_path")]
         public string? ImagePath { get; set; }
@@ -53,5 +33,28 @@ namespace CentroCultural.Domain.Entities
         [MaxLength(500)]
         [Column("audio_path")]
         public string? AudioPath { get; set; }
+
+        [Column("order_number")]
+        public int OrderNumber { get; set; } = 0;
+
+        [Column("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        [Required]
+        [Column("module_id")]
+        public string ModuleId { get; set; } = string.Empty;
+
+        [Column("author_id")]
+        public int AuthorId { get; set; } = 1;
+
+        [Column("created_at")]
+        public long CreatedAt { get; set; }
+
+        [Column("updated_at")]
+        public long? UpdatedAt { get; set; }
+
+        // Navigation property (optional - can be null if module not loaded)
+        [ForeignKey("ModuleId")]
+        public virtual Module? Module { get; set; }
     }
 }

@@ -58,19 +58,3 @@ export interface Material {
   description?: string;
   order: number;
 }
-
-export interface Forum {
-  id: string;
-  title: string;
-  courseId: string;
-  posts: ForumPost[];
-}
-
-export interface ForumPost {
-  id: string;
-  content: string;
-  authorId: string;
-  authorName: string;
-  createdAt: string;
-  forumId: string;
-}

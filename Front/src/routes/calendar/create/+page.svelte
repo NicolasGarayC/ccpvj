@@ -10,6 +10,7 @@
 	let error = '';
 	let availableCourses: Array<{ id: string; title: string }> = [];
 	let availableBlogPosts: Array<{ id: string; title: string; slug: string }> = [];
+	let initialDate: Date | null = null;
 
 	onMount(async () => {
 		// ✅ Verificar autenticación
@@ -20,10 +21,23 @@
 
 		const user = jwtService.getUser();
 		const canCreate = user?.role === 'colaborador' || user?.role === 'administrador';
-		
+
 		if (!canCreate) {
 			goto('/calendar');
 			return;
+		}
+
+		// Leer fecha inicial desde URL si se proporciona
+		const dateParam = $page.url.searchParams.get('date');
+		if (dateParam) {
+			try {
+				const parsedDate = new Date(dateParam);
+				if (!isNaN(parsedDate.getTime())) {
+					initialDate = parsedDate;
+				}
+			} catch (e) {
+				console.warn('Invalid date parameter:', dateParam);
+			}
 		}
 
 		// Cargar cursos y posts de blog disponibles
@@ -132,6 +146,7 @@
 				isEdit={false}
 				{availableCourses}
 				{availableBlogPosts}
+				{initialDate}
 				on:save={handleSave}
 				on:cancel={handleCancel}
 			/>

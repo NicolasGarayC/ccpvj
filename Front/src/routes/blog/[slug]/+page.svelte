@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { blogService } from '$lib/services/blog/blogService';
   import type { BlogPost } from '$lib/data/models/interfaces';
+  import BlogEventRelationManager from '$lib/components/blog/BlogEventRelationManager.svelte';
 
   import { t } from '$lib/i18n';
 
@@ -157,11 +158,21 @@
         {/if}
       </div>
 
+      <!-- Related Events -->
+      {#if post.id}
+        <section class="mt-12 pt-8 border-t border-gray-200">
+          <BlogEventRelationManager
+            blogPostId={post.id}
+            mode="blog-to-events"
+          />
+        </section>
+      {/if}
+
       <!-- Article Footer -->
       <footer class="mt-12 pt-8 border-t border-gray-200">
         <div class="text-center">
-          <a 
-            href="/blog" 
+          <a
+            href="/blog"
             class="inline-flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             {t('readMoreNews') || 'Leer más noticias'}

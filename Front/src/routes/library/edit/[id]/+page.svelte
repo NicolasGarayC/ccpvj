@@ -27,10 +27,13 @@
 	let errors: Record<string, string> = {};
 
 	const languageOptions = [
-		{ value: 'es', label: 'Español' },
-		{ value: 'en', label: 'Inglés' },
-		{ value: 'fr', label: 'Francés' },
-		{ value: 'pt', label: 'Portugués' }
+		'Español',
+		'Inglés',
+		'Francés',
+		'Portugués',
+		'Catalán',
+		'Italiano',
+		'Alemán'
 	];
 
 	const categoryOptions = [
@@ -268,7 +271,7 @@
 						<input
 							id="resource-authors"
 							type="text"
-							bind:value={authorsInput}
+							bind:value={authorInput}
 							on:input={updateAuthors}
 							on:blur={() => validateField('authors')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -410,8 +413,8 @@
 							bind:value={formData.language}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 						>
-							{#each languageOptions as option}
-								<option value={option.value}>{option.label}</option>
+							{#each languageOptions as language}
+								<option value={language}>{language}</option>
 							{/each}
 						</select>
 					</div>

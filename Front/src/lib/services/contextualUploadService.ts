@@ -30,6 +30,13 @@ export interface PostMediaUploadOptions {
     oldFilePath?: string;
 }
 
+export interface BlogMediaUploadOptions {
+    blogPostId: string;
+    file: File;
+    mediaType: 'image' | 'video' | 'audio';
+    oldFilePath?: string;
+}
+
 class ContextualUploadService {
 
     /**
@@ -93,6 +100,38 @@ class ContextualUploadService {
 
         } catch (error) {
             console.error(`Post ${mediaType} upload error:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Upload blog media (image, video, audio) with contextual structure
+     */
+    async uploadBlogMedia({ blogPostId, file, mediaType, oldFilePath }: BlogMediaUploadOptions): Promise<UploadResult> {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('mediaType', mediaType);
+            if (oldFilePath) {
+                formData.append('oldFilePath', oldFilePath);
+            }
+
+            const response = await fetch(`/api/upload/blog/${blogPostId}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Upload failed');
+            }
+
+            console.log(`✅ Blog ${mediaType} uploaded successfully: ${result.relativePath}`);
+            return result;
+
+        } catch (error) {
+            console.error(`Blog ${mediaType} upload error:`, error);
             throw error;
         }
     }

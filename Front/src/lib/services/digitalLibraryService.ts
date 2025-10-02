@@ -345,7 +345,8 @@ class DigitalLibraryService {
 
             // Create download link using the file path
             const link = document.createElement('a');
-            link.href = `/media${item.filePath}`;
+            // item.filePath already includes /media/ prefix, so use it directly
+            link.href = item.filePath.startsWith('/media/') ? item.filePath : `/media${item.filePath}`;
             link.download = item.fileName || (item.title + this.getFileExtension(item.fileType));
             link.target = '_blank';
             document.body.appendChild(link);

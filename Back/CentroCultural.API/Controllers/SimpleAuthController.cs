@@ -36,7 +36,7 @@ namespace CentroCultural.API.Controllers
                 await connection.OpenAsync();
 
                 var command = new SqliteCommand(
-                    "SELECT id, username, password_hash, role, nombre, apellido FROM user WHERE username = @username",
+                    "SELECT u.IdUsuario, u.NombreUsuario, u.Contrasena, r.NombreRol as RolNombre, u.Nombre, u.Apellido FROM Usuario u JOIN Rol r ON u.IdRol = r.IdRol WHERE u.NombreUsuario = @username",
                     connection);
                 command.Parameters.AddWithValue("@username", request.username);
 
@@ -48,7 +48,7 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized(new { success = false, message = "Invalid credentials" });
                 }
 
-                var storedPasswordHash = reader["password_hash"].ToString()!;
+                var storedPasswordHash = reader["Contrasena"].ToString()!;
 
                 // For JWT testing, let's allow common test passwords
                 bool passwordValid = false;
@@ -71,11 +71,11 @@ namespace CentroCultural.API.Controllers
                     return Unauthorized(new { success = false, message = "Invalid credentials" });
                 }
 
-                var userId = Convert.ToInt32(reader["id"]);
-                var username = reader["username"].ToString()!;
-                var role = reader["role"].ToString()!;
-                var nombre = reader["nombre"]?.ToString();
-                var apellido = reader["apellido"]?.ToString();
+                var userId = Convert.ToInt32(reader["IdUsuario"]);
+                var username = reader["NombreUsuario"].ToString()!;
+                var role = reader["RolNombre"].ToString()!;
+                var nombre = reader["Nombre"]?.ToString();
+                var apellido = reader["Apellido"]?.ToString();
 
                 var token = _jwtService.GenerateToken(userId, username, role, nombre, apellido);
 

@@ -6,6 +6,7 @@
 	export let isEdit: boolean = false;
 	export let availableCourses: Array<{ id: string; title: string }> = [];
 	export let availableBlogPosts: Array<{ id: string; title: string; slug: string }> = [];
+	export let initialDate: Date | null = null;
 
 	const dispatch = createEventDispatcher<{
 		save: { eventData: CreateEventData };
@@ -16,7 +17,7 @@
 	let formData: CreateEventData = {
 		title: '',
 		description: '',
-		startDateTime: new Date(),
+		startDateTime: initialDate || new Date(),
 		endDateTime: undefined,
 		isAllDay: false,
 		location: '',
@@ -32,13 +33,17 @@
 		recurrenceInterval: 1,
 		recurrenceEndDate: undefined,
 		recurrenceDaysOfWeek: '',
-		relatedCourseId: '',
-		relatedBlogPostId: ''
+		relatedCourseId: ''
 	};
 
 	// Estado del formulario
 	let isSubmitting = false;
 	let errors: Record<string, string> = {};
+
+	// Actualizar fecha inicial cuando cambie el prop
+	$: if (initialDate && !isEdit) {
+		formData.startDateTime = new Date(initialDate);
+	}
 
 	// Cargar datos del evento si es edición
 	$: if (event && isEdit) {
@@ -61,8 +66,7 @@
 			recurrenceInterval: event.recurrenceInterval || 1,
 			recurrenceEndDate: event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : undefined,
 			recurrenceDaysOfWeek: event.recurrenceDaysOfWeek || '',
-			relatedCourseId: event.relatedCourseId || '',
-			relatedBlogPostId: event.relatedBlogPostId || ''
+			relatedCourseId: event.relatedCourseId || ''
 		};
 	}
 
@@ -194,108 +198,125 @@
 	}
 </script>
 
-<div class="bg-white rounded-lg shadow-lg overflow-hidden">
-	<div class="px-6 py-4 border-b border-gray-200">
-		<h2 class="text-xl font-semibold text-gray-900">
-			{isEdit ? 'Editar Evento' : 'Crear Nuevo Evento'}
+<div class="event-form">
+	<div class="form-header">
+		<h2 class="form-title">
+			🎪 {isEdit ? 'Editar Evento' : 'Crear Nuevo Evento'}
 		</h2>
+		<p class="form-subtitle">
+			{isEdit ? 'Modifica los detalles de tu evento' : 'Crea una nueva actividad para el centro cultural'}
+		</p>
 	</div>
 
-	<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
+	<form on:submit|preventDefault={handleSubmit} class="form-content">
 		<!-- Información básica -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-			<!-- Título -->
-			<div class="md:col-span-2">
-				<label for="title" class="block text-sm font-medium text-gray-700 mb-2">
-					Título <span class="text-red-500">*</span>
+		<div class="form-section">
+			<h3 class="section-title">📝 Información Básica</h3>
+
+			<div class="form-group full-width">
+				<label for="title" class="label">
+					Título del evento <span class="required">*</span>
 				</label>
 				<input
 					id="title"
 					type="text"
 					bind:value={formData.title}
-					placeholder="Ingresa el título del evento"
-					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-						{errors.title ? 'border-red-500' : ''}"
+					class="input"
+					class:error={errors.title}
+					placeholder="Ej: Taller de Teatro Infantil"
+					maxlength="200"
+					disabled={isSubmitting}
 					required
 				/>
 				{#if errors.title}
-					<p class="mt-1 text-sm text-red-600">{errors.title}</p>
+					<span class="error-message">{errors.title}</span>
 				{/if}
+				<div class="character-count">
+					{formData.title.length}/200 caracteres
+				</div>
 			</div>
 
-			<!-- Tipo de evento -->
-			<div>
-				<label for="eventType" class="block text-sm font-medium text-gray-700 mb-2">
-					Tipo de Evento
-				</label>
-				<select
-					id="eventType"
-					bind:value={formData.eventType}
-					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-				>
-					{#each eventTypes as type}
-						<option value={type.value}>{type.label}</option>
-					{/each}
-				</select>
-			</div>
+			<div class="form-row">
+				<div class="form-group">
+					<label for="eventType" class="label">
+						🏷️ Tipo de Evento
+					</label>
+					<select
+						id="eventType"
+						bind:value={formData.eventType}
+						class="input"
+						disabled={isSubmitting}
+					>
+						{#each eventTypes as type}
+							<option value={type.value}>{type.label}</option>
+						{/each}
+					</select>
+				</div>
 
-			<!-- Ubicación -->
-			<div>
-				<label for="location" class="block text-sm font-medium text-gray-700 mb-2">
-					Ubicación
-				</label>
-				<input
-					id="location"
-					type="text"
-					bind:value={formData.location}
-					placeholder="Ej: Aula 1, Sala Principal"
-					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-				/>
+				<div class="form-group">
+					<label for="location" class="label">
+						📍 Ubicación
+					</label>
+					<input
+						id="location"
+						type="text"
+						bind:value={formData.location}
+						class="input"
+						placeholder="Ej: Aula Principal, Salón de Eventos"
+						maxlength="200"
+						disabled={isSubmitting}
+					/>
+				</div>
 			</div>
 		</div>
 
-		<!-- Descripción -->
-		<div>
-			<label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-				Descripción
-			</label>
-			<textarea
-				id="description"
-				bind:value={formData.description}
-				rows="4"
-				placeholder="Describe el evento, su contenido y objetivo"
-				class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-			></textarea>
+		<div class="form-section">
+			<div class="form-group full-width">
+				<label for="description" class="label">
+					📄 Descripción
+				</label>
+				<textarea
+					id="description"
+					bind:value={formData.description}
+					class="textarea"
+					placeholder="Describe el evento, actividades, objetivos y todo lo que los participantes deben saber..."
+					rows="5"
+					maxlength="1000"
+					disabled={isSubmitting}
+				></textarea>
+				<div class="character-count">
+					{formData.description.length}/1000 caracteres
+				</div>
+			</div>
 		</div>
 
 		<!-- Fechas y horarios -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Fechas y Horarios</h3>
+		<div class="form-section">
+			<h3 class="section-title">📅 Fechas y Horarios</h3>
 
-			<!-- Todo el día -->
-			<div class="mb-4">
-				<label class="flex items-center">
+			<div class="form-group full-width">
+				<label class="checkbox-label">
 					<input
 						type="checkbox"
 						bind:checked={formData.isAllDay}
 						on:change={handleAllDayChange}
-						class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="checkbox"
+						disabled={isSubmitting}
 					/>
-					<span class="ml-2 text-sm font-medium text-gray-700">Evento de todo el día</span>
+					✨ Evento de todo el día
 				</label>
 			</div>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Fecha de inicio -->
-				<div>
-					<label for="startDateTime" class="block text-sm font-medium text-gray-700 mb-2">
-						Fecha de Inicio <span class="text-red-500">*</span>
+			<div class="form-row">
+				<div class="form-group">
+					<label for="startDateTime" class="label">
+						🚀 Fecha de Inicio <span class="required">*</span>
 					</label>
 					<input
 						id="startDateTime"
 						type={formData.isAllDay ? 'date' : 'datetime-local'}
-						value={formData.isAllDay ? 
-							formData.startDateTime.toISOString().split('T')[0] : 
+						value={formData.isAllDay ?
+							formData.startDateTime.toISOString().split('T')[0] :
 							formatDateTimeLocal(formData.startDateTime)}
 						on:input={(e) => {
 							if (formData.isAllDay) {
@@ -306,27 +327,27 @@
 								formData.startDateTime = parseDateTimeLocal(e.currentTarget.value);
 							}
 						}}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-							{errors.startDateTime ? 'border-red-500' : ''}"
+						class="input"
+						class:error={errors.startDateTime}
+						disabled={isSubmitting}
 						required
 					/>
 					{#if errors.startDateTime}
-						<p class="mt-1 text-sm text-red-600">{errors.startDateTime}</p>
+						<span class="error-message">{errors.startDateTime}</span>
 					{/if}
 				</div>
 
-				<!-- Fecha de fin -->
-				<div>
-					<label for="endDateTime" class="block text-sm font-medium text-gray-700 mb-2">
-						Fecha de Fin
+				<div class="form-group">
+					<label for="endDateTime" class="label">
+						🏁 Fecha de Fin (opcional)
 					</label>
 					<input
 						id="endDateTime"
 						type={formData.isAllDay ? 'date' : 'datetime-local'}
-						value={formData.endDateTime ? 
-							(formData.isAllDay ? 
-								formData.endDateTime.toISOString().split('T')[0] : 
-								formatDateTimeLocal(formData.endDateTime)) 
+						value={formData.endDateTime ?
+							(formData.isAllDay ?
+								formData.endDateTime.toISOString().split('T')[0] :
+								formatDateTimeLocal(formData.endDateTime))
 							: ''}
 						on:input={(e) => {
 							if (e.currentTarget.value) {
@@ -341,295 +362,410 @@
 								formData.endDateTime = undefined;
 							}
 						}}
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-							{errors.endDateTime ? 'border-red-500' : ''}"
+						class="input"
+						class:error={errors.endDateTime}
+						disabled={isSubmitting}
 					/>
 					{#if errors.endDateTime}
-						<p class="mt-1 text-sm text-red-600">{errors.endDateTime}</p>
+						<span class="error-message">{errors.endDateTime}</span>
 					{/if}
 				</div>
 			</div>
 		</div>
 
 		<!-- Eventos recurrentes -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<div class="flex items-center mb-4">
-				<input
-					id="isRecurring"
-					type="checkbox"
-					bind:checked={formData.isRecurring}
-					class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-				/>
-				<label for="isRecurring" class="ml-2 text-sm font-medium text-gray-700">
-					Evento recurrente
+		<div class="form-section">
+			<h3 class="section-title">🔄 Recurrencia</h3>
+
+			<div class="form-group full-width">
+				<label for="isRecurring" class="checkbox-label">
+					<input
+						id="isRecurring"
+						type="checkbox"
+						bind:checked={formData.isRecurring}
+						class="checkbox"
+						disabled={isSubmitting}
+					/>
+					🔁 Evento recurrente
 				</label>
+				<p class="help-text">💡 Los eventos recurrentes se repetirán automáticamente según el patrón configurado</p>
 			</div>
 
 			{#if formData.isRecurring}
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<!-- Patrón de recurrencia -->
-					<div>
-						<label for="recurrencePattern" class="block text-sm font-medium text-gray-700 mb-2">
-							Patrón de Recurrencia
+				<div class="form-row">
+					<div class="form-group">
+						<label for="recurrencePattern" class="label">
+							🔄 Patrón de Recurrencia <span class="required">*</span>
 						</label>
 						<select
 							id="recurrencePattern"
 							bind:value={formData.recurrencePattern}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-								{errors.recurrencePattern ? 'border-red-500' : ''}"
+							class="input"
+							class:error={errors.recurrencePattern}
+							disabled={isSubmitting}
 						>
 							{#each recurrencePatterns.slice(1) as pattern}
 								<option value={pattern.value}>{pattern.label}</option>
 							{/each}
 						</select>
 						{#if errors.recurrencePattern}
-							<p class="mt-1 text-sm text-red-600">{errors.recurrencePattern}</p>
+							<span class="error-message">{errors.recurrencePattern}</span>
 						{/if}
 					</div>
 
-					<!-- Intervalo -->
-					<div>
-						<label for="recurrenceInterval" class="block text-sm font-medium text-gray-700 mb-2">
-							Cada
+					<div class="form-group">
+						<label for="recurrenceInterval" class="label">
+							⏱️ Cada
 						</label>
 						<input
 							id="recurrenceInterval"
 							type="number"
 							bind:value={formData.recurrenceInterval}
+							class="input"
 							min="1"
 							max="52"
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							disabled={isSubmitting}
 						/>
-						<p class="mt-1 text-xs text-gray-500">
-							{#if formData.recurrencePattern === 'daily'}días{:else if formData.recurrencePattern === 'weekly'}semanas{:else if formData.recurrencePattern === 'monthly'}meses{:else if formData.recurrencePattern === 'yearly'}años{/if}
+						<p class="help-text">
+							{#if formData.recurrencePattern === 'daily'}📅 días{:else if formData.recurrencePattern === 'weekly'}📅 semanas{:else if formData.recurrencePattern === 'monthly'}📅 meses{:else if formData.recurrencePattern === 'yearly'}📅 años{/if}
 						</p>
 					</div>
 
-					<!-- Días de la semana (solo para semanal) -->
-					{#if formData.recurrencePattern === 'weekly'}
-						<div class="md:col-span-2">
-							<label class="block text-sm font-medium text-gray-700 mb-2">
-								Días de la Semana
-							</label>
-							<div class="flex flex-wrap gap-2">
-								{#each daysOfWeek as day}
-									<label class="flex items-center">
-										<input
-											type="checkbox"
-											checked={isDaySelected(day.value)}
-											on:change={(e) => handleDaySelection(day.value, e.currentTarget.checked)}
-											class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-										/>
-										<span class="ml-1 text-sm text-gray-700">{day.label}</span>
-									</label>
-								{/each}
-							</div>
-						</div>
-					{/if}
+				</div>
 
-					<!-- Fecha de fin de recurrencia -->
-					<div class="md:col-span-2">
-						<label for="recurrenceEndDate" class="block text-sm font-medium text-gray-700 mb-2">
-							Fin de la Recurrencia
+				{#if formData.recurrencePattern === 'weekly'}
+					<div class="form-group full-width">
+						<label class="label">
+							📅 Días de la Semana
+						</label>
+						<div class="flex flex-wrap gap-3">
+							{#each daysOfWeek as day}
+								<label class="checkbox-label">
+									<input
+										type="checkbox"
+										checked={isDaySelected(day.value)}
+										on:change={(e) => handleDaySelection(day.value, e.currentTarget.checked)}
+										class="checkbox"
+										disabled={isSubmitting}
+									/>
+									{day.label}
+								</label>
+							{/each}
+						</div>
+						<p class="help-text">💡 Selecciona los días en que se repetirá el evento</p>
+					</div>
+				{/if}
+
+				<div class="form-group full-width">
+					<label for="recurrenceEndDate" class="label">
+						🏁 Fin de la Recurrencia (opcional)
+					</label>
+					<input
+						id="recurrenceEndDate"
+						type="date"
+						value={formData.recurrenceEndDate ? formData.recurrenceEndDate.toISOString().split('T')[0] : ''}
+						on:input={(e) => {
+							formData.recurrenceEndDate = e.currentTarget.value ? new Date(e.currentTarget.value) : undefined;
+						}}
+						class="input"
+						class:error={errors.recurrenceEndDate}
+						disabled={isSubmitting}
+					/>
+					{#if errors.recurrenceEndDate}
+						<span class="error-message">{errors.recurrenceEndDate}</span>
+					{/if}
+					<p class="help-text">💡 Si no especificas una fecha, la recurrencia continuará indefinidamente</p>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Registro y capacidad -->
+		<div class="form-section">
+			<h3 class="section-title">👥 Registro y Capacidad</h3>
+
+			<div class="form-group full-width">
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						bind:checked={formData.requiresRegistration}
+						class="checkbox"
+						disabled={isSubmitting}
+					/>
+					📋 Requiere registro previo
+				</label>
+				<p class="help-text">💡 Los participantes deberán registrarse antes del evento</p>
+			</div>
+
+			{#if formData.requiresRegistration}
+				<div class="form-row">
+					<div class="form-group">
+						<label for="maxAttendees" class="label">
+							👥 Capacidad Máxima
 						</label>
 						<input
-							id="recurrenceEndDate"
-							type="date"
-							value={formData.recurrenceEndDate ? formData.recurrenceEndDate.toISOString().split('T')[0] : ''}
-							on:input={(e) => {
-								formData.recurrenceEndDate = e.currentTarget.value ? new Date(e.currentTarget.value) : undefined;
-							}}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-								{errors.recurrenceEndDate ? 'border-red-500' : ''}"
+							id="maxAttendees"
+							type="number"
+							bind:value={formData.maxAttendees}
+							min="1"
+							placeholder="Sin límite"
+							class="input"
+							disabled={isSubmitting}
 						/>
-						{#if errors.recurrenceEndDate}
-							<p class="mt-1 text-sm text-red-600">{errors.recurrenceEndDate}</p>
+						<p class="help-text">💡 Deja vacío para capacidad ilimitada</p>
+					</div>
+
+					<div class="form-group">
+						<label for="registrationDeadline" class="label">
+							⏰ Fecha Límite de Registro
+						</label>
+						<input
+							id="registrationDeadline"
+							type="datetime-local"
+							value={formData.registrationDeadline ? formatDateTimeLocal(formData.registrationDeadline) : ''}
+							on:input={(e) => {
+								formData.registrationDeadline = e.currentTarget.value ? parseDateTimeLocal(e.currentTarget.value) : undefined;
+							}}
+							class="input"
+							class:error={errors.registrationDeadline}
+							disabled={isSubmitting}
+						/>
+						{#if errors.registrationDeadline}
+							<span class="error-message">{errors.registrationDeadline}</span>
 						{/if}
 					</div>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Registro y capacidad -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Registro y Capacidad</h3>
-
-			<div class="space-y-4">
-				<!-- Requiere registro -->
-				<div>
-					<label class="flex items-center">
-						<input
-							type="checkbox"
-							bind:checked={formData.requiresRegistration}
-							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-						/>
-						<span class="ml-2 text-sm font-medium text-gray-700">Requiere registro previo</span>
-					</label>
-				</div>
-
-				{#if formData.requiresRegistration}
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<!-- Capacidad máxima -->
-						<div>
-							<label for="maxAttendees" class="block text-sm font-medium text-gray-700 mb-2">
-								Capacidad Máxima
-							</label>
-							<input
-								id="maxAttendees"
-								type="number"
-								bind:value={formData.maxAttendees}
-								min="1"
-								placeholder="Sin límite"
-								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							/>
-						</div>
-
-						<!-- Fecha límite de registro -->
-						<div>
-							<label for="registrationDeadline" class="block text-sm font-medium text-gray-700 mb-2">
-								Fecha Límite de Registro
-							</label>
-							<input
-								id="registrationDeadline"
-								type="datetime-local"
-								value={formData.registrationDeadline ? formatDateTimeLocal(formData.registrationDeadline) : ''}
-								on:input={(e) => {
-									formData.registrationDeadline = e.currentTarget.value ? parseDateTimeLocal(e.currentTarget.value) : undefined;
-								}}
-								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-									{errors.registrationDeadline ? 'border-red-500' : ''}"
-							/>
-							{#if errors.registrationDeadline}
-								<p class="mt-1 text-sm text-red-600">{errors.registrationDeadline}</p>
-							{/if}
-						</div>
-					</div>
-				{/if}
-			</div>
-		</div>
-
 		<!-- Enlaces relacionados -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Enlaces Relacionados</h3>
+		<div class="form-section">
+			<h3 class="section-title">🔗 Enlaces Relacionados</h3>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<div class="form-row">
 				<!-- Curso relacionado -->
 				{#if availableCourses.length > 0}
-					<div>
-						<label for="relatedCourseId" class="block text-sm font-medium text-gray-700 mb-2">
-							Curso Relacionado
+					<div class="form-group">
+						<label for="relatedCourseId" class="label">
+							📚 Curso Relacionado
 						</label>
 						<select
 							id="relatedCourseId"
 							bind:value={formData.relatedCourseId}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="input"
+							disabled={isSubmitting}
 						>
 							<option value="">Ninguno</option>
 							{#each availableCourses as course}
 								<option value={course.id}>{course.title}</option>
 							{/each}
 						</select>
+						<p class="help-text">💡 Vincula este evento con un curso específico</p>
 					</div>
 				{/if}
 
-				<!-- Post de blog relacionado -->
-				{#if availableBlogPosts.length > 0}
-					<div>
-						<label for="relatedBlogPostId" class="block text-sm font-medium text-gray-700 mb-2">
-							Post de Blog Relacionado
-						</label>
-						<select
-							id="relatedBlogPostId"
-							bind:value={formData.relatedBlogPostId}
-							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						>
-							<option value="">Ninguno</option>
-							{#each availableBlogPosts as post}
-								<option value={post.id}>{post.title}</option>
-							{/each}
-						</select>
-					</div>
-				{/if}
+				<!-- Nota: Las relaciones con posts de blog ahora se manejan desde el módulo de blog usando BlogEventRelation -->
 			</div>
 		</div>
 
 		<!-- Multimedia -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Multimedia</h3>
+		<div class="form-section">
+			<h3 class="section-title">🎨 Multimedia</h3>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Imagen -->
-				<div>
-					<label for="imagePath" class="block text-sm font-medium text-gray-700 mb-2">
-						Imagen del Evento
+			<div class="form-row">
+				<div class="form-group">
+					<label for="imagePath" class="label">
+						🖼️ Imagen del Evento
 					</label>
 					<input
 						id="imagePath"
 						type="url"
 						bind:value={formData.imagePath}
 						placeholder="https://ejemplo.com/imagen.jpg"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="input"
+						disabled={isSubmitting}
 					/>
+					<p class="help-text">💡 URL de la imagen promocional del evento</p>
 				</div>
 
-				<!-- PDF -->
-				<div>
-					<label for="pdfPath" class="block text-sm font-medium text-gray-700 mb-2">
-						Documento PDF
+				<div class="form-group">
+					<label for="pdfPath" class="label">
+						📄 Documento PDF
 					</label>
 					<input
 						id="pdfPath"
 						type="url"
 						bind:value={formData.pdfPath}
 						placeholder="https://ejemplo.com/documento.pdf"
-						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="input"
+						disabled={isSubmitting}
 					/>
+					<p class="help-text">💡 URL de documentos adicionales o programas</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Configuración especial -->
-		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Configuración Especial</h3>
+		<div class="form-section">
+			<h3 class="section-title">⭐ Configuración Especial</h3>
 
-			<div>
-				<label class="flex items-center">
+			<div class="form-group full-width">
+				<label class="checkbox-label">
 					<input
 						type="checkbox"
 						bind:checked={formData.isFeatured}
-						class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="checkbox"
+						disabled={isSubmitting}
 					/>
-					<span class="ml-2 text-sm font-medium text-gray-700">Marcar como evento destacado</span>
+					⭐ Marcar como evento destacado
 				</label>
-				<p class="mt-1 text-xs text-gray-500">Los eventos destacados aparecerán en la página principal.</p>
+				<p class="help-text">💡 Los eventos destacados aparecerán en la página principal y tendrán mayor visibilidad</p>
 			</div>
 		</div>
 
 		<!-- Botones -->
-		<div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+		<div class="form-actions">
 			<button
 				type="button"
 				on:click={handleCancel}
-				class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+				class="btn btn-secondary"
+				disabled={isSubmitting}
 			>
-				Cancelar
+				❌ Cancelar
 			</button>
-			
+
 			<button
 				type="submit"
 				disabled={isSubmitting}
-				class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center space-x-2"
+				class="btn btn-primary"
 			>
 				{#if isSubmitting}
-					<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-					</svg>
-					Guardando...
+					<div class="loading-spinner"></div>
+					⏳ Guardando...
 				{:else}
-					<span>{isEdit ? 'Actualizar' : 'Crear'} Evento</span>
+					✨ {isEdit ? 'Actualizar' : 'Crear'} Evento
 				{/if}
 			</button>
 		</div>
 	</form>
 </div>
+
+<style>
+	.event-form {
+		@apply bg-gradient-to-br from-white via-blue-50 to-purple-50 rounded-2xl shadow-xl overflow-hidden max-w-4xl mx-auto;
+		border: 2px solid rgba(59, 130, 246, 0.1);
+	}
+
+	.form-header {
+		@apply bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-6;
+	}
+
+	.form-title {
+		@apply text-2xl font-bold mb-2;
+	}
+
+	.form-subtitle {
+		@apply text-blue-100 font-medium;
+	}
+
+	.form-content {
+		@apply p-8 space-y-8;
+	}
+
+	.form-section {
+		@apply bg-white rounded-xl p-6 shadow-md border border-gray-100;
+	}
+
+	.section-title {
+		@apply text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200;
+	}
+
+	.form-row {
+		@apply grid grid-cols-1 md:grid-cols-2 gap-6;
+	}
+
+	.form-group {
+		@apply space-y-2;
+	}
+
+	.form-group.full-width {
+		@apply col-span-full;
+	}
+
+	.label {
+		@apply block text-sm font-semibold text-gray-700 mb-2;
+	}
+
+	.input {
+		@apply w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm;
+		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+		@apply placeholder-gray-400;
+	}
+
+	.input:disabled {
+		@apply bg-gray-100 text-gray-500 cursor-not-allowed;
+	}
+
+	.input.error {
+		@apply border-red-400 ring-2 ring-red-200;
+	}
+
+	.textarea {
+		@apply w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm resize-none;
+		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+		@apply placeholder-gray-400;
+	}
+
+	.textarea:disabled {
+		@apply bg-gray-100 text-gray-500 cursor-not-allowed;
+	}
+
+	.checkbox {
+		@apply w-4 h-4 text-blue-600 bg-white border-2 border-gray-300 rounded;
+		@apply focus:ring-blue-500 focus:ring-2 transition-all duration-200;
+	}
+
+	.checkbox-label {
+		@apply flex items-center space-x-3 text-sm font-medium text-gray-700 cursor-pointer;
+		@apply hover:text-blue-600 transition-colors duration-200;
+	}
+
+	.required {
+		@apply text-red-500 font-bold;
+	}
+
+	.error-message {
+		@apply text-red-600 text-sm font-medium;
+	}
+
+	.character-count {
+		@apply text-xs text-gray-500 text-right;
+	}
+
+	.help-text {
+		@apply text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200;
+	}
+
+	.form-actions {
+		@apply flex justify-end space-x-4 pt-8 border-t border-gray-200;
+	}
+
+	.btn {
+		@apply px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2;
+		@apply focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+	}
+
+	.btn-primary {
+		@apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700;
+		@apply text-white shadow-lg hover:shadow-xl focus:ring-blue-500;
+		@apply transform hover:scale-105 active:scale-95;
+	}
+
+	.btn-secondary {
+		@apply bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50;
+		@apply hover:border-gray-400 focus:ring-gray-400 shadow-md;
+	}
+
+	.loading-spinner {
+		@apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
+	}
+</style>

@@ -151,7 +151,3 @@ export interface ReorderDto {
 	newOrderNumber: number;
 }
 
-// Legacy compatibility types (DEPRECATED - use Post types instead)
-export type WorkItemDto = PostDto;
-export type CreateWorkItemDto = CreatePostDto;
-export type UpdateWorkItemDto = UpdatePostDto;

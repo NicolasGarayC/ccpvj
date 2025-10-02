@@ -3,43 +3,43 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    [Table("user")]
+    [Table("Usuario")]
     public class Usuario
     {
         [Key]
-        [Column("id")]
+        [Column("IdUsuario")]
         public int IdUsuario { get; set; } = 0;
         [Required]
         [MaxLength(100)]
-        [Column("username")]
+        [Column("NombreUsuario")]
         public string NombreUsuario { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(255)]
-        [Column("password_hash")]
+        [Column("Contrasena")]
         public string Contrasena { get; set; } = string.Empty;
 
         [MaxLength(100)]
-        [Column("nombre")]
+        [Column("Nombre")]
         public string? Nombre { get; set; }
 
         [MaxLength(100)]
-        [Column("apellido")]
+        [Column("Apellido")]
         public string? Apellido { get; set; }
 
         [MaxLength(20)]
-        [Column("telefono")]
+        [Column("Telefono")]
         public string? Telefono { get; set; }
 
         [Required]
-        [Column("role")]
-        public string RoleString { get; set; } = "asistente";
+        [Column("IdRol")]
+        public int IdRol { get; set; } = 3;
 
-        [Column("created_at")]
-        public long CreatedAt { get; set; }
+        [Column("FechaCreacion")]
+        public string FechaCreacion { get; set; } = string.Empty;
 
-        [Column("updated_at")]
-        public long UpdatedAt { get; set; }
+        [Column("FechaActualizacion")]
+        public string? FechaActualizacion { get; set; }
 
         // Propiedades para compatibilidad con código existente
         [NotMapped]
@@ -48,53 +48,36 @@ namespace CentroCultural.Domain.Entities
         [NotMapped]
         public bool EsActivo { get; set; } = true;
 
+        // Para compatibilidad con código que espera Role string
         [NotMapped]
-        public DateTime FechaCreacion
+        public string RoleString
         {
-            get => CreatedAt > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(CreatedAt).DateTime : DateTime.UtcNow;
-            set => CreatedAt = ((DateTimeOffset)value).ToUnixTimeMilliseconds();
+            get => IdRol switch
+            {
+                1 => "Asistente",
+                2 => "Colaborador",
+                3 => "Administrador",
+                _ => "Asistente"
+            };
+            set => IdRol = value switch
+            {
+                "Administrador" => 3,
+                "Colaborador" => 2,
+                "Asistente" => 1,
+                _ => 1
+            };
         }
 
         [NotMapped]
-        public DateTime? FechaActualizacion
-        {
-            get => UpdatedAt > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(UpdatedAt).DateTime : null;
-            set => UpdatedAt = value.HasValue ? ((DateTimeOffset)value.Value).ToUnixTimeMilliseconds() : 0;
-        }
+        public string Role => RoleString;
 
         [NotMapped]
         public string FechaRegistro
         {
-            get => FechaCreacion.ToString("yyyy-MM-dd HH:mm:ss");
-            set => FechaCreacion = DateTime.TryParse(value, out var date) ? date : DateTime.UtcNow;
+            get => FechaCreacion;
+            set => FechaCreacion = value;
         }
 
-        // Para compatibilidad con código existente que espera IdRol numérico
-        [NotMapped]
-        public int IdRol
-        {
-            get => RoleString switch
-            {
-                "administrador" => 1,
-                "colaborador" => 2,
-                "asistente" => 3,
-                _ => 3
-            };
-            set => RoleString = value switch
-            {
-                1 => "administrador",
-                2 => "colaborador",
-                3 => "asistente",
-                _ => "asistente"
-            };
-        }
-
-        // Para compatibilidad con código que espera Role string
-        [NotMapped]
-        public string Role => RoleString;
-
-        // Navigation property para compatibilidad con código existente
-        [NotMapped]
-        public virtual Rol? Rol { get; set; }
+        // Rol navigation property removed to avoid EF issues
     }
 }

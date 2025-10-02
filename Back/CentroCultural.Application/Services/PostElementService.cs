@@ -317,8 +317,8 @@ namespace CentroCultural.Application.Services
             // Remove leading slash if present and normalize path
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
-            // Construct full path to media directory - files are in Front/Data/media
-            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..", "Front", "Data", "media");
+            // Construct full path to media directory - files are in Back/Data/media
+            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
 
             Console.WriteLine($"🔧 Debug - Current directory: {Directory.GetCurrentDirectory()}");

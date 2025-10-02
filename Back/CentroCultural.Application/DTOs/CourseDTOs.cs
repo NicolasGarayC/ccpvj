@@ -69,7 +69,7 @@ namespace CentroCultural.Application.DTOs
 
     public class ModuleDetailDto : ModuleDto
     {
-        public IEnumerable<WorkItemDto> WorkItems { get; set; } = new List<WorkItemDto>();
+        // WorkItems removed - legacy feature
     }
 
     public class ModuleSummaryDto

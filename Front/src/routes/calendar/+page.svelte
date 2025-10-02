@@ -19,15 +19,41 @@
 	// ✅ Estado de autenticación
 	let isAuthenticated = false;
 	let canCreateEvents = false;
+	let user = null;
+
+	// Function to update authentication state (same as courses module)
+	async function updateAuthState() {
+		// Verificar el token JWT
+		isAuthenticated = jwtService.isAuthenticated();
+		user = jwtService.getUser();
+
+		console.log('[DEBUG] Calendar Auth State:', {
+			isAuthenticated,
+			user,
+			userRole: user?.role,
+			canManageFromService: jwtService.canManageContent()
+		});
+
+		// Si hay token pero no usuario, intentar validarlo con el servidor
+		if (isAuthenticated && !user) {
+			const validatedUser = await jwtService.validateToken();
+			if (validatedUser) {
+				user = validatedUser;
+			} else {
+				isAuthenticated = false;
+			}
+		}
+
+		// Set canCreateEvents using the service method
+		canCreateEvents = isAuthenticated && jwtService.canManageContent();
+
+		console.log('[DEBUG] Final canCreateEvents:', canCreateEvents);
+	}
 
 	// Cargar datos iniciales
 	onMount(async () => {
-		// ✅ Verificar autenticación y permisos
-		isAuthenticated = jwtService.isAuthenticated();
-		if (isAuthenticated) {
-			const user = jwtService.getUser();
-			canCreateEvents = user?.role === 'colaborador' || user?.role === 'administrador';
-		}
+		// Update authentication state
+		await updateAuthState();
 
 		await Promise.all([
 			loadCalendarView(),
@@ -78,8 +104,17 @@
 
 	// Manejar clic en fecha
 	function handleDateClick(event: CustomEvent<{ date: Date }>) {
-		// Opcional: navegar a vista de día o abrir modal para crear evento
-		console.log('Fecha clickeada:', event.detail.date);
+		const clickedDate = event.detail.date;
+
+		// Si el usuario puede crear eventos, navegar al formulario con la fecha pre-seleccionada
+		if (canCreateEvents) {
+			const formattedDate = clickedDate.toISOString().split('T')[0];
+			goto(`/calendar/create?date=${formattedDate}`);
+		} else {
+			// Si no puede crear eventos, mostrar un mensaje o navegar a la vista de día
+			console.log('Fecha clickeada:', clickedDate);
+			// Podría mostrar eventos de ese día o un mensaje informativo
+		}
 	}
 
 	// Cambiar vista

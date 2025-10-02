@@ -3,11 +3,12 @@
 	import { contextualUploadService } from '$lib/services/contextualUploadService';
 	import type { UploadResult } from '$lib/services/contextualUploadService';
 
-	export let context: 'course' | 'post';
+	export let context: 'course' | 'post' | 'blog';
 	export let mediaType: 'image' | 'video' | 'audio' = 'image';
-	export let courseId: string;
+	export let courseId: string = '';
 	export let moduleId: string = '';
 	export let postId: string = '';
+	export let blogPostId: string = '';
 	export let currentMedia: string = '';
 	export let disabled: boolean = false;
 	export let label: string = '';
@@ -33,6 +34,13 @@
 	function getDefaultLabel(ctx: string, type: string): string {
 		if (ctx === 'course') {
 			return 'Imagen del curso';
+		} else if (ctx === 'blog') {
+			const typeMap = {
+				image: 'Imagen del artículo',
+				video: 'Video del artículo',
+				audio: 'Audio del artículo'
+			};
+			return typeMap[type] || 'Archivo multimedia';
 		} else {
 			const typeMap = {
 				image: 'Imagen',
@@ -51,6 +59,11 @@
 
 		if (context === 'post' && (!courseId || !moduleId || !postId)) {
 			error = 'Course ID, Module ID, and Post ID are required for post uploads';
+			return false;
+		}
+
+		if (context === 'blog' && !blogPostId) {
+			error = 'Blog Post ID is required for blog uploads';
 			return false;
 		}
 
@@ -85,6 +98,13 @@
 					courseId,
 					file,
 					oldImagePath: currentMedia
+				});
+			} else if (context === 'blog') {
+				result = await contextualUploadService.uploadBlogMedia({
+					blogPostId,
+					file,
+					mediaType,
+					oldFilePath: currentMedia
 				});
 			} else {
 				result = await contextualUploadService.uploadPostMedia({

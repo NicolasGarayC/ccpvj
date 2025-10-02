@@ -72,8 +72,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Servicios de almacenamiento de archivos
-builder.Services.AddScoped<CentroCultural.Application.Services.IFileStorageService, CentroCultural.Infrastructure.Services.FileStorageService>();
+// File storage services removed - using direct upload APIs instead
 
 // Configuración de archivos grandes (hasta 5GB para películas completas)
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>

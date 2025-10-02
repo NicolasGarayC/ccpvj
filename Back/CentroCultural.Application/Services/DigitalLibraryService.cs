@@ -688,7 +688,7 @@ namespace CentroCultural.Application.Services
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
             // Construct full path to media directory
-            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..", "Front", "Data", "media");
+            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
 
             Console.WriteLine($"🔧 DigitalLibraryService - Media directory: {mediaDirectory}");

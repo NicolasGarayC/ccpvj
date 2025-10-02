@@ -119,7 +119,7 @@ class CourseService extends BaseHttpService {
 	// Post methods
 	async getPost(id: string): Promise<PostDto | null> {
 		try {
-			return await this.get<PostDto>(`/workitem/${id}`);
+			return await this.get<PostDto>(`/course/posts/${id}`);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes('404')) {
 				return null;
@@ -129,50 +129,26 @@ class CourseService extends BaseHttpService {
 	}
 
 	async getModulePosts(moduleId: string): Promise<PostDto[]> {
-		return this.get<PostDto[]>(`/workitem/module/${moduleId}`);
+		return this.get<PostDto[]>(`/course/modules/${moduleId}/posts`);
 	}
 
 	async createPost(postData: CreatePostDto): Promise<PostDto> {
-		return this.post<PostDto>('/workitem', postData);
+		return this.post<PostDto>('/course/posts', postData);
 	}
 
 	async updatePost(id: string, postData: UpdatePostDto): Promise<void> {
-		return this.put(`/workitem/${id}`, postData);
+		return this.put(`/course/posts/${id}`, postData);
 	}
 
 	async deletePost(id: string): Promise<void> {
-		return this.delete(`/workitem/${id}`);
+		return this.delete(`/course/posts/${id}`);
 	}
 
 	async reorderPost(id: string, newOrderNumber: number): Promise<void> {
 		const reorderData: ReorderDto = { newOrderNumber };
-		return this.post(`/workitem/${id}/reorder`, reorderData);
+		return this.post(`/course/posts/${id}/reorder`, reorderData);
 	}
 
-	// Legacy compatibility methods (DEPRECATED - use Post methods instead)
-	async getWorkItem(id: string): Promise<PostDto | null> {
-		return this.getPost(id);
-	}
-
-	async getModuleWorkItems(moduleId: string): Promise<PostDto[]> {
-		return this.getModulePosts(moduleId);
-	}
-
-	async createWorkItem(workItemData: CreatePostDto): Promise<PostDto> {
-		return this.createPost(workItemData);
-	}
-
-	async updateWorkItem(id: string, workItemData: UpdatePostDto): Promise<void> {
-		return this.updatePost(id, workItemData);
-	}
-
-	async deleteWorkItem(id: string): Promise<void> {
-		return this.deletePost(id);
-	}
-
-	async reorderWorkItem(id: string, newOrderNumber: number): Promise<void> {
-		return this.reorderPost(id, newOrderNumber);
-	}
 
 	/**
 	 * Check authentication status - will be implemented with JWT
@@ -194,9 +170,5 @@ export type {
 	PostDto as Post,
 	CreatePostDto as CreatePost,
 	UpdatePostDto as UpdatePost,
-	// Legacy compatibility
-	PostDto as WorkItem,
-	CreatePostDto as CreateWorkItem,
-	UpdatePostDto as UpdateWorkItem,
 	CoursePagedResultDto as CoursePagedResult
 } from '$lib/types/api/course.types';

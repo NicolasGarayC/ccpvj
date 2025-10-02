@@ -1,3 +1,5 @@
+import { jwtService } from '../auth/jwtService';
+
 // Local type definitions to replace schema imports
 export interface Event {
 	id: string;
@@ -22,7 +24,6 @@ export interface Event {
 	recurrenceEndDate?: Date;
 	recurrenceDaysOfWeek?: string;
 	relatedCourseId?: string;
-	relatedBlogPostId?: string;
 	createdAt: Date;
 	updatedAt?: Date;
 	organizerId: string;
@@ -62,7 +63,6 @@ export interface EventDetail extends EventSummary {
   recurrenceEndDate?: Date;
   recurrenceDaysOfWeek?: string;
   relatedCourseId?: string;
-  relatedBlogPostId?: string;
   createdAt: Date;
   updatedAt?: Date;
   organizerId: string;
@@ -88,7 +88,6 @@ export interface CreateEventData {
   recurrenceEndDate?: Date;
   recurrenceDaysOfWeek?: string;
   relatedCourseId?: string;
-  relatedBlogPostId?: string;
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {
@@ -112,6 +111,12 @@ export interface CalendarFilters {
   endDate?: Date;
 }
 
+export interface CalendarView {
+  viewDate: Date;
+  viewType: string;
+  events: MonthViewEvent[];
+}
+
 export interface EventStats {
   totalEvents: number;
   upcomingEvents: number;
@@ -130,12 +135,12 @@ export interface EventTypeStats {
 class CalendarService {
   private baseURL = 'http://localhost:5251/api';
 
-  // TODO: Add JWT Bearer token when implemented
-  private getRequestOptions(options: RequestInit = {}): RequestInit {
+  private async getRequestOptions(options: RequestInit = {}): Promise<RequestInit> {
+    const token = jwtService.getToken();
     return {
-      // TODO: Add JWT Bearer token when implemented
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...(options.headers || {})
       },
       ...options
@@ -163,7 +168,7 @@ class CalendarService {
 
   async getUpcomingEvents(limit: number = 10): Promise<EventSummary[]> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=${limit}`, this.getRequestOptions());
+      const response = await fetch(`${this.baseURL}/calendar/upcoming?limit=${limit}`, await this.getRequestOptions());
       if (response.ok) {
         const data = await response.json();
         if (data && Array.isArray(data)) {
@@ -180,7 +185,7 @@ class CalendarService {
 
   async getAllEvents(): Promise<EventSummary[]> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar`, this.getRequestOptions());
+      const response = await fetch(`${this.baseURL}/calendar`, await this.getRequestOptions());
       if (response.ok) {
         const data = await response.json();
         if (data && Array.isArray(data)) {
@@ -197,7 +202,7 @@ class CalendarService {
 
   async getEventById(id: string): Promise<EventDetail | null> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions());
+      const response = await fetch(`${this.baseURL}/calendar/${id}`, await this.getRequestOptions());
       if (response.ok) {
         const backendEvent = await response.json();
         return {
@@ -209,7 +214,6 @@ class CalendarService {
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
           relatedCourseId: backendEvent.relatedCourseId,
-          relatedBlogPostId: backendEvent.relatedBlogPostId,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -225,9 +229,36 @@ class CalendarService {
     }
   }
 
-  async getEventsByBlogPost(blogPostId: string): Promise<EventSummary[]> {
+  async getCalendarView(viewDate: Date, viewType: string = 'month'): Promise<CalendarView> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/blog/${blogPostId}`, this.getRequestOptions());
+      const formattedDate = viewDate.toISOString().split('T')[0];
+      const response = await fetch(`${this.baseURL}/calendar/view?viewDate=${formattedDate}&viewType=${viewType}`, await this.getRequestOptions());
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          viewDate: new Date(data.viewDate),
+          viewType: data.viewType,
+          events: data.events.map((event: any) => ({
+            id: event.id,
+            title: event.title,
+            startDateTime: new Date(event.startDateTime),
+            isAllDay: event.isAllDay,
+            eventType: event.eventType,
+            isFeatured: event.isFeatured
+          }))
+        };
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error cargando vista de calendario:', error);
+      throw error;
+    }
+  }
+
+  async getFeaturedEvents(limit: number = 5): Promise<EventSummary[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/calendar/featured?limit=${limit}`, await this.getRequestOptions());
       if (response.ok) {
         const data = await response.json();
         if (data && Array.isArray(data)) {
@@ -237,14 +268,14 @@ class CalendarService {
       }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     } catch (error) {
-      console.error('Error cargando eventos por blog post:', error);
+      console.error('Error cargando eventos destacados:', error);
       throw error;
     }
   }
 
   async createEvent(data: CreateEventData): Promise<EventDetail> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar`, this.getRequestOptions({
+      const response = await fetch(`${this.baseURL}/calendar`, await this.getRequestOptions({
         method: 'POST',
         body: JSON.stringify(data)
       }));
@@ -260,7 +291,6 @@ class CalendarService {
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
           relatedCourseId: backendEvent.relatedCourseId,
-          relatedBlogPostId: backendEvent.relatedBlogPostId,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -275,7 +305,7 @@ class CalendarService {
 
   async updateEvent(data: UpdateEventData): Promise<EventDetail> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${data.id}`, this.getRequestOptions({
+      const response = await fetch(`${this.baseURL}/calendar/${data.id}`, await this.getRequestOptions({
         method: 'PUT',
         body: JSON.stringify(data)
       }));
@@ -291,7 +321,6 @@ class CalendarService {
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
           relatedCourseId: backendEvent.relatedCourseId,
-          relatedBlogPostId: backendEvent.relatedBlogPostId,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -306,7 +335,7 @@ class CalendarService {
 
   async deleteEvent(id: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseURL}/calendar/${id}`, this.getRequestOptions({
+      const response = await fetch(`${this.baseURL}/calendar/${id}`, await this.getRequestOptions({
         method: 'DELETE'
       }));
 

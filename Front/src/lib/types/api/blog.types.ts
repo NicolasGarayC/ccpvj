@@ -15,8 +15,6 @@ export interface ArticleDto {
 	isFeatured: boolean;
 	authorId: number;
 	authorName: string;
-	categoryId?: number;
-	categoryName?: string;
 	createdAt: string;
 	updatedAt?: string;
 	publishedAt?: string;
@@ -31,7 +29,6 @@ export interface CreateArticleDto {
 	isPublished: boolean;
 	isFeatured: boolean;
 	featuredImagePath?: string;
-	categoryId?: number;
 	media?: Array<{
 		mediaId: number;
 		orderIndex: number;
@@ -48,13 +45,11 @@ export interface UpdateArticleDto {
 	isPublished: boolean;
 	isFeatured: boolean;
 	featuredImagePath?: string;
-	categoryId?: number;
 }
 
 export interface ArticleSearchDto {
 	isPublished?: boolean;
 	authorId?: number;
-	categoryId?: number;
 	searchTerm?: string;
 	tags?: string;
 	page?: number;
@@ -63,30 +58,6 @@ export interface ArticleSearchDto {
 	sortBy?: string;
 }
 
-export interface BlogCategoryDto {
-	id: number;
-	name: string;
-	description?: string;
-	slug: string;
-	isActive: boolean;
-	articleCount: number;
-	createdAt: string;
-	updatedAt?: string;
-}
-
-export interface CreateBlogCategoryDto {
-	name: string;
-	description?: string;
-	slug: string;
-	isActive: boolean;
-}
-
-export interface UpdateBlogCategoryDto {
-	name: string;
-	description?: string;
-	slug: string;
-	isActive: boolean;
-}
 
 // Frontend-specific interfaces for blog
 export interface BlogPost {
@@ -102,8 +73,6 @@ export interface BlogPost {
 	publishDate: string;
 	authorId: number;
 	authorName: string;
-	categoryId?: number;
-	categoryName?: string;
 	createdAt: string;
 	updatedAt?: string;
 	viewCount?: number;
@@ -118,7 +87,6 @@ export interface BlogSearchParams {
 	page?: number;
 	pageSize?: number;
 	searchTerm?: string;
-	category?: string;
 	tags?: string[];
 	isPublished?: boolean;
 	authorId?: number;
