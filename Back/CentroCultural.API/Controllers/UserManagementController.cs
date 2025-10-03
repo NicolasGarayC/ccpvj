@@ -408,7 +408,7 @@ namespace CentroCultural.API.Controllers
                 using var connection = new SqliteConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var query = "SELECT NombreRol as Name, NombreRol as DisplayName, 'Role' as Description FROM Rol";
+                var query = "SELECT NombreRol, Descripcion FROM Rol";
                 var command = new SqliteCommand(query, connection);
 
                 var roles = new List<RoleDto>();
@@ -417,9 +417,9 @@ namespace CentroCultural.API.Controllers
                 {
                     roles.Add(new RoleDto
                     {
-                        Name = reader["Name"].ToString()!,
-                        DisplayName = reader["DisplayName"].ToString()!,
-                        Description = reader["Description"].ToString()!,
+                        Name = reader["NombreRol"].ToString()!,
+                        DisplayName = reader["NombreRol"].ToString()!,
+                        Description = reader["Descripcion"].ToString() ?? "",
                         Permissions = Array.Empty<string>() // Por ahora sin permisos específicos
                     });
                 }

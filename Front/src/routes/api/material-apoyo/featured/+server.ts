@@ -3,9 +3,12 @@ import type { RequestHandler } from './$types';
 
 const BACKEND_URL = 'http://localhost:5251/api';
 
-export const GET: RequestHandler = async ({ request }) => {
+export const GET: RequestHandler = async ({ url, request }) => {
 	try {
-		const response = await fetch(`${BACKEND_URL}/courses/my-courses`, {
+		const searchParams = url.searchParams.toString();
+		const backendUrl = `${BACKEND_URL}/materialapoyo/featured${searchParams ? `?${searchParams}` : ''}`;
+
+		const response = await fetch(backendUrl, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -23,7 +26,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return json(data);
 
 	} catch (err) {
-		console.error('Error fetching my courses:', err);
+		console.error('Error fetching featured material de apoyo:', err);
 		return error(500, 'Internal server error');
 	}
 };

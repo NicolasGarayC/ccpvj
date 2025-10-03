@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    [Table("module")]
-    public class Module
+    [Table("modulo")]
+    public class Modulo
     {
         [Key]
         [Column("id")]
@@ -34,8 +34,8 @@ namespace CentroCultural.Domain.Entities
         public long? UpdatedAt { get; set; }
 
         [Required]
-        [Column("course_id")]
-        public string CourseId { get; set; } = string.Empty;
+        [Column("material_apoyo_id")]
+        public string MaterialApoyoId { get; set; } = string.Empty;
 
     }
 }

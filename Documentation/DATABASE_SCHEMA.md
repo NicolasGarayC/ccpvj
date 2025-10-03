@@ -8,6 +8,7 @@
 - **Foreign Keys**: **HABILITADAS** con `PRAGMA foreign_keys = ON`
 - **Convención**: snake_case en BD, PascalCase en entidades C#
 - **Timestamps**: Unix timestamps (INTEGER) en todas las tablas
+- **Analytics**: Sistema de métricas implementado (Octubre 2025)
 
 ### 🧹 **Limpieza Realizada (Octubre 2025)**
 
@@ -27,14 +28,14 @@
 
 #### **Resultado**
 - **Antes**: 21 tablas (7 obsoletas/backups)
-- **Ahora**: 14 tablas funcionales
-- **Reducción**: 33% menos tablas
+- **Ahora**: 16 tablas funcionales (14 originales + 2 analytics)
+- **Analytics**: Sistema de métricas agregado (Octubre 2025)
 - **Integridad**: `PRAGMA integrity_check` - OK
 - **Foreign Keys**: `PRAGMA foreign_key_check` - Sin errores
 
 ---
 
-## 🏗️ **Estructura de Tablas (14 tablas)**
+## 🏗️ **Estructura de Tablas (16 tablas)**
 
 ### 👤 **Sistema de Autenticación**
 
@@ -386,6 +387,85 @@ CREATE TABLE library_item_collection (
 
 ---
 
+### 📊 **Sistema de Analytics (Octubre 2025)**
+
+#### `visitor_tracking` - Seguimiento de Visitantes
+```sql
+CREATE TABLE visitor_tracking (
+    id TEXT PRIMARY KEY,
+    ip_address TEXT NOT NULL,
+    user_agent TEXT,
+    visited_at INTEGER NOT NULL,
+    user_id INTEGER, -- NULL para visitantes anónimos
+    page_visited TEXT,
+    session_id TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Usuario(IdUsuario)
+);
+
+-- Índices
+CREATE INDEX idx_visitor_tracking_date ON visitor_tracking(visited_at);
+CREATE INDEX idx_visitor_tracking_ip ON visitor_tracking(ip_address);
+CREATE INDEX idx_visitor_tracking_session ON visitor_tracking(session_id);
+CREATE INDEX idx_visitor_tracking_user ON visitor_tracking(user_id);
+CREATE INDEX idx_visitor_tracking_page ON visitor_tracking(page_visited);
+```
+**Entidad Backend**: `VisitorTrackingDto`
+**Servicio**: `CentroCultural.Application.Services.AnalyticsService`
+**Propósito**: Rastrear visitantes únicos y páginas visitadas
+
+#### `download_tracking` - Seguimiento de Descargas
+```sql
+CREATE TABLE download_tracking (
+    id TEXT PRIMARY KEY,
+    resource_id TEXT NOT NULL,
+    resource_type TEXT NOT NULL, -- 'library_item', 'blog_media', 'course_media'
+    file_path TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    downloaded_by INTEGER, -- user_id o NULL para anónimos
+    downloaded_at INTEGER NOT NULL,
+    ip_address TEXT,
+    file_size INTEGER,
+    FOREIGN KEY (downloaded_by) REFERENCES Usuario(IdUsuario)
+);
+
+-- Índices
+CREATE INDEX idx_download_tracking_date ON download_tracking(downloaded_at);
+CREATE INDEX idx_download_tracking_resource ON download_tracking(resource_id, resource_type);
+CREATE INDEX idx_download_tracking_user ON download_tracking(downloaded_by);
+CREATE INDEX idx_download_tracking_ip ON download_tracking(ip_address);
+CREATE INDEX idx_download_tracking_file ON download_tracking(file_name);
+```
+**Entidad Backend**: `DownloadTrackingDto`
+**Servicio**: `CentroCultural.Application.Services.AnalyticsService`
+**Propósito**: Rastrear descargas de archivos multimedia
+
+#### **Campos de Tracking Agregados a Tablas Existentes**
+```sql
+-- Agregados a library_item
+ALTER TABLE library_item ADD COLUMN view_count INTEGER DEFAULT 0;
+ALTER TABLE library_item ADD COLUMN download_count INTEGER DEFAULT 0;
+ALTER TABLE library_item ADD COLUMN last_accessed INTEGER;
+
+-- Agregados a blog_post_element
+ALTER TABLE blog_post_element ADD COLUMN view_count INTEGER DEFAULT 0;
+ALTER TABLE blog_post_element ADD COLUMN download_count INTEGER DEFAULT 0;
+ALTER TABLE blog_post_element ADD COLUMN last_accessed INTEGER;
+
+-- Agregados a post_element
+ALTER TABLE post_element ADD COLUMN view_count INTEGER DEFAULT 0;
+ALTER TABLE post_element ADD COLUMN download_count INTEGER DEFAULT 0;
+ALTER TABLE post_element ADD COLUMN last_accessed INTEGER;
+```
+
+**API Endpoints disponibles**:
+- `GET /api/analytics/summary` - Total de visitantes, descargas y recursos
+- `GET /api/analytics/visitors?days=30` - Datos del gráfico de visitantes
+- `GET /api/analytics/top-downloads?limit=5` - Recursos más descargados
+- `POST /api/analytics/track-visitor` - Rastrear visitas (acceso anónimo)
+- `POST /api/analytics/track-download` - Rastrear descargas (acceso anónimo)
+
+---
+
 ### 🔧 **Sistema Interno**
 
 #### `__EFMigrationsHistory` - Historial de Migraciones
@@ -434,20 +514,22 @@ library_collection (n) ←─── many-to-many ───→ library_item (n)
 ## 📊 **Estado Actual de Datos**
 
 ```sql
--- Conteo de registros (aproximado después de limpieza)
+-- Conteo de registros (aproximado después de limpieza + analytics)
 Rol:                      3 roles
 Usuario:                  2+ usuarios
 course:                   datos de prueba
 module:                   datos de prueba
 module_post:              datos de prueba
-post_element:             4 elementos (limpiados de 26)
+post_element:             4 elementos (limpiados de 26) + tracking fields
 blog_post:                1+ posts de prueba
-blog_post_element:        2+ elementos
+blog_post_element:        2+ elementos + tracking fields
 event:                    datos migrados
 blog_post_event:          datos migrados
-library_item:             datos activos
+library_item:             datos activos + tracking fields
 library_collection:       colecciones activas
 library_item_collection:  relaciones activas
+visitor_tracking:         4+ registros de prueba
+download_tracking:        3+ registros de prueba
 ```
 
 ---
@@ -462,9 +544,10 @@ services.AddScoped<ICourseService, CourseService>();
 services.AddScoped<IPostElementService, PostElementService>();
 services.AddScoped<IDigitalLibraryService, DigitalLibraryService>();
 services.AddScoped<ICalendarService, CalendarService>();
+services.AddScoped<IAnalyticsService, AnalyticsService>();
 ```
 
-**Servicios Activos**: 6 servicios principales
+**Servicios Activos**: 7 servicios principales
 **Patrón**: Dependency Injection con interfaces
 
 ---

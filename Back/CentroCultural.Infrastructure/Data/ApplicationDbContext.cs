@@ -14,8 +14,8 @@ namespace CentroCultural.Infrastructure.Data
 
         public DbSet<Usuario> Usuario { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
-        public DbSet<Course> Course { get; set; }
-        public DbSet<Module> Module { get; set; }
+        public DbSet<MaterialApoyo> MaterialApoyo { get; set; }
+        public DbSet<Modulo> Modulo { get; set; }
         public DbSet<ModulePost> ModulePosts { get; set; }
         public DbSet<PostElement> PostElements { get; set; }
 
@@ -83,10 +83,10 @@ namespace CentroCultural.Infrastructure.Data
                 // Rol will be handled as an integer field, no navigation property
             });
 
-            // Configuración de Course - explicit DbContext mapping
-            modelBuilder.Entity<Course>(entity =>
+            // Configuración de MaterialApoyo - explicit DbContext mapping
+            modelBuilder.Entity<MaterialApoyo>(entity =>
             {
-                entity.ToTable("course");
+                entity.ToTable("material_apoyo");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasColumnName("id");
                 entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
@@ -99,10 +99,10 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.EducatorId).HasColumnName("educator_id").IsRequired();
             });
 
-            // Configuraci�n de Module
-            modelBuilder.Entity<Module>(entity =>
+            // Configuración de Modulo
+            modelBuilder.Entity<Modulo>(entity =>
             {
-                entity.ToTable("module");
+                entity.ToTable("modulo");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasColumnName("id");
                 entity.Property(e => e.Title).HasColumnName("title").IsRequired().HasMaxLength(200);
@@ -111,10 +111,10 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at");
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-                entity.Property(e => e.CourseId).HasColumnName("course_id").IsRequired();
+                entity.Property(e => e.MaterialApoyoId).HasColumnName("material_apoyo_id").IsRequired();
 
-                // �ndices para b�squedas y ordenamiento
-                entity.HasIndex(e => new { e.CourseId, e.OrderNumber });
+                // Índices para búsquedas y ordenamiento
+                entity.HasIndex(e => new { e.MaterialApoyoId, e.OrderNumber });
                 entity.HasIndex(e => e.IsActive);
             });
 

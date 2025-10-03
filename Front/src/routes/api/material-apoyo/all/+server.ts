@@ -5,7 +5,7 @@ const BACKEND_URL = 'http://localhost:5251/api';
 
 export const GET: RequestHandler = async ({ request }) => {
 	try {
-		const response = await fetch(`${BACKEND_URL}/course/all`, {
+		const response = await fetch(`${BACKEND_URL}/materialapoyo/all`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		return json(data);
 
 	} catch (err) {
-		console.error('Error fetching all courses:', err);
+		console.error('Error fetching all material de apoyo:', err);
 		return error(500, 'Internal server error');
 	}
 };

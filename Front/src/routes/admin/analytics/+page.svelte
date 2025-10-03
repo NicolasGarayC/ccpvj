@@ -2,13 +2,14 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { jwtService } from '$lib/services/auth/jwtService.js';
+  import { analyticsService } from '$lib/services/analytics/analyticsService.js';
   import { browser } from '$app/environment';
 
   let loading = true;
   let stats = {
-    visitors: 0,
-    downloads: 0,
-    resources: 0
+    totalVisitors: 0,
+    totalDownloads: 0,
+    totalResources: 0
   };
 
   let visitorsChart = [];
@@ -36,16 +37,27 @@
     try {
       loading = true;
 
-      // Por ahora datos simulados - luego se conectará al backend
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular carga
+      // Load real analytics data from backend
+      const [summaryData, visitorsData, topDownloadsData] = await Promise.all([
+        analyticsService.getSummary(),
+        analyticsService.getVisitorsChart(30),
+        analyticsService.getTopDownloads(5)
+      ]);
 
+      stats = summaryData;
+      visitorsChart = visitorsData.data;
+      topResources = topDownloadsData.resources;
+
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+
+      // Fallback to simulated data if API fails
       stats = {
-        visitors: 1247,
-        downloads: 583,
-        resources: 156
+        totalVisitors: 1247,
+        totalDownloads: 583,
+        totalResources: 156
       };
 
-      // Datos simulados para el gráfico de visitantes (últimos 30 días)
       visitorsChart = Array.from({ length: 30 }, (_, i) => ({
         date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES', {
           month: 'short',
@@ -54,17 +66,13 @@
         visitors: Math.floor(Math.random() * 50) + 20
       }));
 
-      // Datos simulados para top recursos
       topResources = [
-        { name: 'Manual de Guitarra Básica.pdf', downloads: 127 },
-        { name: 'Historia del Teatro Colombiano.pdf', downloads: 89 },
-        { name: 'Técnicas de Pintura.mp4', downloads: 76 },
-        { name: 'Fotografía Digital.pdf', downloads: 64 },
-        { name: 'Música Folclórica.mp3', downloads: 52 }
+        { name: 'Manual de Guitarra Básica.pdf', downloads: 127, type: 'library' },
+        { name: 'Historia del Teatro Colombiano.pdf', downloads: 89, type: 'library' },
+        { name: 'Técnicas de Pintura.mp4', downloads: 76, type: 'blog' },
+        { name: 'Fotografía Digital.pdf', downloads: 64, type: 'course' },
+        { name: 'Música Folclórica.mp3', downloads: 52, type: 'library' }
       ];
-
-    } catch (error) {
-      console.error('Error loading analytics:', error);
     } finally {
       loading = false;
     }
@@ -125,7 +133,7 @@
           </div>
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Visitantes</p>
-            <p class="text-2xl font-bold text-gray-900">{stats.visitors.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-gray-900">{stats.totalVisitors.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -137,7 +145,7 @@
           </div>
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Descargas</p>
-            <p class="text-2xl font-bold text-gray-900">{stats.downloads.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-gray-900">{stats.totalDownloads.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -149,7 +157,7 @@
           </div>
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Recursos</p>
-            <p class="text-2xl font-bold text-gray-900">{stats.resources.toLocaleString()}</p>
+            <p class="text-2xl font-bold text-gray-900">{stats.totalResources.toLocaleString()}</p>
           </div>
         </div>
       </div>

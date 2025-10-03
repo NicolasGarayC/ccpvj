@@ -166,15 +166,15 @@
 							</span>
 						</a>
 
-						<!-- Cursos -->
+						<!-- Material de Apoyo -->
 						<a
-							href="/courses"
+							href="/material-apoyo"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('courses') || 'Cursos'}"
+							title="{t('material-apoyo') || 'Material de Apoyo'}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline">{t('courses') || 'Cursos'}</span>
+								<span class="hidden lg:inline">{t('material-apoyo') || 'Material de Apoyo'}</span>
 							</span>
 						</a>
 					</div>
@@ -284,11 +284,11 @@
 						</span>
 					</a>
 
-					<!-- Cursos -->
-					<a href="/courses" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
+					<!-- Material de Apoyo -->
+					<a href="/material-apoyo" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-graduation-cap text-lg"></i>
-							<span>{t('courses') || 'Cursos'}</span>
+							<span>{t('material-apoyo') || 'Material de Apoyo'}</span>
 						</span>
 					</a>
 

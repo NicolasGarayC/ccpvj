@@ -55,6 +55,6 @@ namespace CentroCultural.Domain.Entities
 
         // Navigation property (optional - can be null if module not loaded)
         [ForeignKey("ModuleId")]
-        public virtual Module? Module { get; set; }
+        public virtual Modulo? Modulo { get; set; }
     }
 }

@@ -8,14 +8,14 @@ namespace CentroCultural.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CourseController : ControllerBase
+    public class MaterialApoyoController : ControllerBase
     {
-        private readonly ICourseService _courseService;
-        private readonly ILogger<CourseController> _logger;
+        private readonly IMaterialApoyoService _materialApoyoService;
+        private readonly ILogger<MaterialApoyoController> _logger;
 
-        public CourseController(ICourseService courseService, ILogger<CourseController> logger)
+        public MaterialApoyoController(IMaterialApoyoService materialApoyoService, ILogger<MaterialApoyoController> logger)
         {
-            _courseService = courseService;
+            _materialApoyoService = materialApoyoService;
             _logger = logger;
         }
 
@@ -25,104 +25,104 @@ namespace CentroCultural.API.Controllers
             return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
 
-        // GET: api/course
+        // GET: api/materialapoyo
         [HttpGet]
-        public async Task<ActionResult<CoursePagedResultDto>> GetCourses([FromQuery] CourseSearchDto searchDto)
+        public async Task<ActionResult<MaterialApoyoPagedResultDto>> GetMaterialApoyo([FromQuery] MaterialApoyoSearchDto searchDto)
         {
             try
             {
-                var courses = await _courseService.GetCoursesAsync(searchDto);
-                return Ok(courses);
+                var materialApoyo = await _materialApoyoService.GetMaterialApoyoAsync(searchDto);
+                return Ok(materialApoyo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo cursos");
+                _logger.LogError(ex, "Error obteniendo material de apoyo");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // GET: api/course/all
+        // GET: api/materialapoyo/all
         [HttpGet("all")]
-        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetAllCourses()
+        public async Task<ActionResult<IEnumerable<MaterialApoyoSummaryDto>>> GetAllMaterialApoyo()
         {
             try
             {
-                var courses = await _courseService.GetAllCoursesAsync();
-                return Ok(courses);
+                var materialApoyo = await _materialApoyoService.GetAllMaterialApoyoAsync();
+                return Ok(materialApoyo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo todos los cursos");
+                _logger.LogError(ex, "Error obteniendo todo el material de apoyo");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // GET: api/course/featured
+        // GET: api/materialapoyo/featured
         [HttpGet("featured")]
-        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetFeaturedCourses([FromQuery] int count = 6)
+        public async Task<ActionResult<IEnumerable<MaterialApoyoSummaryDto>>> GetFeaturedMaterialApoyo([FromQuery] int count = 6)
         {
             try
             {
-                var courses = await _courseService.GetFeaturedCoursesAsync(count);
-                return Ok(courses);
+                var materialApoyo = await _materialApoyoService.GetFeaturedMaterialApoyoAsync(count);
+                return Ok(materialApoyo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo cursos destacados");
+                _logger.LogError(ex, "Error obteniendo material de apoyo destacado");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // GET: api/course/{id}
+        // GET: api/materialapoyo/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<CourseDetailDto>> GetCourse(string id)
+        public async Task<ActionResult<MaterialApoyoDetailDto>> GetMaterialApoyo(string id)
         {
             try
             {
-                var course = await _courseService.GetCourseByIdAsync(id);
+                var materialApoyo = await _materialApoyoService.GetMaterialApoyoByIdAsync(id);
 
-                if (course == null)
-                    return NotFound($"Curso con ID {id} no encontrado");
+                if (materialApoyo == null)
+                    return NotFound($"Material de apoyo con ID {id} no encontrado");
 
-                return Ok(course);
+                return Ok(materialApoyo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo curso con ID: {CourseId}", id);
+                _logger.LogError(ex, "Error obteniendo material de apoyo con ID: {MaterialApoyoId}", id);
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        [HttpGet("{courseId}/modules")]
-        public async Task<ActionResult<IEnumerable<ModuleSummaryDto>>> GetCourseModules(string courseId)
+        [HttpGet("{materialApoyoId}/modules")]
+        public async Task<ActionResult<IEnumerable<ModuleSummaryDto>>> GetMaterialApoyoModules(string materialApoyoId)
         {
             try
             {
-                var modules = await _courseService.GetCourseModulesAsync(courseId);
+                var modules = await _materialApoyoService.GetMaterialApoyoModulesAsync(materialApoyoId);
                 return Ok(modules);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo m�dulos del curso: {CourseId}", courseId);
+                _logger.LogError(ex, "Error obteniendo módulos del material de apoyo: {MaterialApoyoId}", materialApoyoId);
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // POST: api/course
+        // POST: api/materialapoyo
         [HttpPost]
         [Authorize(Roles = "administrador")]
-        public async Task<ActionResult<CourseDto>> CreateCourse([FromBody] CreateCourseDto courseDto)
+        public async Task<ActionResult<MaterialApoyoDto>> CreateMaterialApoyo([FromBody] CreateMaterialApoyoDto materialApoyoDto)
         {
             try
             {
                 var userId = GetCurrentUserId();
 
-                var course = await _courseService.CreateCourseAsync(courseDto, userId);
-                return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
+                var materialApoyo = await _materialApoyoService.CreateMaterialApoyoAsync(materialApoyoDto, userId);
+                return CreatedAtAction(nameof(GetMaterialApoyo), new { id = materialApoyo.Id }, materialApoyo);
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid("No tienes permisos para crear cursos");
+                return Forbid("No tienes permisos para crear material de apoyo");
             }
             catch (ArgumentException ex)
             {
@@ -130,30 +130,30 @@ namespace CentroCultural.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creando curso");
+                _logger.LogError(ex, "Error creando material de apoyo");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // PUT: api/course/{id}
+        // PUT: api/materialapoyo/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "administrador")]
-        public async Task<IActionResult> UpdateCourse(string id, [FromBody] UpdateCourseDto courseDto)
+        public async Task<IActionResult> UpdateMaterialApoyo(string id, [FromBody] UpdateMaterialApoyoDto materialApoyoDto)
         {
             try
             {
                 var userId = GetCurrentUserId();
 
-                var result = await _courseService.UpdateCourseAsync(id, courseDto, userId);
+                var result = await _materialApoyoService.UpdateMaterialApoyoAsync(id, materialApoyoDto, userId);
 
                 if (!result)
-                    return NotFound($"Curso con ID {id} no encontrado");
+                    return NotFound($"Material de apoyo con ID {id} no encontrado");
 
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid("No tienes permisos para editar este curso");
+                return Forbid("No tienes permisos para editar este material de apoyo");
             }
             catch (ArgumentException ex)
             {
@@ -161,67 +161,67 @@ namespace CentroCultural.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error actualizando curso: {CourseId}", id);
+                _logger.LogError(ex, "Error actualizando material de apoyo: {MaterialApoyoId}", id);
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        // DELETE: api/course/{id}
+        // DELETE: api/materialapoyo/{id}
         [HttpDelete("{id}")]
         // [Authorize(Roles = "administrador")] // Temporarily disabled for testing
-        public async Task<IActionResult> DeleteCourse(string id)
+        public async Task<IActionResult> DeleteMaterialApoyo(string id)
         {
             try
             {
                 var userId = 1; // Hardcoded for testing
                 // var userId = GetCurrentUserId();
 
-                var result = await _courseService.DeleteCourseAsync(id, userId);
+                var result = await _materialApoyoService.DeleteMaterialApoyoAsync(id, userId);
 
                 if (!result)
-                    return NotFound($"Curso con ID {id} no encontrado");
+                    return NotFound($"Material de apoyo con ID {id} no encontrado");
 
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid("No tienes permisos para eliminar este curso");
+                return Forbid("No tienes permisos para eliminar este material de apoyo");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error eliminando curso: {CourseId}", id);
+                _logger.LogError(ex, "Error eliminando material de apoyo: {MaterialApoyoId}", id);
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
-        [HttpGet("my-courses")]
-        public async Task<ActionResult<IEnumerable<CourseSummaryDto>>> GetMyCourses()
+        [HttpGet("my-material-apoyo")]
+        public async Task<ActionResult<IEnumerable<MaterialApoyoSummaryDto>>> GetMyMaterialApoyo()
         {
             try
             {
                 var userId = GetCurrentUserId();
 
-                var courses = await _courseService.GetCoursesByEducatorAsync(userId);
-                return Ok(courses);
+                var materialApoyo = await _materialApoyoService.GetMaterialApoyoByEducatorAsync(userId);
+                return Ok(materialApoyo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo cursos del educador");
+                _logger.LogError(ex, "Error obteniendo material de apoyo del educador");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
         [HttpGet("statistics")]
-        public async Task<ActionResult<object>> GetCourseStatistics()
+        public async Task<ActionResult<object>> GetMaterialApoyoStatistics()
         {
             try
             {
-                var statistics = await _courseService.GetCourseStatisticsAsync();
+                var statistics = await _materialApoyoService.GetMaterialApoyoStatisticsAsync();
                 return Ok(statistics);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error obteniendo estadísticas de cursos");
+                _logger.LogError(ex, "Error obteniendo estadísticas de material de apoyo");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
@@ -232,7 +232,7 @@ namespace CentroCultural.API.Controllers
         {
             try
             {
-                var module = await _courseService.GetModuleByIdAsync(id);
+                var module = await _materialApoyoService.GetModuleByIdAsync(id);
 
                 if (module == null)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -254,12 +254,12 @@ namespace CentroCultural.API.Controllers
             {
                 var userId = GetCurrentUserId();
 
-                var module = await _courseService.CreateModuleAsync(moduleDto, userId);
+                var module = await _materialApoyoService.CreateModuleAsync(moduleDto, userId);
                 return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid("No tienes permisos para crear módulos en este curso");
+                return Forbid("No tienes permisos para crear módulos en este material de apoyo");
             }
             catch (ArgumentException ex)
             {
@@ -280,7 +280,7 @@ namespace CentroCultural.API.Controllers
             {
                 var userId = GetCurrentUserId();
 
-                var result = await _courseService.UpdateModuleAsync(id, moduleDto, userId);
+                var result = await _materialApoyoService.UpdateModuleAsync(id, moduleDto, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -310,7 +310,7 @@ namespace CentroCultural.API.Controllers
             {
                 var userId = GetCurrentUserId();
 
-                var result = await _courseService.DeleteModuleAsync(id, userId);
+                var result = await _materialApoyoService.DeleteModuleAsync(id, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -335,7 +335,7 @@ namespace CentroCultural.API.Controllers
             {
                 var userId = GetCurrentUserId();
 
-                var result = await _courseService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, userId);
+                var result = await _materialApoyoService.ReorderModuleAsync(id, reorderDto.NewOrderNumber, userId);
 
                 if (!result)
                     return NotFound($"Módulo con ID {id} no encontrado");
@@ -344,7 +344,7 @@ namespace CentroCultural.API.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                return Forbid("No tienes permisos para reordenar módulos en este curso");
+                return Forbid("No tienes permisos para reordenar módulos en este material de apoyo");
             }
             catch (ArgumentException ex)
             {

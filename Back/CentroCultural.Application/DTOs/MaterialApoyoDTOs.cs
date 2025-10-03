@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CentroCultural.Application.DTOs
 {
-    public class CourseDto
+    public class MaterialApoyoDto
     {
         public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
@@ -19,12 +19,12 @@ namespace CentroCultural.Application.DTOs
         public int WorkItemCount { get; set; }
     }
 
-    public class CourseDetailDto : CourseDto
+    public class MaterialApoyoDetailDto : MaterialApoyoDto
     {
         public IEnumerable<ModuleSummaryDto> Modules { get; set; } = new List<ModuleSummaryDto>();
     }
 
-    public class CreateCourseDto
+    public class CreateMaterialApoyoDto
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
@@ -32,7 +32,7 @@ namespace CentroCultural.Application.DTOs
         public string? ImagePath { get; set; }
     }
 
-    public class UpdateCourseDto
+    public class UpdateMaterialApoyoDto
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
@@ -40,7 +40,7 @@ namespace CentroCultural.Application.DTOs
         public string? ImagePath { get; set; }
     }
 
-    public class CourseSummaryDto
+    public class MaterialApoyoSummaryDto
     {
         public string Id { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
@@ -62,8 +62,8 @@ namespace CentroCultural.Application.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public string CourseId { get; set; } = string.Empty;
-        public string CourseName { get; set; } = string.Empty;
+        public string MaterialApoyoId { get; set; } = string.Empty;
+        public string MaterialApoyoName { get; set; } = string.Empty;
         public int WorkItemCount { get; set; }
     }
 
@@ -87,7 +87,7 @@ namespace CentroCultural.Application.DTOs
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; } = 0;
-        public string CourseId { get; set; } = string.Empty;
+        public string MaterialApoyoId { get; set; } = string.Empty;
     }
 
     public class UpdateModuleDto
@@ -102,7 +102,7 @@ namespace CentroCultural.Application.DTOs
         public int NewOrderNumber { get; set; }
     }
 
-    public class CourseSearchDto
+    public class MaterialApoyoSearchDto
     {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
@@ -112,9 +112,9 @@ namespace CentroCultural.Application.DTOs
         public string? SortBy { get; set; } = "created_desc"; // created_desc, created_asc, title_asc, featured_desc
     }
 
-    public class CoursePagedResultDto
+    public class MaterialApoyoPagedResultDto
     {
-        public IEnumerable<CourseSummaryDto> Courses { get; set; } = new List<CourseSummaryDto>();
+        public IEnumerable<MaterialApoyoSummaryDto> MaterialApoyo { get; set; } = new List<MaterialApoyoSummaryDto>();
         public int TotalCount { get; set; }
         public int Page { get; set; }
         public int PageSize { get; set; }

@@ -7,7 +7,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 	try {
 		// Forward all query parameters to the backend
 		const searchParams = url.searchParams.toString();
-		const backendUrl = `${BACKEND_URL}/course${searchParams ? `?${searchParams}` : ''}`;
+		const backendUrl = `${BACKEND_URL}/materialapoyo${searchParams ? `?${searchParams}` : ''}`;
 
 		const response = await fetch(backendUrl, {
 			method: 'GET',
@@ -28,7 +28,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		return json(data);
 
 	} catch (err) {
-		console.error('Error fetching courses:', err);
+		console.error('Error fetching material de apoyo:', err);
 		return error(500, 'Internal server error');
 	}
 };
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const body = await request.json();
 
 		// Forward the request to the backend
-		const response = await fetch(`${BACKEND_URL}/course`, {
+		const response = await fetch(`${BACKEND_URL}/materialapoyo`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json(data);
 
 	} catch (err) {
-		console.error('Error creating course:', err);
+		console.error('Error creating material de apoyo:', err);
 		return error(500, 'Internal server error');
 	}
 };

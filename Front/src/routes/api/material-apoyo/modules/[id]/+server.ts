@@ -5,13 +5,10 @@ const BACKEND_URL = 'http://localhost:5251/api';
 
 export const GET: RequestHandler = async ({ params, request }) => {
 	try {
-		const courseId = params.id;
-
-		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
+		const response = await fetch(`${BACKEND_URL}/materialapoyo/modules/${params.id}`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
-				// Forward any cookies from the frontend to the backend
 				'Cookie': request.headers.get('cookie') || ''
 			},
 			credentials: 'include'
@@ -19,28 +16,26 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
 		if (!response.ok) {
 			const errorText = await response.text();
-			return error(response.status, errorText || 'Backend error');
+			return error(response.status, errorText || 'Module not found');
 		}
 
 		const data = await response.json();
 		return json(data);
 
 	} catch (err) {
-		console.error('Error fetching course:', err);
+		console.error('Error fetching module:', err);
 		return error(500, 'Internal server error');
 	}
 };
 
 export const PUT: RequestHandler = async ({ params, request }) => {
 	try {
-		const courseId = params.id;
 		const body = await request.json();
 
-		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
+		const response = await fetch(`${BACKEND_URL}/materialapoyo/modules/${params.id}`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
-				// Forward any cookies from the frontend to the backend
 				'Cookie': request.headers.get('cookie') || ''
 			},
 			body: JSON.stringify(body),
@@ -48,44 +43,38 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		});
 
 		if (!response.ok) {
-			const errorText = await response.text();
-			return error(response.status, errorText || 'Backend error');
+			const errorData = await response.text();
+			return error(response.status, errorData || 'Backend error');
 		}
 
-		const data = await response.json();
-		return json(data);
+		return new Response(null, { status: 204 });
 
 	} catch (err) {
-		console.error('Error updating course:', err);
+		console.error('Error updating module:', err);
 		return error(500, 'Internal server error');
 	}
 };
 
 export const DELETE: RequestHandler = async ({ params, request }) => {
 	try {
-		const courseId = params.id;
-
-		// Call backend to delete course (this will handle DB cleanup and file deletion)
-		const response = await fetch(`${BACKEND_URL}/course/${courseId}`, {
+		const response = await fetch(`${BACKEND_URL}/materialapoyo/modules/${params.id}`, {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
-				// Forward any cookies from the frontend to the backend
 				'Cookie': request.headers.get('cookie') || ''
 			},
 			credentials: 'include'
 		});
 
 		if (!response.ok) {
-			const errorText = await response.text();
-			return error(response.status, errorText || 'Backend error');
+			const errorData = await response.text();
+			return error(response.status, errorData || 'Backend error');
 		}
 
-		// Return success without body (204 No Content from backend)
 		return new Response(null, { status: 204 });
 
 	} catch (err) {
-		console.error('Error deleting course:', err);
+		console.error('Error deleting module:', err);
 		return error(500, 'Internal server error');
 	}
 };

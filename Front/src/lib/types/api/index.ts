@@ -6,8 +6,11 @@
 // Auth types
 export * from './auth.types';
 
-// Course types
+// Course types (legacy)
 export * from './course.types';
+
+// Material Apoyo types
+export * from './materialApoyo.types';
 
 // Blog types
 export * from './blog.types';

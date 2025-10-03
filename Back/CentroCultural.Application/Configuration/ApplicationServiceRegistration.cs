@@ -10,10 +10,11 @@ namespace CentroCultural.Application.Configuration
         {
             services.AddScoped<IBlogService, BlogService>();
             services.AddScoped<IBlogPostElementService, BlogPostElementService>();
-            services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<IMaterialApoyoService, MaterialApoyoService>();
             services.AddScoped<IPostElementService, PostElementService>();
             services.AddScoped<IDigitalLibraryService, DigitalLibraryService>();
             services.AddScoped<ICalendarService, CalendarService>();
+            services.AddScoped<IAnalyticsService, AnalyticsService>();
 
             return services;
         }

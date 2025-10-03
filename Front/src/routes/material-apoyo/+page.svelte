@@ -1,42 +1,42 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { courseService } from '$lib/services/courseService';
-  import type { CourseSummaryDto } from '$lib/types/api/course.types';
-  import type { CourseSearchParams } from '$lib/services/courseService';
-  import CourseCard from '$lib/components/course/CourseCard.svelte';
+  import { materialApoyoService } from '$lib/services/materialApoyoService';
+  import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
+  import type { MaterialApoyoSearchParams } from '$lib/services/materialApoyoService';
+  import MaterialApoyoCard from '$lib/components/material-apoyo/MaterialApoyoCard.svelte';
 
   // Estado de la aplicación
-  let courses: CourseSummaryDto[] = [];
-  let filteredCourses: CourseSummaryDto[] = [];
+  let materialApoyo: MaterialApoyoSummaryDto[] = [];
+  let filteredMaterialApoyo: MaterialApoyoSummaryDto[] = [];
   let isLoading = true;
   let error: string | null = null;
-  
+
   // Permisos de usuario
   let isAuthenticated = false;
   let canManage = false;
-  
+
   // Filtros y búsqueda
   let searchTerm = '';
   let showFeaturedOnly = false;
   let sortBy = 'createdAt';
   let sortOrder: 'asc' | 'desc' = 'desc';
-  
+
   // Variables para paginación
   let currentPage = 1;
   let itemsPerPage = 12;
-  let totalCourses = 0;
-  
-  // Calcular cursos filtrados y paginados
+  let totalMaterialApoyo = 0;
+
+  // Calcular material de apoyo filtrado y paginado
   $: {
-    filteredCourses = filterCourses(courses, searchTerm, showFeaturedOnly);
-    filteredCourses = sortCourses(filteredCourses, sortBy, sortOrder);
-    totalCourses = filteredCourses.length;
+    filteredMaterialApoyo = filterMaterialApoyo(materialApoyo, searchTerm, showFeaturedOnly);
+    filteredMaterialApoyo = sortMaterialApoyo(filteredMaterialApoyo, sortBy, sortOrder);
+    totalMaterialApoyo = filteredMaterialApoyo.length;
   }
-  
-  $: paginatedCourses = paginateCourses(filteredCourses, currentPage, itemsPerPage);
-  $: totalPages = Math.ceil(totalCourses / itemsPerPage);
-  
+
+  $: paginatedMaterialApoyo = paginateMaterialApoyo(filteredMaterialApoyo, currentPage, itemsPerPage);
+  $: totalPages = Math.ceil(totalMaterialApoyo / itemsPerPage);
+
   onMount(async () => {
     // Verificar permisos de usuario
     isAuthenticated = jwtService.isAuthenticated();
@@ -44,43 +44,43 @@
       const user = jwtService.getUser();
       canManage = user?.role === 'colaborador' || user?.role === 'administrador';
     }
-    
+
     // Cargar datos
-    await loadCourses();
+    await loadMaterialApoyo();
   });
-  
-  async function loadCourses() {
+
+  async function loadMaterialApoyo() {
     try {
       isLoading = true;
       error = null;
-      courses = await courseService.getAllCourses();
-      console.log('Courses loaded:', courses);
-      console.log('First course:', courses[0]);
+      materialApoyo = await materialApoyoService.getAllMaterialApoyo();
+      console.log('Material apoyo loaded:', materialApoyo);
+      console.log('First material apoyo:', materialApoyo[0]);
     } catch (e: unknown) {
-      error = 'Error al cargar los cursos';
+      error = 'Error al cargar el material de apoyo';
       console.error(error, e);
     } finally {
       isLoading = false;
     }
   }
-  
-  
-  function filterCourses(courses: CourseSummaryDto[], search: string, featuredOnly: boolean): CourseSummaryDto[] {
-    console.log('Filtering courses:', courses.length, 'courses');
-    const filtered = courses.filter(course => {
-      console.log('Course:', course.title, 'isActive:', course.isActive);
+
+
+  function filterMaterialApoyo(materialApoyo: MaterialApoyoSummaryDto[], search: string, featuredOnly: boolean): MaterialApoyoSummaryDto[] {
+    console.log('Filtering material apoyo:', materialApoyo.length, 'items');
+    const filtered = materialApoyo.filter(item => {
+      console.log('Material apoyo:', item.title, 'isActive:', item.isActive);
       // Temporary fix: don't filter by isActive if it's undefined
-      if (course.isActive !== undefined && !course.isActive) {
-        console.log('Course filtered out due to isActive:', course.title);
+      if (item.isActive !== undefined && !item.isActive) {
+        console.log('Material apoyo filtered out due to isActive:', item.title);
         return false;
       }
 
       // Filtro por búsqueda de texto
       if (search) {
         const searchLower = search.toLowerCase();
-        const matchesTitle = course.title.toLowerCase().includes(searchLower);
-        const matchesDescription = course.description.toLowerCase().includes(searchLower);
-        const matchesEducator = course.educatorName?.toLowerCase().includes(searchLower) || false;
+        const matchesTitle = item.title.toLowerCase().includes(searchLower);
+        const matchesDescription = item.description.toLowerCase().includes(searchLower);
+        const matchesEducator = item.educatorName?.toLowerCase().includes(searchLower) || false;
 
         if (!matchesTitle && !matchesDescription && !matchesEducator) {
           return false;
@@ -88,16 +88,16 @@
       }
 
       // Filtro por destacados
-      if (featuredOnly && !course.isFeatured) return false;
+      if (featuredOnly && !item.isFeatured) return false;
 
       return true;
     });
-    console.log('Filtered result:', filtered.length, 'courses');
+    console.log('Filtered result:', filtered.length, 'items');
     return filtered;
   }
-  
-  function sortCourses(courses: CourseSummaryDto[], sortBy: string, order: 'asc' | 'desc'): CourseSummaryDto[] {
-    return [...courses].sort((a, b) => {
+
+  function sortMaterialApoyo(materialApoyo: MaterialApoyoSummaryDto[], sortBy: string, order: 'asc' | 'desc'): MaterialApoyoSummaryDto[] {
+    return [...materialApoyo].sort((a, b) => {
       let comparison = 0;
 
       switch (sortBy) {
@@ -118,30 +118,30 @@
       return order === 'asc' ? comparison : -comparison;
     });
   }
-  
-  function paginateCourses(courses: CourseSummaryDto[], page: number, perPage: number): CourseSummaryDto[] {
+
+  function paginateMaterialApoyo(materialApoyo: MaterialApoyoSummaryDto[], page: number, perPage: number): MaterialApoyoSummaryDto[] {
     const start = (page - 1) * perPage;
-    return courses.slice(start, start + perPage);
+    return materialApoyo.slice(start, start + perPage);
   }
-  
+
   function handleSearch() {
     currentPage = 1; // Reset a primera página cuando se busca
   }
-  
+
   function clearFilters() {
     searchTerm = '';
     showFeaturedOnly = false;
     currentPage = 1;
   }
 
-  function handleCourseDeleted(event: CustomEvent<string>) {
-    const deletedCourseId = event.detail;
-    courses = courses.filter(course => course.id !== deletedCourseId);
+  function handleMaterialApoyoDeleted(event: CustomEvent<string>) {
+    const deletedMaterialApoyoId = event.detail;
+    materialApoyo = materialApoyo.filter(item => item.id !== deletedMaterialApoyoId);
   }
 </script>
 
 <svelte:head>
-  <title>Cursos - Centro Cultural Víctor Jara</title>
+  <title>Material de Apoyo - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -158,21 +158,21 @@
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
           <span class="text-4xl mr-3">🚀</span>
           <span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-            Cursos Increíbles
+            Material de Apoyo
           </span>
         </h1>
         <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-medium mb-8">
-          🌟 ¡Descubre un mundo de aprendizaje súper genial! Encuentra cursos increíbles que te ayudarán a aprender, crear y brillar como nunca antes
+          🌟 ¡Descubre un mundo de aprendizaje súper genial! Encuentra material de apoyo increíble que te ayudará a aprender, crear y brillar como nunca antes
         </p>
 
         {#if canManage}
           <div class="mt-8">
             <a
-              href="/courses/create"
+              href="/material-apoyo/create"
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-10 py-5 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold border-2 border-orange-400"
             >
               <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear Curso Genial
+              Crear Material de Apoyo
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
@@ -186,7 +186,7 @@
         <span class="text-3xl">📈</span>
         ¡Estadísticas Increíbles!
       </h2>
-      <p class="text-gray-600 font-medium">Mira todo lo genial que puedes aprender en nuestros cursos</p>
+      <p class="text-gray-600 font-medium">Mira todo lo genial que puedes aprender con nuestro material de apoyo</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -197,9 +197,9 @@
           <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
             <span class="text-2xl">🎓</span>
           </div>
-          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">Total Cursos</p>
-          <p class="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">{courses.length}</p>
-          <p class="text-xs text-emerald-600 font-semibold">¡Cursos geniales! 🚀</p>
+          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">Total Material</p>
+          <p class="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">{materialApoyo.length}</p>
+          <p class="text-xs text-emerald-600 font-semibold">¡Material genial! 🚀</p>
         </div>
       </div>
 
@@ -211,7 +211,7 @@
             <span class="text-2xl">⭐</span>
           </div>
           <p class="text-sm font-bold text-orange-700 mb-2 uppercase tracking-wide">Destacados</p>
-          <p class="text-4xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">{courses.filter(c => c.isFeatured).length}</p>
+          <p class="text-4xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">{materialApoyo.filter(c => c.isFeatured).length}</p>
           <p class="text-xs text-orange-600 font-semibold">¡Súper populares! 🏆</p>
         </div>
       </div>
@@ -224,7 +224,7 @@
             <span class="text-2xl">📚</span>
           </div>
           <p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Módulos</p>
-          <p class="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">{courses.reduce((acc, course) => acc + (course.moduleCount || 0), 0)}</p>
+          <p class="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">{materialApoyo.reduce((acc, item) => acc + (item.moduleCount || 0), 0)}</p>
           <p class="text-xs text-blue-600 font-semibold">¡Módulos increíbles! 🌈</p>
         </div>
       </div>
@@ -241,9 +241,9 @@
         <div class="text-center mb-8">
           <h2 class="text-2xl font-black text-gray-800 mb-2 flex items-center justify-center gap-3">
             <span class="text-2xl">🎯</span>
-            ¡Encuentra Tu Curso Perfecto!
+            ¡Encuentra Tu Material Perfecto!
           </h2>
-          <p class="text-gray-600 font-medium">Explora entre todos nuestros cursos súper geniales</p>
+          <p class="text-gray-600 font-medium">Explora entre todo nuestro material de apoyo súper genial</p>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
@@ -252,7 +252,7 @@
             <div class="relative group">
               <input
                 type="text"
-                placeholder="🎓 Busca cursos increíbles, educadores geniales..."
+                placeholder="🎓 Busca material increíble, educadores geniales..."
                 bind:value={searchTerm}
                 on:input={handleSearch}
                 class="w-full pl-16 pr-8 py-5 text-lg border-3 border-emerald-200 rounded-2xl focus:ring-6 focus:ring-emerald-300/30 focus:border-emerald-400 transition-all duration-300 bg-white/80 focus:bg-white shadow-lg font-medium placeholder:text-gray-400"
@@ -330,19 +330,19 @@
         <!-- Resultados info juvenil -->
         <div class="mt-8 pt-6 border-t-2 border-emerald-100">
           <div class="text-center">
-            {#if filteredCourses.length === 0}
+            {#if filteredMaterialApoyo.length === 0}
               <p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
                 <span class="text-2xl">😔</span>
-                No encontramos cursos súper geniales
+                No encontramos material de apoyo súper genial
               </p>
             {:else}
               <div class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl px-6 py-3">
                 <span class="text-xl">🎯</span>
                 <p class="font-bold text-gray-700">
-                  Mostrando <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredCourses.length)}</span>
-                  de <span class="text-teal-600 font-black">{filteredCourses.length}</span> cursos increíbles
+                  Mostrando <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMaterialApoyo.length)}</span>
+                  de <span class="text-teal-600 font-black">{filteredMaterialApoyo.length}</span> materiales increíbles
                   {#if searchTerm || showFeaturedOnly}
-                    <span class="text-gray-500">(de {courses.length} totales)</span>
+                    <span class="text-gray-500">(de {materialApoyo.length} totales)</span>
                   {/if}
                 </p>
               </div>
@@ -383,17 +383,17 @@
           </div>
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">📚</span>
-            ¡Cargando Cursos Increíbles!
+            ¡Cargando Material Increíble!
           </h3>
           <p class="text-lg text-gray-600 mb-4 font-medium">Preparando la mejor experiencia de aprendizaje para ti</p>
           <div class="flex items-center justify-center gap-2 text-emerald-600 font-bold">
             <span class="animate-pulse">✨</span>
-            <span>Buscando cursos súper geniales</span>
+            <span>Buscando material súper genial</span>
             <span class="animate-pulse">✨</span>
           </div>
         </div>
       </div>
-    {:else if paginatedCourses.length === 0}
+    {:else if paginatedMaterialApoyo.length === 0}
       <!-- Estado vacío súper juvenil -->
       <div class="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-gray-200 p-16 overflow-hidden">
         <!-- Elementos decorativos -->
@@ -406,7 +406,7 @@
             <div class="relative inline-block">
               <div class="w-32 h-32 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-full flex items-center justify-center mx-auto shadow-lg mb-4">
                 <span class="text-6xl">
-                  {#if filteredCourses.length === 0 && courses.length > 0}
+                  {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
                     🤔
                   {:else}
                     🎓
@@ -421,24 +421,24 @@
           </div>
 
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
-            {#if filteredCourses.length === 0 && courses.length > 0}
-              🤷‍♂️ ¡Oops! No encontramos cursos súper geniales
+            {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
+              🤷‍♂️ ¡Oops! No encontramos material de apoyo súper genial
             {:else}
-              📖 Esperando cursos increíbles
+              📖 Esperando material increíble
             {/if}
           </h3>
 
           <p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
-            {#if filteredCourses.length === 0 && courses.length > 0}
-              🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar cursos súper geniales.
+            {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
+              🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar material súper genial.
             {:else if canManage}
-              🌟 ¡Sé el primero en crear conocimiento increíble! Agrega el primer curso y dale vida a esta plataforma.
+              🌟 ¡Sé el primero en crear conocimiento increíble! Agrega el primer material de apoyo y dale vida a esta plataforma.
             {:else}
-              ⏰ Pronto tendremos cursos súper geniales para que aprendas cosas increíbles y te conviertas en un experto.
+              ⏰ Pronto tendremos material de apoyo súper genial para que aprendas cosas increíbles y te conviertas en un experto.
             {/if}
           </p>
 
-          {#if filteredCourses.length === 0 && courses.length > 0}
+          {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
             <button
               on:click={clearFilters}
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
@@ -449,34 +449,34 @@
             </button>
           {:else if canManage}
             <a
-              href="/courses/create"
+              href="/material-apoyo/create"
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
             >
               <span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear el primer curso genial
+              Crear el primer material de apoyo
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           {/if}
         </div>
       </div>
     {:else}
-      <!-- Grid de cursos súper juvenil -->
+      <!-- Grid de material de apoyo súper juvenil -->
       <div class="mb-8">
         <div class="text-center mb-10">
           <h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">🎯</span>
-            ¡Cursos Increíbles Esperándote!
+            ¡Material Increíble Esperándote!
           </h2>
           <p class="text-gray-600 font-medium">Elige tu próxima aventura de aprendizaje</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {#each paginatedCourses as course (course.id)}
-            <div class="course-card-wrapper">
-              <CourseCard
-                {course}
+          {#each paginatedMaterialApoyo as materialApoyoItem (materialApoyoItem.id)}
+            <div class="material-apoyo-card-wrapper">
+              <MaterialApoyoCard
+                materialApoyo={materialApoyoItem}
                 showActions={canManage}
-                on:deleted={handleCourseDeleted}
+                on:deleted={handleMaterialApoyoDeleted}
               />
             </div>
           {/each}
@@ -494,7 +494,7 @@
           >
             <i class="fas fa-angle-double-left text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
-          
+
           <button
             on:click={() => currentPage = Math.max(1, currentPage - 1)}
             disabled={currentPage === 1}
@@ -509,11 +509,11 @@
             const end = Math.min(totalPages, start + 4);
             return start + i;
           }).filter(page => page <= totalPages) as page}
-            <button 
+            <button
               on:click={() => currentPage = page}
               class="px-4 py-3 border-2 rounded-xl transition-all duration-300 font-semibold text-lg min-w-[3rem] {
-                currentPage === page 
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent shadow-lg' 
+                currentPage === page
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent shadow-lg'
                   : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-emerald-300 text-gray-700 hover:text-emerald-600'
               }"
             >
@@ -529,7 +529,7 @@
           >
             <i class="fas fa-angle-right text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
-          
+
           <button
             on:click={() => currentPage = totalPages}
             disabled={currentPage === totalPages}
@@ -546,12 +546,12 @@
 
 <style>
 
-  .course-card-wrapper {
+  .material-apoyo-card-wrapper {
     height: 100%;
     transition: transform 0.2s ease-in-out;
   }
 
-  .course-card-wrapper:hover {
+  .material-apoyo-card-wrapper:hover {
     transform: translateY(-4px);
   }
 

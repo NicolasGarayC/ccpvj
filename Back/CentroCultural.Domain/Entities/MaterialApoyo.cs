@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CentroCultural.Domain.Entities
 {
-    [Table("course")]
-    public class Course
+    [Table("material_apoyo")]
+    public class MaterialApoyo
     {
         [Column("id")]
         public string Id { get; set; } = string.Empty;
