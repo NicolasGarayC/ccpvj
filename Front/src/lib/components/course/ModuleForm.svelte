@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService, type CreateModuleDto, type UpdateModuleDto, type Module } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import type { CreateModuleDto, UpdateModuleDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
 
-	export let module: Module | null = null; // null for create, Module for edit
-	export let courseId: string;
+	export let module: ModuleSummaryDto | null = null; // null for create, Module for edit
+	export let materialApoyoId: string;
 	export let loading = false;
 	export let visible = false;
 
@@ -18,7 +19,7 @@
 
 	let formErrors: Record<string, string> = {};
 	let submitting = false;
-	let existingModules: Module[] = [];
+	let existingModules: ModuleSummaryDto[] = [];
 
 	onMount(async () => {
 		if (visible) {
@@ -33,7 +34,7 @@
 
 	async function loadExistingModules() {
 		try {
-			existingModules = await courseService.getCourseModules(courseId);
+			existingModules = await materialApoyoService.getMaterialApoyoModules(materialApoyoId);
 		} catch (err) {
 			console.error('Error loading existing modules:', err);
 		}
@@ -73,7 +74,7 @@
 		}
 
 		submitting = true;
-		
+
 		try {
 			if (isEditing && module) {
 				const updateData: UpdateModuleDto = {
@@ -82,17 +83,17 @@
 					orderNumber: formData.orderNumber
 				};
 
-				await courseService.updateModule(module.id, updateData);
+				await materialApoyoService.updateModule(module.id, updateData);
 				dispatch('success', { type: 'update', id: module.id, data: updateData });
 			} else {
 				const createData: CreateModuleDto = {
 					title: formData.title.trim(),
 					description: formData.description.trim() || undefined,
 					orderNumber: formData.orderNumber,
-					courseId: courseId
+					materialApoyoId: materialApoyoId
 				};
 
-				const newModule = await courseService.createModule(createData);
+				const newModule = await materialApoyoService.createModule(createData);
 				dispatch('success', { type: 'create', module: newModule });
 			}
 		} catch (error) {
@@ -205,7 +206,7 @@
 
 					<div class="form-group">
 						<label for="orderNumber">
-							Posición en el curso <span class="required">*</span>
+							Posición en el material de apoyo <span class="required">*</span>
 						</label>
 						<div class="order-input-container">
 							<input

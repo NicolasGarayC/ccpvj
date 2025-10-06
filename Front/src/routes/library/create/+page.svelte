@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import type { CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
+	import { contextualUploadService } from '$lib/services/contextualUploadService';
 
 	// Estado del formulario
 	// Campo separado para el input de tags como string
@@ -32,6 +33,10 @@
 	let loading = false;
 	let errors: Record<string, string> = {};
 	let success = false;
+
+	// Track uploaded files for cleanup
+	let uploadedFilePath: string | null = null;
+	let itemSaved = false;
 	let availableCategories: string[] = [];
 	let categoryOptions: Array<{value: string, label: string, description: string}> = [];
 
@@ -105,6 +110,14 @@
 		}
 	});
 
+	onDestroy(async () => {
+		// Cleanup orphan files when leaving page without saving
+		if (uploadedFilePath && !itemSaved) {
+			console.log('🧹 Page destroyed without save - cleaning up orphan file');
+			await contextualUploadService.cleanupOrphanFiles([uploadedFilePath]);
+		}
+	});
+
 	function handleFileChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
@@ -159,6 +172,9 @@
 					category: formData.category
 				});
 
+				// Track uploaded file for cleanup
+				uploadedFilePath = uploadResult.relativePath || uploadResult.url.replace('/media/', '');
+
 				formData.filePath = uploadResult.url;
 				formData.fileType = uploadResult.fileType;
 				formData.fileSize = uploadResult.size;
@@ -170,6 +186,9 @@
 			// Crear el recurso en la base de datos
 			const newItem = await digitalLibraryService.createItem(formData);
 
+			// Mark as saved successfully
+			itemSaved = true;
+
 			success = true;
 			setTimeout(() => {
 				goto('/library');
@@ -178,6 +197,13 @@
 		} catch (error) {
 			console.error('Error creating library item:', error);
 			errors.general = 'Error al crear el recurso. Por favor, inténtalo de nuevo.';
+
+			// Cleanup uploaded file on error
+			if (uploadedFilePath && !itemSaved) {
+				console.log('🧹 Cleaning up uploaded file due to error');
+				await contextualUploadService.cleanupOrphanFiles([uploadedFilePath]);
+				uploadedFilePath = null;
+			}
 		} finally {
 			loading = false;
 			isUploading = false;
@@ -490,17 +516,17 @@
 							</select>
 						</div>
 
-						<!-- ISBN -->
+						<!-- Subcategoría -->
 						<div>
-							<label for="isbn" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-								<span>📚</span>
-								ISBN (opcional)
+							<label for="subcategory" class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+								<span>📂</span>
+								Subcategoría (opcional)
 							</label>
 							<input
-								id="isbn"
+								id="subcategory"
 								type="text"
-								bind:value={formData.isbn}
-								placeholder="978-3-16-148410-0"
+								bind:value={formData.subcategory}
+								placeholder="Ej: Poesía, Narrativa..."
 								class="w-full p-4 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-300/20 focus:border-green-400 transition-all duration-300 bg-white font-medium"
 							>
 						</div>

@@ -165,21 +165,21 @@ tests/ (estructura sugerida)
 **Principio Clave**: Nunca archivos huérfanos
 
 ```
-Data/media/[context]/[content-id]/files
+Back/Data/media/[context]/[content-id]/files
              ↓
-    courses/matematicas-basica-001/banner.jpg
-    workitems/algebra-ecuaciones-001/diagram.png
-    workitems/algebra-ecuaciones-001/video.mp4
-    blog/post-nuevos-talleres/featured.jpg
-    events/evento-navidad-2024/poster.jpg
+    material-apoyo/{id}/banner.jpg
+    material-apoyo/{id}/modules/{moduleId}/posts/{postId}/images/diagram.png
+    material-apoyo/{id}/modules/{moduleId}/posts/{postId}/videos/video.mp4
+    library/{itemId}_{timestamp}_{nombre}.ext  (Biblioteca Digital)
+    blog/{postId}/featured.jpg
 ```
 
 ### 🗂️ Convenciones de Archivos
 - **Scripts**: `.sh` en `/Data/scripts/` con permisos ejecutables
-- **SQL**: `.sql` en `/Data/` 
+- **SQL**: `.sql` en `/Data/`
 - **Documentación**: `.md` en `/Documentation/`
 - **Configuraciones**: En `/Infraestructure/`
-- **Media**: En `/Data/media/[context]/`
+- **Media**: En `/Back/Data/media/[context]/`
 
 ---
 

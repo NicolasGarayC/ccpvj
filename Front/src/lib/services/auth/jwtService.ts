@@ -1,4 +1,6 @@
 import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
+import { authModalStore } from '$lib/stores/authStore';
 
 export interface JwtUser {
     id: number;
@@ -124,6 +126,7 @@ class JwtService {
         if (this.isTokenExpired(token)) {
             console.log('[DEBUG] Token expired, logging out automatically');
             this.removeToken(); // Auto-logout if token is expired
+            authModalStore.showSessionExpired(); // Show modal
             return false;
         }
 

@@ -2,9 +2,10 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { courseService, type Course } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import type { MaterialApoyoDto } from '$lib/types/api/materialApoyo.types';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import CourseForm from '$lib/components/course/CourseForm.svelte';
+	import MaterialApoyoForm from '$lib/components/course/MaterialApoyoForm.svelte';
 
 	let course: Course | null = null;
 	let loading = true;
@@ -37,7 +38,7 @@
 		try {
 			loading = true;
 			error = '';
-			course = await courseService.getCourse(courseId);
+			course = await materialApoyoService.getMaterialApoyoById(courseId);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error cargando el curso';
 			console.error('Error loading course:', err);
@@ -49,7 +50,7 @@
 	function handleSuccess(event: CustomEvent<{type: string, id?: string}>) {
 		const { type } = event.detail;
 		if (type === 'update') {
-			goto(`/courses/${courseId}`, { replaceState: true });
+			goto(`/material-apoyo/${courseId}`, { replaceState: true });
 		}
 	}
 
@@ -61,12 +62,12 @@
 	}
 
 	function handleCancel() {
-		goto(`/courses/${courseId}`);
+		goto(`/material-apoyo/${courseId}`);
 	}
 </script>
 
 <svelte:head>
-	<title>Editar Curso - Centro Cultural Víctor Jara</title>
+	<title>Editar Material de Apoyo - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -77,11 +78,11 @@
 				<h1 class="text-3xl md:text-4xl font-black mb-4">
 					<span class="text-2xl mr-3">✏️</span>
 					<span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-						Editar Curso
+						Editar Material de Apoyo
 					</span>
 				</h1>
 				<p class="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
-					Modifica los detalles del curso para mantener el contenido actualizado y atractivo para los estudiantes
+					Modifica los detalles del material de apoyo para mantener el contenido actualizado y útil
 				</p>
 			</div>
 		</div>
@@ -91,8 +92,8 @@
 			<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-16">
 				<div class="text-center">
 					<div class="w-16 h-16 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-6"></div>
-					<h3 class="text-xl font-bold text-gray-800 mb-2">Cargando curso...</h3>
-					<p class="text-gray-600">Obteniendo los detalles del curso para editar</p>
+					<h3 class="text-xl font-bold text-gray-800 mb-2">Cargando material...</h3>
+					<p class="text-gray-600">Obteniendo los detalles del material de apoyo para editar</p>
 				</div>
 			</div>
 		{:else if error && !course}
@@ -105,7 +106,7 @@
 							<line x1="9" y1="9" x2="15" y2="15"></line>
 						</svg>
 					</div>
-					<h3 class="text-xl font-bold text-red-800 mb-4">Error al cargar el curso</h3>
+					<h3 class="text-xl font-bold text-red-800 mb-4">Error al cargar el material</h3>
 					<p class="text-red-600 mb-6">{error}</p>
 					<div class="flex gap-4 justify-center">
 						<button
@@ -116,9 +117,9 @@
 						</button>
 						<button
 							class="px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-colors font-semibold"
-							on:click={() => goto('/courses')}
+							on:click={() => goto('/material-apoyo')}
 						>
-							Volver a cursos
+							Volver a Material de Apoyo
 						</button>
 					</div>
 				</div>
@@ -126,7 +127,7 @@
 		{:else if course}
 			<!-- Form -->
 			<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 overflow-hidden">
-				<CourseForm
+				<MaterialApoyoForm
 					{course}
 					on:success={handleSuccess}
 					on:error={handleError}
@@ -153,12 +154,12 @@
 		<div class="mt-8 text-center">
 			<button
 				class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-				on:click={() => goto('/courses')}
+				on:click={() => goto('/material-apoyo')}
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="15,18 9,12 15,6"></polyline>
 				</svg>
-				Volver a la lista de cursos
+				Volver a Material de Apoyo
 			</button>
 		</div>
 	</div>

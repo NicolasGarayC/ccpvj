@@ -272,10 +272,10 @@ El proyecto está en desarrollo activo. Para contribuir:
 ### 🏗️ **Arquitectura Multimedia Genérica Definitiva**
 
 ```
-Data/media/
-├── content/                          # Todo el contenido de la aplicación
-│   ├── courses/                      # Contenido educativo
-│   │   └── {course-id}/
+Back/Data/media/
+├── library/                          # Biblioteca Digital - estructura SIMPLE
+├── material-apoyo/                   # Material de Apoyo
+│   └── {course-id}/
 │   │       ├── banner.{ext}          # Imagen banner del curso
 │   │       └── modules/
 │   │           └── {module-id}/
@@ -400,9 +400,9 @@ POST /api/cleanup
 ### 🔧 **Integración con Nginx**
 
 #### **Desarrollo (sin nginx)**
-- Archivos en: `Data/media/{type}/filename`
+- Archivos en: `Back/Data/media/{type}/filename`
 - Servidos vía: `GET /media/{type}/filename`
-- Upload directo a SvelteKit
+- Upload directo a backend .NET
 
 #### **Producción (con nginx)**
 - Nginx intercepta uploads grandes → `/upload/{type}/`

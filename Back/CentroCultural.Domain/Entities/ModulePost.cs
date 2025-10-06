@@ -53,8 +53,11 @@ namespace CentroCultural.Domain.Entities
         [Column("updated_at")]
         public long? UpdatedAt { get; set; }
 
-        // Navigation property (optional - can be null if module not loaded)
+        // Navigation properties
         [ForeignKey("ModuleId")]
         public virtual Modulo? Modulo { get; set; }
+
+        [ForeignKey("AuthorId")]
+        public virtual Usuario? Author { get; set; }
     }
 }

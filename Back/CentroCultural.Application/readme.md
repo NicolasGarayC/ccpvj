@@ -173,7 +173,7 @@ DELETE /api/library/{id}     # Eliminar recurso [Colaborador+]
 Usuario, Rol, RefreshToken, TokenBlacklist
 
 // Sistema Educativo
-Course, Module, WorkItem
+MaterialApoyo, Modulo, ModulePost
 
 // Blog y Eventos
 BlogPost, BlogCategory, Event, EventRegistration
@@ -231,7 +231,7 @@ npm run dev
 
 ### **Sistema Contextual**
 - **No archivos independientes**: Todo multimedia pertenece a contenido específico
-- **Tipos soportados**: `course`, `workitem`, `blog`, `event`
+- **Tipos soportados**: `material-apoyo`, `module-post`, `blog`, `event`
 - **Limpieza automática**: Al eliminar contenido se eliminan archivos asociados
 - **Compatible con nginx**: Headers para uploads grandes
 

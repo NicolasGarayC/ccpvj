@@ -16,7 +16,7 @@ namespace CentroCultural.Application.DTOs
         public string EducatorName { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
         public int ModuleCount { get; set; }
-        public int WorkItemCount { get; set; }
+        public int PostCount { get; set; }
     }
 
     public class MaterialApoyoDetailDto : MaterialApoyoDto
@@ -26,6 +26,7 @@ namespace CentroCultural.Application.DTOs
 
     public class CreateMaterialApoyoDto
     {
+        public string? Id { get; set; } // Optional: if provided, will be used instead of auto-generated GUID
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool IsFeatured { get; set; } = false;
@@ -64,7 +65,7 @@ namespace CentroCultural.Application.DTOs
         public DateTime? UpdatedAt { get; set; }
         public string MaterialApoyoId { get; set; } = string.Empty;
         public string MaterialApoyoName { get; set; } = string.Empty;
-        public int WorkItemCount { get; set; }
+        public int PostCount { get; set; }
     }
 
     public class ModuleDetailDto : ModuleDto
@@ -79,7 +80,7 @@ namespace CentroCultural.Application.DTOs
         public string Description { get; set; } = string.Empty;
         public int OrderNumber { get; set; }
         public bool IsActive { get; set; }
-        public int WorkItemCount { get; set; }
+        public int PostCount { get; set; }
     }
 
     public class CreateModuleDto

@@ -6,7 +6,7 @@
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
 
 	export let moduleId: string;
-	export let courseId: string;
+	export let materialApoyoId: string;
 	export let showActions = false;
 
 	const dispatch = createEventDispatcher();
@@ -254,7 +254,7 @@
 				<div
 					class="post-item"
 					class:drag-over={draggedOverIndex === index && draggedPost?.id !== post.id}
-					draggable={true}
+					draggable={showActions}
 					on:dragstart={(e) => handleDragStart(e, post)}
 					on:dragover={(e) => handleDragOver(e, index)}
 					on:dragleave={handleDragLeave}
@@ -263,7 +263,7 @@
 				>
 					<PostCard
 						{post}
-						showActions={true}
+						{showActions}
 						isDragging={draggedPost?.id === post.id}
 						on:view={handleViewPost}
 						on:edit={handleEditPost}
@@ -290,7 +290,7 @@
 <PostForm
 	visible={showPostForm}
 	{moduleId}
-	{courseId}
+	{materialApoyoId}
 	post={editingPost}
 	{nextOrderNumber}
 	on:created={handlePostCreated}

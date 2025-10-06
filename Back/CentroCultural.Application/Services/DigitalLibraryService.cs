@@ -440,37 +440,41 @@ namespace CentroCultural.Application.Services
         // Utility methods
         public async Task<IEnumerable<string>> GetAvailableCategoriesAsync()
         {
-            var categories = await _context.LibraryItems
+            // Siempre devolver categorías predefinidas para que estén disponibles al crear recursos
+            var predefinedCategories = new List<string>
+            {
+                "Literatura",
+                "Historia",
+                "Arte y Música",
+                "Ciencias Sociales",
+                "Ciencias Exactas",
+                "Educación",
+                "Filosofía",
+                "Medio Ambiente",
+                "Política",
+                "Cultura Popular",
+                "Derechos Humanos",
+                "Tecnología",
+                "Salud",
+                "Economía",
+                "Documentales"
+            };
+
+            // Obtener categorías que existen en la base de datos
+            var dbCategories = await _context.LibraryItems
                 .Where(li => li.IsActive && li.Category != null)
                 .Select(li => li.Category!)
                 .Distinct()
-                .OrderBy(c => c)
                 .ToListAsync();
 
-            // Si no hay categorías en la base de datos, devolver categorías predefinidas
-            if (!categories.Any())
-            {
-                return new List<string>
-                {
-                    "Literatura",
-                    "Historia",
-                    "Arte y Música",
-                    "Ciencias Sociales",
-                    "Ciencias Exactas",
-                    "Educación",
-                    "Filosofía",
-                    "Medio Ambiente",
-                    "Política",
-                    "Cultura Popular",
-                    "Derechos Humanos",
-                    "Tecnología",
-                    "Salud",
-                    "Economía",
-                    "Documentales"
-                };
-            }
+            // Combinar categorías predefinidas con las de la base de datos (si hay alguna personalizada)
+            var allCategories = predefinedCategories
+                .Union(dbCategories)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
 
-            return categories;
+            return allCategories;
         }
 
         public async Task<IEnumerable<string>> GetAvailableAuthorsAsync()
@@ -686,6 +690,12 @@ namespace CentroCultural.Application.Services
         {
             // Convert relative path to full file system path
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+
+            // Remove 'media/' prefix if present (paths in DB include '/media/' prefix)
+            if (cleanPath.StartsWith("media" + Path.DirectorySeparatorChar))
+            {
+                cleanPath = cleanPath.Substring(("media" + Path.DirectorySeparatorChar).Length);
+            }
 
             // Construct full path to media directory
             var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");

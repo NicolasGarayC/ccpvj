@@ -135,6 +135,7 @@ export interface LibraryUploadOptions {
 }
 
 class DigitalLibraryService {
+    private apiUrl = 'http://localhost:5251';
 
     private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
         const headers = {
@@ -143,7 +144,12 @@ class DigitalLibraryService {
             ...options.headers
         };
 
-        return fetch(url, { ...options, headers });
+        const fullUrl = url.startsWith('http') ? url : `${this.apiUrl}${url}`;
+        return fetch(fullUrl, {
+            ...options,
+            headers,
+            credentials: 'include'
+        });
     }
 
     private buildQueryString(params: Record<string, any>): string {

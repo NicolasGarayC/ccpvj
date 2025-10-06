@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { courseService, type CreateCourseDto, type UpdateCourseDto, type Course } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import type { MaterialApoyoDetailDto, CreateMaterialApoyoDto, UpdateMaterialApoyoDto } from '$lib/types/api/materialApoyo.types';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
 	import type { UploadResult } from '$lib/services/contextualUploadService';
 
-	export let course: Course | null = null; // null for create, Course for edit
+	export let course: MaterialApoyoDetailDto | null = null; // null for create, MaterialApoyoDetailDto for edit
 	export let loading = false;
 
 	const dispatch = createEventDispatcher();
 	const isEditing = !!course;
+
+	// Generate a temporary ID for new courses to allow image upload before save
+	const tempId = course?.id || crypto.randomUUID();
 
 	let formData = {
 		title: course?.title || '',
@@ -19,6 +23,7 @@
 
 	let formErrors: Record<string, string> = {};
 	let submitting = false;
+	let isUploadingMedia = false;
 
 
 	function validateForm(): boolean {
@@ -57,27 +62,28 @@
 		}
 
 		submitting = true;
-		
+
 		try {
 			if (isEditing && course) {
-				const updateData: UpdateCourseDto = {
+				const updateData: UpdateMaterialApoyoDto = {
 					title: formData.title.trim(),
 					description: formData.description.trim(),
 					isFeatured: formData.isFeatured,
 					imagePath: formData.imagePath || undefined
 				};
-				
-				await courseService.updateCourse(course.id, updateData);
+
+				await materialApoyoService.updateMaterialApoyo(course.id, updateData);
 				dispatch('success', { type: 'update', id: course.id });
 			} else {
-				const createData: CreateCourseDto = {
+				const createData: CreateMaterialApoyoDto = {
 					title: formData.title.trim(),
 					description: formData.description.trim(),
 					isFeatured: formData.isFeatured,
 					imagePath: formData.imagePath || undefined
 				};
-				
-				const newCourse = await courseService.createCourse(createData);
+
+				// Use the pre-generated ID if we uploaded an image
+				const newCourse = await materialApoyoService.createMaterialApoyoWithId(tempId, createData);
 				dispatch('success', { type: 'create', course: newCourse });
 			}
 		} catch (error) {
@@ -92,9 +98,14 @@
 		dispatch('cancel');
 	}
 
+	function handleUploadStart() {
+		isUploadingMedia = true;
+	}
+
 	function handleImageUpload(event: CustomEvent<UploadResult>) {
 		const result = event.detail;
 		formData.imagePath = result.relativePath;
+		isUploadingMedia = false;
 
 		console.log('✅ Course image uploaded:', result);
 
@@ -106,6 +117,7 @@
 
 	function handleImageRemove() {
 		formData.imagePath = '';
+		isUploadingMedia = false;
 
 		// Auto-save removal if editing
 		if (isEditing && course) {
@@ -116,19 +128,20 @@
 	function handleUploadError(event: CustomEvent<string>) {
 		const error = event.detail;
 		formErrors.imagePath = error;
+		isUploadingMedia = false;
 		console.error('Course image upload error:', error);
 	}
 
 	async function autoSaveImagePath(imagePath: string) {
 		try {
-			const updateData: UpdateCourseDto = {
+			const updateData: UpdateMaterialApoyoDto = {
 				title: formData.title.trim(),
 				description: formData.description.trim(),
 				isFeatured: formData.isFeatured,
 				imagePath: imagePath || undefined
 			};
 
-			await courseService.updateCourse(course!.id, updateData);
+			await materialApoyoService.updateMaterialApoyo(course!.id, updateData);
 			// Optionally dispatch a silent update event
 			dispatch('success', { type: 'update', id: course!.id, silent: true });
 		} catch (error) {
@@ -187,23 +200,19 @@
 
 		<div class="form-group">
 			<ContextualMediaUploader
-				context="course"
+				context="material-apoyo"
 				mediaType="image"
-				courseId={course?.id || 'temp'}
+				contentId={tempId}
 				currentMedia={formData.imagePath}
-				disabled={submitting || loading || !isEditing}
-				label="Imagen del curso"
+				disabled={submitting || loading}
+				label="Imagen del Material de Apoyo"
+				on:uploadStart={handleUploadStart}
 				on:uploadSuccess={handleImageUpload}
 				on:uploadError={handleUploadError}
 				on:mediaRemoved={handleImageRemove}
 			/>
 			{#if formErrors.imagePath}
 				<span class="error-message">{formErrors.imagePath}</span>
-			{/if}
-			{#if !isEditing}
-				<p class="help-text">
-					💡 Guarda el curso primero para poder subir una imagen.
-				</p>
 			{/if}
 		</div>
 
@@ -235,13 +244,16 @@
 			<button
 				type="submit"
 				class="btn btn-primary"
-				disabled={submitting || loading}
+				disabled={submitting || loading || isUploadingMedia}
 			>
-				{#if submitting}
+				{#if isUploadingMedia}
+					<span class="loading-spinner"></span>
+					Subiendo imagen...
+				{:else if submitting}
 					<span class="loading-spinner"></span>
 					{isEditing ? 'Actualizando...' : 'Creando...'}
 				{:else}
-					{isEditing ? 'Actualizar Curso' : 'Crear Curso'}
+					{isEditing ? 'Actualizar Proyecto' : 'Crear Proyecto'}
 				{/if}
 			</button>
 		</div>

@@ -356,5 +356,149 @@ namespace CentroCultural.API.Controllers
                 return StatusCode(500, "Error interno del servidor");
             }
         }
+
+        // ==================== ModulePost Operations ====================
+
+        [HttpGet("modules/{moduleId}/posts")]
+        public async Task<ActionResult<IEnumerable<ModulePostDto>>> GetModulePosts(string moduleId)
+        {
+            try
+            {
+                var posts = await _materialApoyoService.GetModulePostsAsync(moduleId);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo posts del módulo: {ModuleId}", moduleId);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("posts/{id}")]
+        public async Task<ActionResult<ModulePostDto>> GetPost(string id)
+        {
+            try
+            {
+                var post = await _materialApoyoService.GetPostByIdAsync(id);
+
+                if (post == null)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return Ok(post);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo post con ID: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost("posts")]
+        [Authorize(Roles = "administrador")]
+        public async Task<ActionResult<ModulePostDto>> CreatePost([FromBody] CreateModulePostDto postDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var post = await _materialApoyoService.CreatePostAsync(postDto, userId);
+                return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para crear posts");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creando post");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPut("posts/{id}")]
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> UpdatePost(string id, [FromBody] UpdateModulePostDto postDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _materialApoyoService.UpdatePostAsync(id, postDto, userId);
+
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para editar este post");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error actualizando post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpDelete("posts/{id}")]
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> DeletePost(string id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _materialApoyoService.DeletePostAsync(id, userId);
+
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para eliminar este post");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error eliminando post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost("posts/{id}/reorder")]
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> ReorderPost(string id, [FromBody] ReorderModuleDto reorderDto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _materialApoyoService.ReorderPostAsync(id, reorderDto.NewOrderNumber, userId);
+
+                if (!result)
+                    return NotFound($"Post con ID {id} no encontrado");
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("No tienes permisos para reordenar posts");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reordenando post: {PostId}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
     }
 }

@@ -2,13 +2,14 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { courseService, type CourseDetail, type UpdateCourseDto, type Module } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import ModuleList from '$lib/components/course/ModuleList.svelte';
 	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
 	import ModuleForm from '$lib/components/course/ModuleForm.svelte';
 
-	let course: CourseDetail | null = null;
+	let course: MaterialApoyoDetailDto | null = null;
 	let loading = true;
 	let error = '';
 	let isAuthenticated = false;
@@ -32,11 +33,11 @@
 
 	// Module management state
 	let showModuleForm = false;
-	let editingModule: Module | null = null;
+	let editingModule: ModuleSummaryDto | null = null;
 	let moduleFormLoading = false;
 
-	const courseId = $page.params.id;
-	let actualCourseId = courseId; // ID real del curso para operaciones
+	const materialApoyoId = $page.params.id;
+	let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo para operaciones
 
 	// Function to update authentication state (same as layout)
 	async function updateAuthState() {
@@ -71,15 +72,15 @@
 		try {
 			loading = true;
 			error = '';
-			course = await courseService.getCourse(courseId);
+			course = await materialApoyoService.getMaterialApoyoById(materialApoyoId);
 
-			// Update actualCourseId with the real ID from the loaded course
+			// Update actualMaterialApoyoId with the real ID from the loaded course
 			if (course) {
-				actualCourseId = course.id;
+				actualMaterialApoyoId = course.id;
 			}
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Error cargando el curso';
-			console.error('Error loading course:', err);
+			error = err instanceof Error ? err.message : 'Error cargando el material de apoyo';
+			console.error('Error loading material de apoyo:', err);
 		} finally {
 			loading = false;
 		}
@@ -95,7 +96,7 @@
 
 
 	function handleBackToCourses() {
-		goto('/courses');
+		goto('/material-apoyo');
 	}
 
 	function enableEditMode() {
@@ -164,7 +165,7 @@
 				imagePath: editForm.imagePath || undefined
 			};
 
-			await courseService.updateCourse(course.id, updateData);
+			await materialApoyoService.updateMaterialApoyo(course.id, updateData);
 
 			// Reload course data
 			await loadCourse();
@@ -209,7 +210,7 @@
 			moduleFormLoading = true;
 			error = '';
 
-			await courseService.deleteModule(moduleId);
+			await materialApoyoService.deleteModule(moduleId);
 
 			// Reload course data to get updated modules
 			await loadCourse();
@@ -226,7 +227,7 @@
 		goto(`/modules/${moduleId}`);
 	}
 
-	function handleModuleFormSuccess(event: CustomEvent<{type: string, module?: Module, id?: string, data?: any}>) {
+	function handleModuleFormSuccess(event: CustomEvent<{type: string, module?: ModuleSummaryDto, id?: string, data?: any}>) {
 		const { type } = event.detail;
 
 		showModuleForm = false;
@@ -646,7 +647,7 @@
 <!-- Module Form Modal -->
 <ModuleForm
 	module={editingModule}
-	courseId={actualCourseId}
+	materialApoyoId={actualMaterialApoyoId}
 	loading={moduleFormLoading}
 	visible={showModuleForm}
 	on:success={handleModuleFormSuccess}

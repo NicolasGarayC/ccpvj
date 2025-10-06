@@ -50,7 +50,7 @@ class ContextualUploadService {
                 formData.append('oldImagePath', oldImagePath);
             }
 
-            const response = await fetch(`/api/upload/courses/${courseId}`, {
+            const response = await fetch(`/api/upload/material-apoyo/${courseId}`, {
                 method: 'POST',
                 body: formData
             });
@@ -157,7 +157,7 @@ class ContextualUploadService {
             },
             video: {
                 types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov'],
-                maxSize: 500 * 1024 * 1024 // 500MB
+                maxSize: 20 * 1024 * 1024 * 1024 // 20GB for movies
             },
             audio: {
                 types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
@@ -197,13 +197,54 @@ class ContextualUploadService {
     }
 
     /**
+     * Cleanup orphan files that were uploaded but not saved
+     */
+    async cleanupOrphanFiles(files: string[]): Promise<{ success: boolean; deletedCount: number; errors?: string[] }> {
+        try {
+            if (!files || files.length === 0) {
+                return { success: true, deletedCount: 0 };
+            }
+
+            console.log(`🧹 Cleaning up ${files.length} orphan file(s)...`, files);
+
+            const response = await fetch('/api/upload/cleanup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ files })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Cleanup failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Cleanup completed: ${result.message}`, result);
+
+            return {
+                success: true,
+                deletedCount: result.deletedCount || 0,
+                errors: result.errors
+            };
+        } catch (error) {
+            console.error('❌ Error cleaning up orphan files:', error);
+            return {
+                success: false,
+                deletedCount: 0,
+                errors: [error instanceof Error ? error.message : 'Unknown error']
+            };
+        }
+    }
+
+    /**
      * Extract context information from file path
      */
     parseContextFromPath(relativePath: string): { contentType?: string; courseId?: string; moduleId?: string; postId?: string; mediaType?: string } {
         // Expected format: content/{contentType}/{contentId}/...
         // Examples:
-        // - content/courses/{courseId}/banner.ext
-        // - content/courses/{courseId}/modules/{moduleId}/posts/{postId}/{mediaType}/{filename}
+        // - content/material-apoyo/{materialApoyoId}/banner.ext
+        // - content/material-apoyo/{materialApoyoId}/modules/{moduleId}/posts/{postId}/{mediaType}/{filename}
         // - content/blog/posts/{postId}/{mediaType}/{filename}
         // - content/library/resources/{resourceId}/{mediaType}/{filename}
         const parts = relativePath.split('/');
@@ -212,7 +253,7 @@ class ContextualUploadService {
             const contentType = parts[1];
             const result: any = { contentType };
 
-            if (contentType === 'courses') {
+            if (contentType === 'material-apoyo' || contentType === 'courses') {
                 result.courseId = parts[2];
 
                 if (parts[3] === 'modules' && parts.length >= 5) {

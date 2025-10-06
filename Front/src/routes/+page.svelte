@@ -5,7 +5,7 @@
 	import FeatureCard from '$lib/components/common/FeatureCard.svelte';
 	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
 	import { blogService } from '$lib/services/blog/blogService';
-	import { courseService } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import type { BlogPost, Course } from '$lib/data/models/interfaces';
 
@@ -39,7 +39,7 @@
 	onMount(async () => {
 		try {
 			latestBlogPosts = await blogService.getLatestPosts();
-			featuredCourses = await courseService.getFeaturedCourses();
+			featuredCourses = await materialApoyoService.getFeaturedMaterialApoyo();
 		} catch (error) {
 			console.error('Error cargando datos iniciales:', error);
 		}
@@ -102,15 +102,15 @@
 		<!-- Botones de acción juveniles -->
 		<div class="mt-8 flex flex-wrap justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.8s;">
 			{#if !isLoggedIn}
-				<a href="/courses" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-8 py-4 font-bold text-purple-900 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-yellow-300/50">
+				<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-8 py-4 font-bold text-purple-900 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-yellow-300/50">
 					<span class="relative z-10 flex items-center gap-2">
-						🚀 {t('startLearning')}
+						{t('startLearning')}
 					</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
 				</a>
 				<a href="/auth/login" class="group relative overflow-hidden rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-white/30">
 					<span class="flex items-center gap-2">
-						👨‍🏫 {t('educatorLogin')}
+						{t('educatorLogin')}
 					</span>
 				</a>
 			{:else if isEducator}
@@ -125,7 +125,7 @@
 					</span>
 				</a>
 			{:else}
-				<a href="/courses" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
+				<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
 					<span class="relative z-10 flex items-center gap-2">
 						🎒 {t('myMaterials')}
 					</span>
@@ -351,7 +351,7 @@
 
 							<!-- Botón de acceso épico -->
 							<div class="text-center">
-								<a href={`/courses/${module.id}`}
+								<a href={`/material-apoyo/${module.id}`}
 								   class="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r {module.color} text-white font-bold text-sm rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
 									<span class="relative z-10">{t('accessMaterials')}</span>
 									<div class="text-lg animate-bounce group-hover/btn:translate-x-1 transition-transform duration-300">🎯</div>
@@ -383,7 +383,7 @@
 			</h3>
 
 			<div class="flex flex-wrap justify-center gap-4">
-				<a href="/courses" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
+				<a href="/material-apoyo" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
 					<span class="relative z-10">🚀 Explorar Todos los Cursos</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 				</a>
@@ -475,7 +475,7 @@
 								</div>
 
 								<!-- Botón épico -->
-								<a href={`/courses/${course.id}`}
+								<a href={`/material-apoyo/${course.id}`}
 								   class="group/btn relative inline-flex items-center gap-3 w-full justify-center px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-2xl shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-300/50">
 									<span class="relative z-10">{t('exploreCourseMaterials')}</span>
 									<div class="text-2xl animate-bounce group-hover/btn:translate-x-2 transition-transform duration-300">🎮</div>
@@ -524,7 +524,7 @@
 
 		<!-- Botón para ver todos los cursos -->
 		<div class="mt-20 text-center">
-			<a href="/courses" class="group relative inline-flex items-center gap-4 px-12 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-500 hover:scale-110 hover:shadow-indigo-300/50">
+			<a href="/material-apoyo" class="group relative inline-flex items-center gap-4 px-12 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-500 hover:scale-110 hover:shadow-indigo-300/50">
 				<span class="relative z-10">{t('viewAllCourses')}</span>
 				<div class="text-3xl animate-bounce group-hover:translate-x-3 group-hover:scale-125 transition-all duration-300">🌟</div>
 
@@ -616,7 +616,7 @@
 
 		<!-- Botones de acción épicos -->
 		<div class="flex flex-wrap justify-center gap-8 mb-16 animate-fade-in-up" style="animation-delay: 1.2s;">
-			<a href="/courses" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-12 py-5 font-black text-xl text-purple-900 shadow-2xl transition-all duration-500 hover:scale-125 hover:shadow-yellow-300/50 transform hover:-rotate-3">
+			<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-12 py-5 font-black text-xl text-purple-900 shadow-2xl transition-all duration-500 hover:scale-125 hover:shadow-yellow-300/50 transform hover:-rotate-3">
 				<span class="relative z-10 flex items-center gap-3">
 					<span class="text-3xl animate-bounce">🚀</span>
 					{t('exploreCourses')}

@@ -193,10 +193,10 @@ Course → Modules → Posts → Multimedia Files
 ### 🏗️ **DEFINITIVE Generic Media Structure**
 
 ```
-Data/media/
-├── content/                          # All application content
-│   ├── courses/                      # Educational content
-│   │   └── {course-id}/
+Back/Data/media/
+├── library/                          # Digital Library - SIMPLE structure (all files here)
+├── material-apoyo/                   # Material de Apoyo
+│   └── {course-id}/
 │   │       ├── banner.{ext}          # Course banner image
 │   │       └── modules/
 │   │           └── {module-id}/

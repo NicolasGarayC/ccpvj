@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { courseService } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
 	import type { ModuleDetailDto } from '$lib/types/api/course.types';
 	import { modulePostService, type PostDetail } from '$lib/services/modulePostService';
 	import PostList from '$lib/components/course/PostList.svelte';
@@ -44,7 +44,7 @@
 	async function checkAuthStatus() {
 		try {
 			// TODO: Use JWT-based authentication
-			const authResult = await courseService.checkAuthStatus();
+			const authResult = await materialApoyoService.checkAuthStatus();
 
 			canManagePosts = authResult.canManage;
 			console.log('[DEBUG] Auth check result:', authResult);
@@ -61,7 +61,7 @@
 		error = null;
 
 		try {
-			module = await courseService.getModule(moduleId);
+			module = await materialApoyoService.getModule(moduleId);
 
 			if (!module) {
 				error = 'Módulo no encontrado';
@@ -226,10 +226,10 @@
 	}
 
 	function handleBackToCourse() {
-		if (module?.courseId) {
-			goto(`/courses/${module.courseId}`);
+		if (module?.materialApoyoId) {
+			goto(`/material-apoyo/${module.materialApoyoId}`);
 		} else {
-			goto('/courses');
+			goto('/material-apoyo');
 		}
 	}
 </script>
@@ -320,7 +320,7 @@
 			<PostList
 				bind:this={postListComponent}
 				moduleId={module.id}
-				courseId={module.courseId}
+				materialApoyoId={module.materialApoyoId}
 				showActions={canManagePosts}
 				on:viewPost={handleViewPost}
 				on:editPost={handleEditPost}
@@ -347,7 +347,7 @@
 	<PostForm
 		visible={showPostEditor}
 		moduleId={module.id}
-		courseId={module.courseId}
+		materialApoyoId={module.materialApoyoId}
 		post={editingPost}
 		nextOrderNumber={postCount + 1}
 		on:created={handlePostCreated}

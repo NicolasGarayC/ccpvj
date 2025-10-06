@@ -42,6 +42,9 @@ builder.Services.Configure<CentroCultural.Infrastructure.Configuration.JwtSettin
 // JWT Service
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// Background Services
+builder.Services.AddHostedService<CentroCultural.Infrastructure.Services.OrphanFileCleanupService>();
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<CentroCultural.Infrastructure.Configuration.JwtSettings>();
 var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
@@ -74,10 +77,10 @@ builder.Services.AddSwaggerGen();
 
 // File storage services removed - using direct upload APIs instead
 
-// Configuración de archivos grandes (hasta 5GB para películas completas)
+// Configuración de archivos grandes (hasta 20GB para películas completas)
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 5_368_709_120; // 5GB
+    options.MultipartBodyLengthLimit = 21_474_836_480; // 20GB
     options.ValueLengthLimit = int.MaxValue;
     options.ValueCountLimit = int.MaxValue;
     options.KeyLengthLimit = int.MaxValue;
@@ -87,9 +90,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 // Configurar Kestrel para archivos grandes
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 5_368_709_120; // 5GB
-    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(30);
-    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(30);
+    options.Limits.MaxRequestBodySize = 21_474_836_480; // 20GB
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(60);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(60);
 });
 
 var app = builder.Build();

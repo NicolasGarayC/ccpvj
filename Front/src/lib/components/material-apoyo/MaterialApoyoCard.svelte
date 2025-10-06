@@ -55,12 +55,21 @@
 			day: 'numeric'
 		});
 	}
+
+	// Build proper image URL
+	function getImageUrl(imagePath: string | undefined): string {
+		if (!imagePath) return '';
+		if (imagePath.startsWith('http') || imagePath.startsWith('/media/')) {
+			return imagePath;
+		}
+		return `/media/${imagePath}`;
+	}
 </script>
 
 <div class="course-card">
 	{#if materialApoyo.imagePath}
 		<div class="course-image">
-			<img src={materialApoyo.imagePath} alt={materialApoyo.title} />
+			<img src={getImageUrl(materialApoyo.imagePath)} alt={materialApoyo.title} />
 			{#if materialApoyo.isFeatured}
 				<div class="featured-badge">Destacado</div>
 			{/if}

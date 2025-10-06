@@ -5,6 +5,7 @@
 	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
 	import { browser } from '$app/environment';
 	import { t } from '$lib/i18n';
+	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -170,11 +171,11 @@
 						<a
 							href="/material-apoyo"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('material-apoyo') || 'Material de Apoyo'}"
+							title="Material de Apoyo"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline">{t('material-apoyo') || 'Material de Apoyo'}</span>
+								<span class="hidden lg:inline whitespace-nowrap">Material de Apoyo</span>
 							</span>
 						</a>
 					</div>
@@ -288,7 +289,7 @@
 					<a href="/material-apoyo" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-graduation-cap text-lg"></i>
-							<span>{t('material-apoyo') || 'Material de Apoyo'}</span>
+							<span>Material de Apoyo</span>
 						</span>
 					</a>
 
@@ -360,6 +361,9 @@
 	>
 		<slot />
 	</main>
+
+	<!-- Session Expired Modal -->
+	<SessionExpiredModal />
 
 	<!-- Footer juvenil y moderno -->
 	<footer class="bg-gradient-to-r from-gray-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden">

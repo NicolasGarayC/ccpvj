@@ -25,6 +25,14 @@ namespace CentroCultural.Application.Interfaces
         Task<bool> DeleteModuleAsync(string id, int userId);
         Task<bool> ReorderModuleAsync(string id, int newOrderNumber, int userId);
 
+        // ModulePost operations
+        Task<IEnumerable<ModulePostDto>> GetModulePostsAsync(string moduleId);
+        Task<ModulePostDto?> GetPostByIdAsync(string id);
+        Task<ModulePostDto> CreatePostAsync(CreateModulePostDto dto, int userId);
+        Task<bool> UpdatePostAsync(string id, UpdateModulePostDto dto, int userId);
+        Task<bool> DeletePostAsync(string id, int userId);
+        Task<bool> ReorderPostAsync(string id, int newOrder, int userId);
+
         // Statistics and utility methods
         Task<object> GetMaterialApoyoStatisticsAsync();
     }

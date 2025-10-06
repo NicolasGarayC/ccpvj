@@ -3,9 +3,11 @@
 	import { contextualUploadService } from '$lib/services/contextualUploadService';
 	import type { UploadResult } from '$lib/services/contextualUploadService';
 
-	export let context: 'course' | 'post' | 'blog';
+	export let context: 'course' | 'material-apoyo' | 'post' | 'blog';
 	export let mediaType: 'image' | 'video' | 'audio' = 'image';
-	export let courseId: string = '';
+	export let courseId: string = ''; // deprecated, use contentId
+	export let materialApoyoId: string = ''; // deprecated, use contentId
+	export let contentId: string = ''; // Generic content ID
 	export let moduleId: string = '';
 	export let postId: string = '';
 	export let blogPostId: string = '';
@@ -14,7 +16,11 @@
 	export let label: string = '';
 	export let required: boolean = false;
 
+	// Support legacy properties
+	$: actualContentId = contentId || materialApoyoId || courseId;
+
 	const dispatch = createEventDispatcher<{
+		uploadStart: void;
 		uploadSuccess: UploadResult;
 		uploadError: string;
 		mediaRemoved: void;
@@ -32,8 +38,8 @@
 	$: mediaUrl = currentMedia ? contextualUploadService.getMediaUrl(currentMedia) : '';
 
 	function getDefaultLabel(ctx: string, type: string): string {
-		if (ctx === 'course') {
-			return 'Imagen del curso';
+		if (ctx === 'course' || ctx === 'material-apoyo') {
+			return type === 'image' ? 'Imagen del Material de Apoyo' : 'Archivo del Material de Apoyo';
 		} else if (ctx === 'blog') {
 			const typeMap = {
 				image: 'Imagen del artículo',
@@ -52,13 +58,13 @@
 	}
 
 	function validateContext(): boolean {
-		if (context === 'course' && !courseId) {
-			error = 'Course ID is required for course uploads';
+		if ((context === 'course' || context === 'material-apoyo') && !actualContentId) {
+			error = 'Material Apoyo ID is required for uploads';
 			return false;
 		}
 
-		if (context === 'post' && (!courseId || !moduleId || !postId)) {
-			error = 'Course ID, Module ID, and Post ID are required for post uploads';
+		if (context === 'post' && (!actualContentId || !moduleId)) {
+			error = 'Material Apoyo ID and Module ID are required for post uploads';
 			return false;
 		}
 
@@ -85,6 +91,9 @@
 		isUploading = true;
 		uploadProgress = 0;
 
+		// Notify parent that upload has started
+		dispatch('uploadStart');
+
 		try {
 			// Create preview for images
 			if (mediaType === 'image') {
@@ -93,9 +102,9 @@
 
 			let result: UploadResult;
 
-			if (context === 'course') {
+			if (context === 'course' || context === 'material-apoyo') {
 				result = await contextualUploadService.uploadCourseImage({
-					courseId,
+					courseId: actualContentId,
 					file,
 					oldImagePath: currentMedia
 				});
@@ -109,7 +118,7 @@
 			} else {
 				result = await contextualUploadService.uploadPostMedia({
 					postId,
-					courseId,
+					courseId: actualContentId,
 					moduleId,
 					file,
 					mediaType,
@@ -186,7 +195,7 @@
 	function getMaxSizeInfo(type: string): string {
 		const sizes = {
 			image: '20MB',
-			video: '500MB',
+			video: '20GB',
 			audio: '100MB'
 		};
 		return sizes[type] || '20MB';

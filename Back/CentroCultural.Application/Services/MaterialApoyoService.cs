@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using CentroCultural.Infrastructure.Data;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
@@ -10,10 +11,12 @@ namespace CentroCultural.Application.Services
     public class MaterialApoyoService : IMaterialApoyoService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<MaterialApoyoService> _logger;
 
-        public MaterialApoyoService(ApplicationDbContext context)
+        public MaterialApoyoService(ApplicationDbContext context, ILogger<MaterialApoyoService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<MaterialApoyoSummaryDto>> GetAllMaterialApoyoAsync()
@@ -174,9 +177,14 @@ namespace CentroCultural.Application.Services
 
         public async Task<MaterialApoyoDto> CreateMaterialApoyoAsync(CreateMaterialApoyoDto createMaterialApoyoDto, int userId)
         {
+            // Use provided ID if present, otherwise generate new GUID
+            var id = !string.IsNullOrEmpty(createMaterialApoyoDto.Id)
+                ? createMaterialApoyoDto.Id
+                : Guid.NewGuid().ToString();
+
             var materialApoyo = new MaterialApoyo
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = id,
                 Title = createMaterialApoyoDto.Title,
                 Description = createMaterialApoyoDto.Description,
                 IsFeatured = createMaterialApoyoDto.IsFeatured,
@@ -257,7 +265,7 @@ namespace CentroCultural.Application.Services
                         .Where(p => p.ModuleId == module.Id)
                         .ToListAsync();
 
-                    // Collect multimedia file paths from posts (COMPLETE CASCADE)
+                    // Collect multimedia file paths from posts (legacy columns - for backward compatibility)
                     foreach (var post in posts)
                     {
                         if (!string.IsNullOrEmpty(post.ImagePath))
@@ -266,6 +274,17 @@ namespace CentroCultural.Application.Services
                             mediaFilesToDelete.Add(post.VideoPath);
                         if (!string.IsNullOrEmpty(post.AudioPath))
                             mediaFilesToDelete.Add(post.AudioPath);
+
+                        // IMPORTANT: Also get files from post_element table (current system)
+                        var postElements = await _context.PostElements
+                            .Where(e => e.PostId == post.Id && !string.IsNullOrEmpty(e.FilePath))
+                            .ToListAsync();
+
+                        foreach (var element in postElements)
+                        {
+                            if (!string.IsNullOrEmpty(element.FilePath))
+                                mediaFilesToDelete.Add(element.FilePath);
+                        }
                     }
 
                     // Note: Module entity doesn't have ImagePath property in current schema
@@ -278,7 +297,9 @@ namespace CentroCultural.Application.Services
                 if (!string.IsNullOrEmpty(materialApoyo.ImagePath))
                     mediaFilesToDelete.Add(materialApoyo.ImagePath);
 
-                // 5. Delete using raw SQL to avoid EF tracking issues
+                // 5. Delete using raw SQL to avoid EF tracking issues (cascade order: elements -> posts -> modules -> material)
+                await _context.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM post_element WHERE post_id IN (SELECT id FROM module_post WHERE module_id IN (SELECT id FROM modulo WHERE material_apoyo_id = {0}))", id);
                 await _context.Database.ExecuteSqlRawAsync(
                     "DELETE FROM module_post WHERE module_id IN (SELECT id FROM modulo WHERE material_apoyo_id = {0})", id);
                 await _context.Database.ExecuteSqlRawAsync(
@@ -324,8 +345,13 @@ namespace CentroCultural.Application.Services
         private string GetFullMediaPath(string relativePath)
         {
             // Convert relative path to full file system path
-            // Remove leading slash if present and normalize path
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+
+            // Remove 'media/' prefix if present (paths in DB may include '/media/' prefix)
+            if (cleanPath.StartsWith("media" + Path.DirectorySeparatorChar))
+            {
+                cleanPath = cleanPath.Substring(("media" + Path.DirectorySeparatorChar).Length);
+            }
 
             // Construct full path to media directory - files are in Back/Data/media
             var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
@@ -475,6 +501,193 @@ namespace CentroCultural.Application.Services
 
         public Task<bool> ReorderModuleAsync(string id, int newOrderNumber, int userId) =>
             throw new NotImplementedException();
+
+        // ==================== ModulePost CRUD Operations ====================
+
+        public async Task<IEnumerable<ModulePostDto>> GetModulePostsAsync(string moduleId)
+        {
+            var posts = await _context.ModulePosts
+                .Include(p => p.Author)
+                .Where(p => p.ModuleId == moduleId)
+                .OrderBy(p => p.OrderNumber)
+                .ToListAsync();
+
+            return posts.Select(p => new ModulePostDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Subtitle = p.Subtitle,
+                Content = p.Content,
+                ImagePath = p.ImagePath,
+                VideoPath = p.VideoPath,
+                AudioPath = p.AudioPath,
+                OrderNumber = p.OrderNumber,
+                IsActive = p.IsActive,
+                ModuleId = p.ModuleId,
+                AuthorId = p.AuthorId,
+                AuthorName = p.Author?.NombreUsuario ?? "Desconocido",
+                CreatedAt = DateTimeOffset.FromUnixTimeSeconds(p.CreatedAt).DateTime,
+                UpdatedAt = p.UpdatedAt.HasValue
+                    ? DateTimeOffset.FromUnixTimeSeconds(p.UpdatedAt.Value).DateTime
+                    : null
+            });
+        }
+
+        public async Task<ModulePostDto?> GetPostByIdAsync(string id)
+        {
+            var post = await _context.ModulePosts
+                .Include(p => p.Author)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (post == null) return null;
+
+            return new ModulePostDto
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Subtitle = post.Subtitle,
+                Content = post.Content,
+                ImagePath = post.ImagePath,
+                VideoPath = post.VideoPath,
+                AudioPath = post.AudioPath,
+                OrderNumber = post.OrderNumber,
+                IsActive = post.IsActive,
+                ModuleId = post.ModuleId,
+                AuthorId = post.AuthorId,
+                AuthorName = post.Author?.NombreUsuario ?? "Desconocido",
+                CreatedAt = DateTimeOffset.FromUnixTimeSeconds(post.CreatedAt).DateTime,
+                UpdatedAt = post.UpdatedAt.HasValue
+                    ? DateTimeOffset.FromUnixTimeSeconds(post.UpdatedAt.Value).DateTime
+                    : null
+            };
+        }
+
+        public async Task<ModulePostDto> CreatePostAsync(CreateModulePostDto dto, int userId)
+        {
+            // Validar que el módulo existe
+            var module = await _context.Modulo.FindAsync(dto.ModuleId);
+            if (module == null)
+                throw new ArgumentException($"Módulo con ID {dto.ModuleId} no encontrado");
+
+            // Generar ID único
+            var postId = $"post-{Guid.NewGuid()}";
+
+            var post = new ModulePost
+            {
+                Id = postId,
+                Title = dto.Title,
+                Subtitle = dto.Subtitle,
+                Content = dto.Content,
+                ImagePath = dto.ImagePath,
+                VideoPath = dto.VideoPath,
+                AudioPath = dto.AudioPath,
+                OrderNumber = dto.OrderNumber,
+                IsActive = true,
+                ModuleId = dto.ModuleId,
+                AuthorId = userId,
+                CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                UpdatedAt = null
+            };
+
+            _context.ModulePosts.Add(post);
+            await _context.SaveChangesAsync();
+
+            return await GetPostByIdAsync(postId)
+                ?? throw new InvalidOperationException("Error al crear el post");
+        }
+
+        public async Task<bool> UpdatePostAsync(string id, UpdateModulePostDto dto, int userId)
+        {
+            var post = await _context.ModulePosts.FindAsync(id);
+            if (post == null) return false;
+
+            post.Title = dto.Title;
+            post.Subtitle = dto.Subtitle;
+            post.Content = dto.Content;
+            post.ImagePath = dto.ImagePath;
+            post.VideoPath = dto.VideoPath;
+            post.AudioPath = dto.AudioPath;
+            post.OrderNumber = dto.OrderNumber;
+            post.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeletePostAsync(string id, int userId)
+        {
+            var post = await _context.ModulePosts.FindAsync(id);
+            if (post == null) return false;
+
+            // Eliminar archivos físicos
+            var filesToDelete = new List<string>();
+            if (!string.IsNullOrEmpty(post.ImagePath)) filesToDelete.Add(post.ImagePath);
+            if (!string.IsNullOrEmpty(post.VideoPath)) filesToDelete.Add(post.VideoPath);
+            if (!string.IsNullOrEmpty(post.AudioPath)) filesToDelete.Add(post.AudioPath);
+
+            foreach (var filePath in filesToDelete)
+            {
+                try
+                {
+                    var fullPath = GetFullMediaPath(filePath);
+                    if (File.Exists(fullPath))
+                    {
+                        File.Delete(fullPath);
+                        _logger.LogInformation($"🗑️ Archivo eliminado: {fullPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"⚠️ Error eliminando archivo {filePath}: {ex.Message}");
+                }
+            }
+
+            _context.ModulePosts.Remove(post);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ReorderPostAsync(string id, int newOrder, int userId)
+        {
+            var post = await _context.ModulePosts.FindAsync(id);
+            if (post == null) return false;
+
+            if (newOrder < 1)
+                throw new ArgumentException("El orden debe ser mayor a 0");
+
+            var oldOrder = post.OrderNumber;
+            var moduleId = post.ModuleId;
+
+            // Reordenar otros posts
+            var postsToUpdate = await _context.ModulePosts
+                .Where(p => p.ModuleId == moduleId && p.Id != id)
+                .ToListAsync();
+
+            if (newOrder > oldOrder)
+            {
+                // Mover hacia abajo: decrementar posts entre oldOrder y newOrder
+                foreach (var p in postsToUpdate.Where(p => p.OrderNumber > oldOrder && p.OrderNumber <= newOrder))
+                {
+                    p.OrderNumber--;
+                }
+            }
+            else if (newOrder < oldOrder)
+            {
+                // Mover hacia arriba: incrementar posts entre newOrder y oldOrder
+                foreach (var p in postsToUpdate.Where(p => p.OrderNumber >= newOrder && p.OrderNumber < oldOrder))
+                {
+                    p.OrderNumber++;
+                }
+            }
+
+            post.OrderNumber = newOrder;
+            post.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // ==================== Statistics ====================
 
         public async Task<object> GetMaterialApoyoStatisticsAsync()
         {

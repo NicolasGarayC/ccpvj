@@ -6,10 +6,11 @@
 	import type { PostElement } from '$lib/services/postElementService';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
 	import type { UploadResult } from '$lib/services/contextualUploadService';
+	import { contextualUploadService } from '$lib/services/contextualUploadService';
 
 	export let visible = false;
 	export let moduleId: string;
-	export let courseId: string;
+	export let materialApoyoId: string;
 	export let post: PostDetail | null = null;
 	export let nextOrderNumber = 1;
 
@@ -38,6 +39,13 @@
 
 	let elements: ElementBlock[] = [];
 	let draggedIndex: number | null = null;
+
+	// Track uploaded files for cleanup
+	let uploadedFiles: string[] = [];
+	let postSaved = false;
+
+	// Track uploading state to disable submit button
+	let isUploadingMedia = false;
 
 	$: isEdit = !!post;
 	$: modalTitle = isEdit ? 'Editar Post' : 'Crear Nuevo Post';
@@ -343,6 +351,8 @@
 				});
 			}
 
+			// Mark as saved successfully
+			postSaved = true;
 			handleClose();
 		} catch (error) {
 			console.error('Error saving post:', error);
@@ -360,8 +370,18 @@
 		}
 	}
 
-	function handleClose() {
+	async function handleClose() {
 		if (!isLoading) {
+			// Cleanup orphan files if closing without saving
+			if (!postSaved && uploadedFiles.length > 0) {
+				console.log(`🧹 Modal closing without save - cleaning up ${uploadedFiles.length} orphan file(s)`);
+				await contextualUploadService.cleanupOrphanFiles(uploadedFiles);
+			}
+
+			// Reset state
+			uploadedFiles = [];
+			postSaved = false;
+
 			resetForm();
 			dispatch('close');
 		}
@@ -416,10 +436,19 @@
 		elements = [...elements];
 	}
 
+	function handleMediaUploadStart() {
+		isUploadingMedia = true;
+	}
+
 	function handleMediaUpload(index: number, event: CustomEvent<UploadResult>) {
 		const result = event.detail;
 
 		if (elements[index]) {
+			// Track uploaded file for potential cleanup
+			if (!isEdit) {
+				uploadedFiles.push(result.relativePath);
+			}
+
 			// Update element with uploaded file information
 			elements[index].filePath = result.relativePath;
 			elements[index].fileName = result.filename;
@@ -429,12 +458,17 @@
 
 			console.log(`✅ Media uploaded for element ${index}:`, result);
 		}
+
+		// Upload finished (success)
+		isUploadingMedia = false;
 	}
 
 	function handleMediaUploadError(index: number, event: CustomEvent<string>) {
 		const error = event.detail;
 		console.error(`Media upload error for element ${index}:`, error);
-		// You might want to show this error to the user
+
+		// Upload finished (error)
+		isUploadingMedia = false;
 	}
 
 	function handleRemoveMedia(index: number) {
@@ -695,12 +729,13 @@
 													<ContextualMediaUploader
 														context="post"
 														mediaType={element.elementType}
-														courseId={courseId}
+														materialApoyoId={materialApoyoId}
 														moduleId={moduleId}
 														postId={post?.id || 'temp'}
 														currentMedia={element.filePath || ''}
 														disabled={isLoading}
 														label=""
+t																on:uploadStart={handleMediaUploadStart}
 														on:uploadSuccess={(e) => handleMediaUpload(index, e)}
 														on:uploadError={(e) => handleMediaUploadError(index, e)}
 														on:mediaRemoved={() => handleRemoveMedia(index)}
@@ -724,10 +759,13 @@
 					<button type="button" class="btn btn-outline" on:click={handleClose} disabled={isLoading}>
 						Cancelar
 					</button>
-					<button type="submit" class="btn btn-primary" disabled={isLoading}>
+					<button type="submit" class="btn btn-primary" disabled={isLoading || isUploadingMedia}>
 						{#if isLoading}
 							<div class="loading-spinner"></div>
 							{isEdit ? 'Actualizando...' : 'Creando...'}
+t				{:else if isUploadingMedia}
+						<div class="loading-spinner"></div>
+						Subiendo archivo...
 						{:else}
 							{isEdit ? 'Actualizar Post' : 'Crear Post'}
 						{/if}

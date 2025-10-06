@@ -54,10 +54,11 @@ ccpvj/
 │   ├── CentroCultural.API/
 │   ├── CentroCultural.Application/
 │   ├── CentroCultural.Domain/
-│   └── CentroCultural.Infrastructure/
-├── Data/                    # Base de datos y archivos
-│   ├── ccpvj.db            # SQLite database
-│   └── media/              # Archivos multimedia
+│   ├── CentroCultural.Infrastructure/
+│   └── Data/                # Archivos del backend
+│       └── media/           # ⚠️ Archivos multimedia (imágenes, videos, documentos)
+├── Data/                    # Base de datos
+│   └── ccpvj.db            # SQLite database
 └── Documentation/          # Documentación completa
 ```
 
@@ -161,9 +162,41 @@ dotnet test               # Ejecutar tests
 
 ## 🎥 Sistema Multimedia
 
-- **Formatos soportados**: Imágenes (JPG, PNG, WebP), Videos (MP4, WebM), Audio (MP3, WAV), Documentos (PDF, DOC, etc.)
-- **Límites**: 20MB imágenes, 500MB videos, 100MB audio/documentos
-- **Limpieza automática**: Eliminación de archivos huérfanos
+### 📂 Ubicación de Archivos
+**⚠️ IMPORTANTE**: Los archivos multimedia se almacenan en `Back/Data/media/`, **NO** en `Data/media/`
+
+```
+Back/Data/media/
+├── library/                         # Biblioteca Digital
+│   └── {itemId}_{timestamp}_{nombre}.ext
+├── material-apoyo/                  # Material de Apoyo
+│   └── {id}/
+│       ├── banner.jpg               # Imagen de portada
+│       └── modules/{moduleId}/
+│           └── posts/{postId}/
+│               ├── images/          # Imágenes del post
+│               ├── videos/          # Videos del post
+│               └── audios/          # Audios del post
+└── blog/                            # Blog y Noticias
+    └── {postId}/
+        ├── images/
+        ├── videos/
+        └── audios/
+```
+
+### 📋 Especificaciones
+- **Formatos soportados**:
+  - Imágenes: JPG, PNG, WebP, GIF
+  - Videos: MP4, WebM, AVI
+  - Audio: MP3, WAV, OGG
+  - Documentos: PDF, DOC, DOCX, TXT
+- **Límites de tamaño**:
+  - Imágenes: 20MB
+  - Videos: 20GB (para películas educativas)
+  - Audio: 100MB
+  - Documentos: 20GB
+- **Limpieza automática**: Eliminación de archivos huérfanos cada hora
+- **Eliminación en cascada**: Al eliminar contenido, se eliminan automáticamente los archivos físicos asociados
 - **Nginx compatible**: Para uploads grandes en producción
 
 ---

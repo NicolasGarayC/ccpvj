@@ -93,7 +93,7 @@
 
       <!-- Quick Actions Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <a href="/courses" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
+        <a href="/material-apoyo" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
           <div class="flex items-center">
             <div class="bg-blue-100 rounded-lg p-3">
               <i class="fas fa-graduation-cap text-blue-600 text-xl"></i>

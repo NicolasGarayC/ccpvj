@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
-	import { courseService } from '$lib/services/courseService';
-	import type { ModuleSummaryDto } from '$lib/types/api/course.types';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import type { ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
 	import ModuleCard from './ModuleCard.svelte';
 
 	export let courseId: string;
@@ -23,7 +23,7 @@
 		try {
 			loading = true;
 			error = '';
-			modules = await courseService.getCourseModules(courseId);
+			modules = await materialApoyoService.getMaterialApoyoModules(courseId);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Error cargando módulos';
 			console.error('Error loading modules:', err);

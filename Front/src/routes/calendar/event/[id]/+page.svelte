@@ -121,7 +121,7 @@
 
 	function navigateToRelatedCourse() {
 		if (event?.relatedCourseId) {
-			goto(`/courses/${event.relatedCourseId}`);
+			goto(`/material-apoyo/${event.relatedCourseId}`);
 		}
 	}
 

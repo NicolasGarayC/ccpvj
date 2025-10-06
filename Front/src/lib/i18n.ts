@@ -56,14 +56,14 @@ const translations = {
   // Events and calendar
   'upcomingEvents': '🎪 ¡Próximos Eventos Geniales!',
   'noEventsYet': '¡Estamos preparando eventos súper divertidos!',
-  'viewCalendar': '📅 Ver Calendario Completo',
+  'viewCalendar': 'Ver Calendario Completo',
   'registerEvent': '✅ ¡Inscríbete Ya!',
 
   // Educational materials
   'educationalMaterials': '🎒 ¡Materiales de Aprendizaje!',
   'accessCourseMaterials': 'Descubre recursos increíbles para aprender y crear',
   'moduleCountLabel': '📚 {count} módulos súper geniales',
-  'accessMaterials': '🎯 ¡Acceder Ya!',
+  'accessMaterials': ' ¡Acceder Ya!',
   'modules': 'módulos',
 
   // Featured courses
@@ -83,8 +83,8 @@ const translations = {
   // Final call to action
   'readyToStart': '🎯 ¿Listo para la Aventura?',
   'joinCommunityText': '¡Únete a nuestra comunidad de jóvenes creativos y empezemos juntos esta increíble experiencia de aprendizaje!',
-  'exploreCourses': '🚀 Explorar Cursos',
-  'readLatestNews': '📱 Leer Noticias',
+  'exploreCourses': 'Explorar Cursos',
+  'readLatestNews': 'Leer Noticias',
 
   // Special sections
   'quickActions': '⚡ Acciones Rápidas',

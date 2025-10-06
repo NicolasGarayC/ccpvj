@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { courseService } from '$lib/services/courseService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import CourseForm from '$lib/components/course/CourseForm.svelte';
+	import MaterialApoyoForm from '$lib/components/course/MaterialApoyoForm.svelte';
 
 	let error = '';
 	let canCreate = false;
@@ -27,7 +27,7 @@
 	function handleSuccess(event: CustomEvent<{type: string, course?: any}>) {
 		const { type, course } = event.detail;
 		if (type === 'create' && course) {
-			goto(`/courses/${course.id}`, { replaceState: true });
+			goto(`/material-apoyo/${course.id}`, { replaceState: true });
 		}
 	}
 
@@ -39,12 +39,12 @@
 	}
 
 	function handleCancel() {
-		goto('/courses');
+		goto('/material-apoyo');
 	}
 </script>
 
 <svelte:head>
-	<title>Crear Curso - Centro Cultural Víctor Jara</title>
+	<title>Crear Material de Apoyo - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -55,11 +55,11 @@
 				<h1 class="text-3xl md:text-4xl font-black mb-4">
 					<span class="text-2xl mr-3">✨</span>
 					<span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-						Crear Nuevo Curso
+						Crear Nuevo Material de Apoyo
 					</span>
 				</h1>
 				<p class="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
-					Comparte tu conocimiento creando un curso increíble que inspire y eduque a nuestra comunidad
+					Comparte tu conocimiento creando material educativo que inspire y eduque a nuestra comunidad
 				</p>
 			</div>
 		</div>
@@ -79,16 +79,16 @@
 					<p class="text-red-600 mb-6">{error}</p>
 					<button
 						class="px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-colors font-semibold"
-						on:click={() => goto('/courses')}
+						on:click={() => goto('/material-apoyo')}
 					>
-						Volver a cursos
+						Volver a Material de Apoyo
 					</button>
 				</div>
 			</div>
 		{:else}
 			<!-- Form -->
 			<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 overflow-hidden">
-				<CourseForm
+				<MaterialApoyoForm
 					course={null}
 					on:success={handleSuccess}
 					on:error={handleError}
@@ -115,12 +115,12 @@
 		<div class="mt-8 text-center">
 			<button
 				class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-				on:click={() => goto('/courses')}
+				on:click={() => goto('/material-apoyo')}
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="15,18 9,12 15,6"></polyline>
 				</svg>
-				Volver a la lista de cursos
+				Volver a Material de Apoyo
 			</button>
 		</div>
 	</div>

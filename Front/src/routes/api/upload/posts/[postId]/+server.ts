@@ -4,7 +4,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync, unlinkSync } from 'fs';
 import path from 'path';
 
-const BASE_UPLOAD_DIR = 'Data/media/content/courses';
+const BASE_UPLOAD_DIR = 'Data/media/content/material-apoyo';
 
 // File type and size limits by media type
 const MEDIA_CONFIG = {
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
             }, { status: 400 });
         }
 
-        // Create contextual directory structure: courses/{courseId}/modules/{moduleId}/posts/{postId}/{mediaType}/
+        // Create contextual directory structure: material-apoyo/{materialApoyoId}/modules/{moduleId}/posts/{postId}/{mediaType}/
         const contextDir = path.join(BASE_UPLOAD_DIR, courseId, 'modules', moduleId, 'posts', postId, config.folder);
         if (!existsSync(contextDir)) {
             await mkdir(contextDir, { recursive: true });
@@ -105,7 +105,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
         await writeFile(filepath, buffer);
 
         // Return contextual path for database storage
-        const relativePath = `content/courses/${courseId}/modules/${moduleId}/posts/${postId}/${config.folder}/${filename}`;
+        const relativePath = `content/material-apoyo/${courseId}/modules/${moduleId}/posts/${postId}/${config.folder}/${filename}`;
 
         console.log(`✅ Post ${mediaType} uploaded: ${relativePath}`);
 

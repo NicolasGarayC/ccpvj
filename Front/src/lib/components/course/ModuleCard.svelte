@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { ModuleSummaryDto } from '$lib/types/api/course.types';
+	import type { ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
 	import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
 	export let module: ModuleSummaryDto;

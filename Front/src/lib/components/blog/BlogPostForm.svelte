@@ -4,7 +4,7 @@
 	import { blogPostElementService, type CreateElementDto, type ElementType, type ElementWithFile } from '$lib/services/blog/blogPostElementService';
 	import type { BlogPost } from '$lib/types/api';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
-	import type { UploadResult } from '$lib/services/contextualUploadService';
+	import { contextualUploadService, type UploadResult } from '$lib/services/contextualUploadService';
 
 	export let visible = false;
 	export let post: BlogPost | null = null;
@@ -15,6 +15,10 @@
 	let isLoading = false;
 	let errors: Record<string, string> = {};
 	let isDragging = false;
+
+	// Track uploaded files for cleanup
+	let uploadedFiles: string[] = [];
+	let postSaved = false;
 
 	interface ElementBlock {
 		id: string;
@@ -316,6 +320,8 @@
 				});
 			}
 
+			// Mark as saved successfully
+			postSaved = true;
 			handleClose();
 		} catch (error) {
 			console.error('Error saving blog post:', error);
@@ -333,8 +339,18 @@
 		}
 	}
 
-	function handleClose() {
+	async function handleClose() {
 		if (!isLoading) {
+			// Cleanup orphan files if closing without saving
+			if (!postSaved && uploadedFiles.length > 0) {
+				console.log(`🧹 Modal closing without save - cleaning up ${uploadedFiles.length} orphan file(s)`);
+				await contextualUploadService.cleanupOrphanFiles(uploadedFiles);
+			}
+
+			// Reset state
+			uploadedFiles = [];
+			postSaved = false;
+
 			resetForm();
 			dispatch('close');
 		}
@@ -392,6 +408,11 @@
 		const result = event.detail;
 
 		if (elements[index]) {
+			// Track uploaded file for potential cleanup
+			if (!isEdit) {
+				uploadedFiles.push(result.relativePath);
+			}
+
 			// Update element with uploaded file information
 			elements[index].filePath = result.relativePath;
 			elements[index].fileName = result.filename;

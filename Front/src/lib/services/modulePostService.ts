@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { jwtService } from './auth/jwtService';
 
 // Local type definitions to replace schema imports
 export interface ModulePost {
@@ -62,11 +63,11 @@ export interface PostSearchParams {
 }
 
 class ModulePostService {
-	private apiUrl = 'http://localhost:5251/api/workitem';
+	private apiUrl = 'http://localhost:5251/api/materialapoyo';
 
 	// Get all posts for a specific module
 	async getModulePosts(moduleId: string): Promise<PostDetail[]> {
-		const response = await fetch(`${this.apiUrl}/module/${moduleId}`, {
+		const response = await fetch(`${this.apiUrl}/modules/${moduleId}/posts`, {
 			method: 'GET',
 			credentials: 'include',
 			headers: {
@@ -83,7 +84,7 @@ class ModulePostService {
 
 	// Get a specific post by ID
 	async getPost(id: string): Promise<PostDetail | null> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
+		const response = await fetch(`${this.apiUrl}/posts/${id}`, {
 			method: 'GET',
 			credentials: 'include',
 			headers: {
@@ -104,11 +105,12 @@ class ModulePostService {
 
 	// Create a new post
 	async createPost(postData: CreatePostDto): Promise<PostDetail> {
-		const response = await fetch(this.apiUrl, {
+		const response = await fetch(`${this.apiUrl}/posts`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			},
 			body: JSON.stringify(postData)
 		});
@@ -132,11 +134,12 @@ class ModulePostService {
 
 	// Update an existing post
 	async updatePost(id: string, postData: UpdatePostDto): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
+		const response = await fetch(`${this.apiUrl}/posts/${id}`, {
 			method: 'PUT',
 			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				...jwtService.getAuthHeader()
 			},
 			body: JSON.stringify(postData)
 		});
@@ -162,7 +165,7 @@ class ModulePostService {
 
 	// Delete a post
 	async deletePost(id: string): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/${id}`, {
+		const response = await fetch(`${this.apiUrl}/posts/${id}`, {
 			method: 'DELETE',
 			credentials: 'include',
 			headers: {
@@ -191,7 +194,7 @@ class ModulePostService {
 
 	// Reorder a post
 	async reorderPost(id: string, newOrderNumber: number): Promise<void> {
-		const response = await fetch(`${this.apiUrl}/${id}/reorder`, {
+		const response = await fetch(`${this.apiUrl}/posts/${id}/reorder`, {
 			method: 'PATCH',
 			credentials: 'include',
 			headers: {

@@ -12,8 +12,8 @@ Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural 
 - ✅ **Mapeo consistente**: snake_case (BD) ↔ PascalCase (C#) funcional
 
 #### **2. Servicios de Aplicación**
-- ✅ **CourseService**: Corregido `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
-- ✅ **WorkItemService**: Eliminado uso inconsistente de `DateTime.UtcNow`
+- ✅ **MaterialApoyoService**: Corregido `DateTime.FromBinary()` → `DateTimeOffset.FromUnixTimeSeconds()`
+- ✅ **ModulePostService**: Timestamps Unix manejados correctamente
 - ✅ **Conversiones de fecha**: Unix timestamps manejados correctamente en DTOs
 
 #### **3. Base de Datos**
@@ -96,28 +96,29 @@ GET    /api/usermanagement/can-manage   # Verificar permisos
 GET    /api/usermanagement/check-username/{username} # Disponibilidad
 ```
 
-## 🎓 Sistema de Cursos
+## 🎓 Sistema de Material de Apoyo
 
 ### Características
-- **Jerarquía**: Course → Module → WorkItem
-- **Multimedia Contextual**: Archivos vinculados a WorkItems
-- **Filtros Avanzados**: Por materia, destacados, autor
+- **Jerarquía**: MaterialApoyo → Modulo → ModulePost
+- **Multimedia Contextual**: Archivos vinculados a Posts
+- **Filtros Avanzados**: Por categoría, destacados, autor
 - **Paginación**: Resultados optimizados
 - **Permisos**: Control por roles
 
-### Endpoints de Cursos
+### Endpoints de Material de Apoyo
 ```http
-GET    /api/course                    # Lista paginada
-GET    /api/course/all                # Todos los cursos  
-GET    /api/course/featured           # Cursos destacados
-GET    /api/course/{id}               # Curso específico
-GET    /api/course/{id}/modules       # Módulos del curso
-POST   /api/course                    # Crear [Colaborador+]
-PUT    /api/course/{id}               # Actualizar [Colaborador+]
-DELETE /api/course/{id}               # Eliminar [Colaborador+]
-GET    /api/course/my-courses         # Mis cursos [Colaborador+]
-GET    /api/course/subjects           # Materias disponibles
-GET    /api/course/statistics         # Estadísticas [Admin]
+GET    /api/materialapoyo                    # Lista paginada
+GET    /api/materialapoyo/all                # Todos los materiales
+GET    /api/materialapoyo/featured           # Material destacado
+GET    /api/materialapoyo/{id}               # Material específico
+GET    /api/materialapoyo/{id}/modules       # Módulos del material
+POST   /api/materialapoyo                    # Crear [Colaborador+]
+PUT    /api/materialapoyo/{id}               # Actualizar [Colaborador+]
+DELETE /api/materialapoyo/{id}               # Eliminar [Colaborador+]
+GET    /api/materialapoyo/modules/{id}       # Módulo específico
+POST   /api/materialapoyo/modules            # Crear módulo [Colaborador+]
+PUT    /api/materialapoyo/modules/{id}       # Actualizar módulo [Colaborador+]
+DELETE /api/materialapoyo/modules/{id}       # Eliminar módulo [Colaborador+]
 ```
 
 ## 📝 Sistema de Blog
@@ -150,9 +151,7 @@ POST   /api/blog/{id}/unpublish       # Despublicar [Colaborador+]
 
 ### Endpoints de Upload
 ```http
-POST   /api/upload/course/{id}/images     # Imagen para curso
-POST   /api/upload/workitem/{id}/images   # Imagen para WorkItem
-POST   /api/upload/workitem/{id}/videos   # Video para WorkItem  
+POST   /api/upload/posts/{id}             # Multimedia para Post (imagen/video/audio)
 POST   /api/upload/blog/{id}/images       # Imagen para blog
 POST   /api/upload/blog/{id}/videos       # Video para blog
 POST   /api/upload/blog/{id}/documents    # PDF para blog
@@ -238,23 +237,24 @@ public class TokenBlacklist
 }
 
 // Sistema educativo
-public class Course
+public class MaterialApoyo
 {
-    public int Id { get; set; }
+    public string Id { get; set; }
     public string Title { get; set; }
-    public string Subject { get; set; }
+    public string Description { get; set; }
     public bool IsFeatured { get; set; }
-    public List<Module> Modules { get; set; }
+    public List<Modulo> Modules { get; set; }
 }
 
-public class WorkItem  
+public class ModulePost
 {
-    public int Id { get; set; }
+    public string Id { get; set; }
     public string Title { get; set; }
     public string Content { get; set; }
     public string ImagePath { get; set; }
     public string VideoPath { get; set; }
-    public int ModuleId { get; set; }
+    public string AudioPath { get; set; }
+    public string ModuleId { get; set; }
 }
 ```
 
@@ -266,9 +266,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Usuario> Usuario { get; set; }
     public DbSet<RefreshToken> RefreshToken { get; set; }
     public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
-    public DbSet<Course> Course { get; set; }
-    public DbSet<Module> Module { get; set; }
-    public DbSet<WorkItem> WorkItem { get; set; }
+    public DbSet<MaterialApoyo> MaterialApoyo { get; set; }
+    public DbSet<Modulo> Modulos { get; set; }
+    public DbSet<ModulePost> ModulePosts { get; set; }
     public DbSet<BlogPost> BlogPost { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

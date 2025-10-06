@@ -70,6 +70,11 @@ class MaterialApoyoService extends BaseHttpService {
 		return this.post<MaterialApoyoDto>('/materialapoyo', materialApoyoData);
 	}
 
+	async createMaterialApoyoWithId(id: string, materialApoyoData: CreateMaterialApoyoDto): Promise<MaterialApoyoDto> {
+		// Send the ID as part of the request body
+		return this.post<MaterialApoyoDto>('/materialapoyo', { ...materialApoyoData, id });
+	}
+
 	async updateMaterialApoyo(id: string, materialApoyoData: UpdateMaterialApoyoDto): Promise<void> {
 		return this.put(`/materialapoyo/${id}`, materialApoyoData);
 	}
@@ -154,8 +159,14 @@ class MaterialApoyoService extends BaseHttpService {
 	 * Check authentication status - will be implemented with JWT
 	 */
 	async checkAuthStatus(): Promise<{ canManage: boolean; user: any | null }> {
-		// TODO: Implement with JWT token validation
-		return { canManage: true, user: { id: 1, username: 'admin', role: 'administrador' } };
+		// Import jwtService locally to avoid circular dependencies
+		const { jwtService } = await import('$lib/services/auth/jwtService');
+
+		const isAuthenticated = jwtService.isAuthenticated();
+		const user = jwtService.getUser();
+		const canManage = isAuthenticated && jwtService.canManageContent();
+
+		return { canManage, user };
 	}
 }
 

@@ -153,10 +153,10 @@
   }
 
   async function handleRemove() {
-    // Si es un curso y tiene un ID, eliminar desde el servidor
+    // Si es material de apoyo y tiene un ID, eliminar desde el servidor
     if (contentType === 'course' && contentId && mediaType === 'image' && previewUrl) {
       try {
-        const response = await fetch(`/api/courses/${contentId}/remove-image`, {
+        const response = await fetch(`/api/material-apoyo/${contentId}/remove-image`, {
           method: 'DELETE',
           // TODO: Add JWT Bearer token when implemented
         });

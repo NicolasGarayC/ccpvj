@@ -44,12 +44,12 @@ npm install
 ### 2.1 Create Required Directory Structure
 ```bash
 # Create all required directories as per your NGINX config
-sudo mkdir -p /home/user/ccpvj/Data/media/{temp,uploads}/{images,videos,audio}
-sudo mkdir -p /home/user/ccpvj/Data/media/temp/uploads/{images,videos,audio}
+sudo mkdir -p /home/user/ccpvj/Back/Data/media/{temp,uploads}/{images,videos,audio}
+sudo mkdir -p /home/user/ccpvj/Back/Data/media/temp/uploads/{images,videos,audio}
 
 # Set proper permissions
-sudo chown -R $USER:$USER /home/user/ccpvj/Data/
-sudo chmod -R 755 /home/user/ccpvj/Data/
+sudo chown -R $USER:$USER /home/user/ccpvj/Back/Data/
+sudo chmod -R 755 /home/user/ccpvj/Back/Data/
 
 # Create NGINX cache directories
 sudo mkdir -p /tmp/nginx-cache-static /tmp/nginx-cache-media
@@ -111,9 +111,9 @@ Your NGINX configuration already supports contextual multimedia:
 ```nginx
 # Contextual media serving (already configured)
 location ~* \.(jpg|jpeg|png|gif|webp|svg)$ {
-    root /home/user/ccpvj/Data/media;  # Serves from contextual directories
+    root /home/user/ccpvj/Back/Data/media;  # Serves from contextual directories
     # Will serve from:
-    # /media/courses/*, /media/workitems/*, /media/blog/*, /media/events/*
+    # /media/content/material-apoyo/*, /media/{categoria}/*, /media/blog/*, /media/events/*
 }
 
 # Contextual upload endpoints (already configured)
@@ -271,13 +271,13 @@ curl http://localhost/api/test-auth
 ### 6.1 Test Contextual Media File Serving
 ```bash
 # Create contextual test files in appropriate directories
-echo "test course banner" > /home/user/ccpvj/Data/media/courses/test-banner.jpg
-echo "test workitem image" > /home/user/ccpvj/Data/media/workitems/test-diagram.png
-echo "test blog image" > /home/user/ccpvj/Data/media/blog/test-article.jpg
-echo "test event poster" > /home/user/ccpvj/Data/media/events/test-poster.jpg
+echo "test material apoyo banner" > /home/user/ccpvj/Back/Data/media/content/material-apoyo/test-banner.jpg
+echo "test library document" > /home/user/ccpvj/Back/Data/media/tecnologia/document/test-doc.pdf
+echo "test blog image" > /home/user/ccpvj/Back/Data/media/blog/test-article.jpg
+echo "test event poster" > /home/user/ccpvj/Back/Data/media/events/test-poster.jpg
 
 # Test contextual media access (direct NGINX serving)
-curl -I http://localhost/media/courses/test-banner.jpg
+curl -I http://localhost/media/content/material-apoyo/test-banner.jpg
 curl -I http://localhost/media/workitems/test-diagram.png
 curl -I http://localhost/media/blog/test-article.jpg  
 curl -I http://localhost/media/events/test-poster.jpg
@@ -300,12 +300,12 @@ curl -I http://localhost/media/events/test-poster.jpg
 ### 6.3 Verify Directory Structure
 ```bash
 # Verify contextual directory structure was created
-ls -la /home/user/ccpvj/Data/media/
-# Should show: courses/, workitems/, blog/, events/, temp/
+ls -la /home/user/ccpvj/Back/Data/media/
+# Should show: content/, {categorias}/, blog/, events/, temp/
 
 # Verify temp directories for uploads
-ls -la /home/user/ccpvj/Data/media/temp/uploads/  
-# Should show: courses/, workitems/, blog/, events/
+ls -la /home/user/ccpvj/Back/Data/media/temp/uploads/
+# Should show upload temp directories
 ```
 
 ---
