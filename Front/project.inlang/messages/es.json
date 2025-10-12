@@ -1,0 +1,19 @@
+{
+  "login": "Iniciar Sesión",
+  "username": "Usuario",
+  "password": "Contraseña",
+  "home": "Inicio",
+  "dashboard": "Panel",
+  "logout": "Cerrar Sesión",
+  "centroTitle": "Centro Cultural Víctor Jara",
+  "loginSubtitle": "Red Comunitaria de Aprendizaje",
+  "usernamePlaceholder": "Ingresa tu usuario",
+  "passwordPlaceholder": "Ingresa tu contraseña",
+  "loggingIn": "Iniciando sesión...",
+  "redirecting": "Redirigiendo...",
+  "loginSuccess": "Inicio de sesión exitoso. Redirigiendo...",
+  "loginError": "Error al iniciar sesión",
+  "connectionError": "Error de conexión. Verifica que el servidor esté funcionando.",
+  "backToHome": "Volver al inicio",
+  "footerText": "Todos los derechos reservados"
+}

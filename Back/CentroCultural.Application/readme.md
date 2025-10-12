@@ -1,417 +1,381 @@
-﻿Te ayudo a crear ejemplos completos de Postman para probar todas las funcionalidades de autenticación. Aquí tienes los requests organizados por flujo:
+# Backend CentroCultural - API .NET 8
 
-## 1. **LOGIN - Iniciar sesión**
+## 📌 Resumen del Backend
+
+**Sistema Backend** para la plataforma del Centro Cultural Víctor Jara construido con **.NET 8** como **API REST complementaria** al frontend SvelteKit.
+
+### 🎯 Estado Actual
+- **✅ OPERATIVO**: APIs funcionales con autenticación cookie-based
+- **✅ COMPATIBLE**: Integración completa con frontend SvelteKit
+- **✅ MODERNIZADO**: Sistema JWT eliminado, reemplazado por cookies
+- **⚠️ OPCIONAL**: El frontend puede operar independientemente
+
+---
+
+## 🛠️ Tecnologías y Dependencias
+
+### **Framework Base**
+- **.NET 8.0** - Framework principal con soporte LTS
+- **ASP.NET Core Web API** - APIs REST
+- **Entity Framework Core 8.0** - ORM para SQLite
+- **Microsoft.EntityFrameworkCore.Sqlite** - Proveedor SQLite
+
+### **Autenticación** (Cookie-based)
+- **Microsoft.AspNetCore.Authentication.Cookies** - Autenticación por cookies
+- **BCrypt.Net-Next 4.0.3** - Hash de contraseñas
+- **⚠️ JWT Packages**: Presentes pero NO utilizados (legacy)
+
+### **Testing y Desarrollo**
+- **Microsoft.AspNetCore.Mvc.Testing** - Testing de integración
+- **xunit 2.9.3** - Framework de pruebas
+- **Swashbuckle.AspNetCore 6.4.0** - Documentación OpenAPI/Swagger
+
+### **Base de Datos**
+- **SQLite** - Base de datos principal (`../Data/ccpvj.db`)
+- **Entity Framework Core Design** - Herramientas de migración
+- **Foreign Keys Enabled** - Integridad referencial activa
+
+---
+
+## 🏗️ Arquitectura del Backend
+
 ```
-Method: POST
-URL: https://localhost:7000/api/auth/login
+Back/
+├── CentroCultural.API/           # Controladores y configuración
+│   ├── Controllers/              # Endpoints REST
+│   ├── Program.cs               # Configuración principal
+│   └── appsettings.json         # Configuración
+│
+├── CentroCultural.Application/   # Lógica de negocio
+│   ├── Services/                # Servicios de aplicación
+│   ├── Interfaces/              # Contratos
+│   └── DTOs/                    # Objetos de transferencia
+│
+├── CentroCultural.Domain/        # Entidades de dominio
+│   ├── Entities/                # Modelos de datos
+│   ├── Enums/                   # Enumeraciones
+│   └── Exceptions/              # Excepciones custom
+│
+└── CentroCultural.Infrastructure/ # Infraestructura
+    ├── Data/                    # Contexto EF Core
+    ├── Services/                # Servicios de infraestructura
+    └── Configuration/           # Configuración de servicios
 ```
 
-**Headers:**
+---
 
-```
-Content-Type: application/json
+## 🔑 Sistema de Autenticación (Cookie-based)
+
+### **Configuración Actual**
+```csharp
+// Program.cs - Cookie Authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "auth-session";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
 ```
 
-**Body (raw JSON):**
+### **Compatibilidad con SvelteKit**
+```csharp
+// CORS configurado para SvelteKit
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSvelteKit", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowCredentials() // Crucial para cookies
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+```
+
+---
+
+## 🌐 Endpoints API Principales
+
+### **🔐 Autenticación** (`/api/auth`)
+```
+POST   /api/auth/login       # Iniciar sesión (cookies)
+POST   /api/auth/logout      # Cerrar sesión
+GET    /api/auth/me          # Usuario actual
+POST   /api/auth/refresh     # Auto-refresh (sliding expiration)
+```
+
+### **📚 Cursos** (`/api/course`)
+```
+GET    /api/course           # Lista cursos (paginado)
+GET    /api/course/all       # Todos los cursos
+GET    /api/course/featured  # Cursos destacados
+GET    /api/course/{id}      # Detalle curso con módulos
+POST   /api/course           # Crear curso [Colaborador+]
+PUT    /api/course/{id}      # Actualizar curso [Colaborador+]
+DELETE /api/course/{id}      # Eliminar curso [Colaborador+]
+GET    /api/course/my-courses # Cursos del educador [Colaborador+]
+GET    /api/course/statistics # Estadísticas [Administrador]
+GET    /api/course/subjects  # Materias disponibles
+```
+
+### **📋 Módulos** (`/api/course/modules`)
+```
+GET    /api/course/modules/{id}      # Detalle módulo
+POST   /api/course/modules           # Crear módulo [Colaborador+]
+PUT    /api/course/modules/{id}      # Actualizar módulo [Colaborador+]
+DELETE /api/course/modules/{id}      # Eliminar módulo [Colaborador+]
+PATCH  /api/course/modules/{id}/reorder # Reordenar módulo [Colaborador+]
+```
+
+### **📝 Blog** (`/api/blog`)
+```
+GET    /api/blog             # Lista posts (paginado)
+GET    /api/blog/{id}        # Detalle post
+GET    /api/blog/slug/{slug} # Post por slug
+POST   /api/blog             # Crear post [Colaborador+]
+PUT    /api/blog/{id}        # Actualizar post [Colaborador+]
+DELETE /api/blog/{id}        # Eliminar post [Colaborador+]
+POST   /api/blog/{id}/publish # Publicar post [Colaborador+]
+GET    /api/blog/featured    # Posts destacados
+GET    /api/blog/popular     # Posts populares
+GET    /api/blog/recent      # Posts recientes
+```
+
+### **📁 Multimedia** (`/api/upload`)
+```
+POST   /api/upload/{contentType}/{contentId}/images   # Subir imágenes
+POST   /api/upload/{contentType}/{contentId}/videos   # Subir videos
+POST   /api/upload/{contentType}/{contentId}/audio    # Subir audio
+GET    /api/upload/status/{uploadId}                  # Estado upload
+DELETE /api/upload/{mediaId}                          # Eliminar media
+GET    /api/upload/{contentType}/{contentId}          # Media por contenido
+POST   /api/upload/cleanup                            # Limpiar archivos temp
+```
+
+### **📚 Biblioteca** (`/api/library`)
+```
+GET    /api/library          # Recursos biblioteca
+POST   /api/library          # Subir recurso [Colaborador+]
+GET    /api/library/{id}     # Detalle recurso
+DELETE /api/library/{id}     # Eliminar recurso [Colaborador+]
+```
+
+---
+
+## 🗄️ Modelo de Datos (Entity Framework)
+
+### **Entidades Principales**
+```csharp
+// Autenticación
+Usuario, Rol, RefreshToken, TokenBlacklist
+
+// Sistema Educativo
+MaterialApoyo, Modulo, ModulePost
+
+// Blog y Eventos
+BlogPost, BlogCategory, Event, EventRegistration
+
+// Multimedia Contextual
+MediaEntity, UploadStatus
+
+// Biblioteca
+LibraryResource
+```
+
+### **Configuración SQLite**
+```csharp
+// ApplicationDbContext configurado para SQLite
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString)
+           .EnableSensitiveDataLogging(false)
+           .EnableServiceProviderCaching());
+```
+
+---
+
+## 🚀 Cómo Ejecutar el Backend
+
+### **Desarrollo Local**
+```bash
+cd Back/
+dotnet restore
+dotnet run
+```
+**URL**: https://localhost:5251
+**Swagger**: https://localhost:5251/swagger
+
+### **Con Frontend SvelteKit**
+```bash
+# Terminal 1 - Backend
+cd Back/
+dotnet run
+
+# Terminal 2 - Frontend
+cd Front/
+npm run dev
+```
+
+### **Base de Datos**
+```bash
+# La base de datos se crea automáticamente en Program.cs
+# Ubicación: D:/ccpvj/Data/ccpvj.db
+# Foreign Keys: Habilitados automáticamente
+```
+
+---
+
+## 📊 Gestión de Multimedia (Contextual)
+
+### **Sistema Contextual**
+- **No archivos independientes**: Todo multimedia pertenece a contenido específico
+- **Tipos soportados**: `material-apoyo`, `module-post`, `blog`, `event`
+- **Limpieza automática**: Al eliminar contenido se eliminan archivos asociados
+- **Compatible con nginx**: Headers para uploads grandes
+
+### **Estructura de Archivos**
+```
+Data/media/uploads/
+├── images/{contentType}/{contentId}/
+├── videos/{contentType}/{contentId}/
+├── audio/{contentType}/{contentId}/
+└── documents/{contentType}/{contentId}/
+```
+
+### **Validaciones Implementadas**
+- **Imágenes**: JPG, PNG, GIF, WebP (max 20MB)
+- **Videos**: MP4, WebM, MOV (max 500MB)
+- **Audio**: MP3, WAV, OGG (max 100MB)
+- **Documentos**: PDF, Office files (max 100MB)
+
+---
+
+## 🔧 Configuración (appsettings.json)
+
+### **Base de Datos**
 ```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=../Data/ccpvj.db"
+  }
+}
+```
+
+### **Legacy JWT Settings** (No utilizados)
+```json
+{
+  "JwtSettings": {
+    "SecretKey": "clave_super_secreta_123456",
+    "Issuer": "SistemaEducativoMesh",
+    "Audience": "CentroCultural",
+    "ExpirationMinutes": 120
+  }
+}
+```
+
+### **Configuración de Aplicación**
+```json
+{
+  "Application": {
+    "Name": "Red Mesh Comunitaria",
+    "Version": "1.0.0",
+    "MaxConcurrentUsers": 30
+  }
+}
+```
+
+---
+
+## 🧪 Testing y Desarrollo
+
+### **Swagger UI**
+- **URL**: https://localhost:5251/swagger
+- **Documentación**: OpenAPI 3.0 generada automáticamente
+- **Testing**: Interface para probar endpoints
+
+### **Datos de Prueba**
+```json
+// Usuario administrador (seeding automático)
 {
   "nombreUsuario": "admin",
   "contrasena": "admin123"
 }
-```
 
-**Respuesta esperada:**
-```json
+// Curso de ejemplo incluido
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "Ax2vF8kL9mN0pQ3sT6uW...",
-  "expiresAt": "2024-12-17T10:30:00Z",
-  "usuario": {
-    "idUsuario": 1,
-    "nombreUsuario": "admin",
-    "nombre": "Administrador",
-    "apellido": "Sistema",
-    "telefono": "",
-    "nombreRol": "Educador"
-  }
+  "title": "Introducción a la Programación",
+  "educator": "admin"
 }
 ```
 
 ---
 
-## 2. **REFRESH TOKEN - Renovar token**
-```
-Method: POST
-URL: https://localhost:7000/api/auth/refresh
-```
+## 🔄 Migración de JWT a Cookies
 
-**Headers:**
+### **Cambios Realizados**
+- ✅ **Eliminado**: Sistema JWT completo
+- ✅ **Implementado**: Cookie-based authentication
+- ✅ **Compatible**: Headers CORS para SvelteKit
+- ✅ **Mantiene**: Misma estructura de endpoints
 
-```
-Content-Type: application/json
-```
-
-**Body (raw JSON):**
-```json
-{
-  "refreshToken": "Ax2vF8kL9mN0pQ3sT6uW..."
-}
-```
-
-**Respuesta esperada:**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "Bx3wG9lM0nN1qR4tU7vX...",
-  "expiresAt": "2024-12-17T10:45:00Z",
-  "usuario": {
-    "idUsuario": 1,
-    "nombreUsuario": "admin",
-    "nombre": "Administrador",
-    "apellido": "Sistema",
-    "telefono": "",
-    "nombreRol": "Educador"
-  }
-}
-```
-
----
-
-## 3. **LOGOUT - Cerrar sesión (dispositivo actual)**
-```
-Method: POST
-URL: https://localhost:7000/api/auth/logout
-```
-
-**Headers:**
-
-```
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**Body (raw JSON):**
-```json
-{
-  "refreshToken": "Bx3wG9lM0nN1qR4tU7vX..."
-}
-```
-
-**Respuesta esperada:**
-```json
-{
-  "message": "Logout exitoso"
-}
-```
-
----
-
-## 4. **LOGOUT ALL - Cerrar sesión en todos los dispositivos**
-```
-Method: POST
-URL: https://localhost:7000/api/auth/logout-all
-```
-
-**Headers:**
-
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**Body:** (Vacío)
-
-**Respuesta esperada:**
-```json
-{
-  "message": "Logout de todos los dispositivos exitoso"
-}
-```
-
----
-
-## 5. **ENDPOINT PROTEGIDO - Ejemplo para probar autenticación**
-
-Primero, necesitas crear un endpoint de prueba:
-
+### **AuthController Simplificado**
 ```csharp
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+// Login ahora usa cookies HttpOnly
+await HttpContext.SignInAsync(
+    CookieAuthenticationDefaults.AuthenticationScheme,
+    new ClaimsPrincipal(claimsIdentity),
+    authProperties
+);
 
-namespace CentroCultural.API.Controllers
-{
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
-    public class TestController : ControllerBase
-    {
-        [HttpGet("profile")]
-        public IActionResult GetProfile()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userName = User.FindFirst(ClaimTypes.Name)?.Value;
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            var jti = User.FindFirst("jti")?.Value;
-
-            return Ok(new
-            {
-                userId,
-                userName,
-                role,
-                jti,
-                message = "Endpoint protegido funcionando correctamente"
-            });
-        }
-    }
-}
-```
-```
-Method: GET
-URL: https://localhost:7000/api/test/profile
-```
-
-**Headers:**
-
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**Respuesta esperada:**
-```json
-{
-  "userId": "1",
-  "userName": "admin",
-  "role": "Educador",
-  "jti": "12345678-1234-5678-9abc-123456789012",
-  "message": "Endpoint protegido funcionando correctamente"
-}
+// Logout limpia cookies
+await HttpContext.SignOutAsync(
+    CookieAuthenticationDefaults.AuthenticationScheme
+);
 ```
 
 ---
 
-## **COLECCIÓN COMPLETA PARA POSTMAN**
+## 📈 Estado de Desarrollo
 
-Aquí tienes la configuración JSON completa para importar en Postman:
+### **✅ Funcional**
+- APIs CRUD completas para cursos, módulos, blog
+- Autenticación cookie-based operativa
+- Sistema multimedia contextual implementado
+- Base de datos SQLite con foreign keys
+- Documentación Swagger actualizada
 
-```json
-{
-  "info": {
-    "name": "CentroCultural Auth API",
-    "description": "Colección para probar autenticación JWT con refresh tokens",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "https://localhost:7000"
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "refreshToken",
-      "value": ""
-    }
-  ],
-  "item": [
-    {
-      "name": "1. Login",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"nombreUsuario\": \"admin\",\n  \"contrasena\": \"admin123\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/login",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "login"]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 200) {",
-              "    const response = pm.response.json();",
-              "    pm.collectionVariables.set('accessToken', response.accessToken);",
-              "    pm.collectionVariables.set('refreshToken', response.refreshToken);",
-              "    console.log('Tokens guardados automáticamente');",
-              "}"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "2. Refresh Token",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/refresh",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "refresh"]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "if (pm.response.code === 200) {",
-              "    const response = pm.response.json();",
-              "    pm.collectionVariables.set('accessToken', response.accessToken);",
-              "    pm.collectionVariables.set('refreshToken', response.refreshToken);",
-              "    console.log('Tokens actualizados automáticamente');",
-              "}"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "3. Get Profile (Protected)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/test/profile",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "test", "profile"]
-        }
-      }
-    },
-    {
-      "name": "4. Logout",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/logout",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "logout"]
-        }
-      }
-    },
-    {
-      "name": "5. Logout All Devices",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/logout-all",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "auth", "logout-all"]
-        }
-      }
-    },
-    {
-      "name": "6. Try Access After Logout (Should Fail)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/test/profile",
-          "host": ["{{baseUrl}}"],
-          "path": ["api", "test", "profile"]
-        }
-      }
-    }
-  ]
-}
-```
+### **⚠️ En Desarrollo**
+- Testing unitario e integración
+- Optimización de rendimiento
+- Limpieza de dependencias JWT legacy
+
+### **🔄 Integración con Frontend**
+- **SvelteKit**: Consume APIs via `/api/` routes
+- **Cookies**: Compartidas entre frontend/backend
+- **CORS**: Configurado para desarrollo local
+- **Opcional**: Frontend puede operar sin backend
 
 ---
 
-## **FLUJO DE PRUEBAS RECOMENDADO:**
+## 📝 Notas para Desarrolladores
 
-### **Escenario 1: Flujo completo exitoso**
-1. **Login** → Guarda automáticamente los tokens
-2. **Get Profile** → Debe funcionar con el access token
-3. **Refresh Token** → Debe generar nuevos tokens
-4. **Get Profile** → Debe funcionar con el nuevo access token
+### **Autenticación**
+- Usar `[Authorize]` para endpoints protegidos
+- Roles: `"Colaborador,Administrador"` para creación/edición
+- Claims disponibles: `NameIdentifier`, `Name`, `Role`
 
-### **Escenario 2: Prueba de blacklist**
-1. **Login** → Obtener tokens
-2. **Get Profile** → Confirmar que funciona
-3. **Logout** → Agregar token a blacklist
-4. **Get Profile** → Debe fallar con 401 "Token has been revoked"
+### **Base de Datos**
+- Foreign keys habilitados automáticamente
+- Seeding de datos inicial incluido
+- Migraciones automáticas en desarrollo
 
-### **Escenario 3: Prueba de refresh token expirado/inválido**
-1. **Login** → Obtener tokens
-2. **Refresh Token** con token inválido → Debe fallar con 401
-3. **Refresh Token** con token válido → Debe funcionar
-
-### **Escenario 4: Logout de todos los dispositivos**
-1. **Login** desde múltiples "sesiones" (ejecutar login varias veces)
-2. **Logout All** → Revocar todos los refresh tokens
-3. **Refresh Token** → Debe fallar para todos los tokens previos
+### **Multimedia**
+- Validar contenido existe antes de upload
+- Usar servicios de limpieza para eliminar archivos
+- Headers nginx para uploads grandes
 
 ---
 
-## **RESPUESTAS DE ERROR ESPERADAS:**
-
-**401 Unauthorized (Credenciales inválidas):**
-```json
-{
-  "message": "Credenciales inválidas"
-}
-```
-
-**401 Unauthorized (Token expirado/inválido):**
-```json
-{
-  "message": "Refresh token inválido o expirado"
-}
-```
-
-**401 Unauthorized (Token en blacklist):**
-```
-Token has been revoked
-```
+**⚠️ Importante**: Este backend es **complementario** al frontend SvelteKit. El sistema puede operar completamente desde el frontend usando sus propias APIs.

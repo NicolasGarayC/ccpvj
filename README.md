@@ -1,350 +1,208 @@
+# Centro Cultural Víctor Jara - Plataforma Web Educativa
 
+## 📌 Resumen Ejecutivo
 
+Plataforma web educativa para centros culturales comunitarios diseñada para funcionar offline-first con arquitectura de red mesh local. **Estado actual: FUNCIONAL - Correcciones técnicas recientes aplicadas**.
 
-# Contexto Completo del Proyecto - Centro Cultural Víctor Jara
+### 🎯 Objetivo
+Crear una plataforma educativa y cultural para el Centro Cultural Víctor Jara en Bogotá que permita:
+- Gestión de cursos educativos organizados por materias
+- Sistema multimedia contextual integrado
+- Roles diferenciados (asistente, colaborador, administrador)
+- Blog y sistema de noticias del centro
 
-## 📌 Instrucciones de Comunicación
-**IMPORTANTE**: Responde de manera **concisa y al punto**, sin textos innecesarios. Mantén precisión técnica pero evita explicaciones extensas.
+## 🚀 Inicio Rápido
 
-## 📌 Contexto General del Proyecto
+### Requisitos
+- Node.js 18+
+- .NET 8 SDK (opcional para backend)
 
-Desarrollo de una **plataforma web offline**, integrada en una **red MESH local**, para un centro cultural comunitario en Bogotá (Centro Cultural Víctor Jara).
+### Ejecutar el Proyecto
 
-**Objetivo principal**: Potenciar y expandir el acceso a contenidos culturales, educativos y comunicativos, incluso sin conexión a internet, utilizando una red distribuida entre dispositivos de la comunidad.
-
-**Prioridad crítica**: **Consumir los menos recursos posibles en procesamiento**, no en almacenamiento.
-
-## 📌 Tecnologías Seleccionadas
-
-### Frontend
-- **Svelte 5**: Framework elegido por ligereza, reactividad y bajo consumo de recursos
-- Páginas de calendario, catálogo de eventos, interfaces de usuario
-- Búsqueda con filtros optimizada para móviles
-
-### Backend
-- **.NET 8 (ASP.NET Core)**: Lógica de negocio, seguridad y acceso a BD
-- **Arquitectura en capas**:
-  - Capa de Presentación (APIs/Controllers)
-  - Capa de Aplicación (casos de uso)
-  - Capa de Dominio (entidades y validaciones)
-  - Capa de Infraestructura (BD y servicios externos)
-
-### Servidor Web
-- **NGINX**: Proxy inverso y manejo de multimedia
-- Balanceo de carga, compresión Gzip/Brotli, terminado SSL
-- **Optimización multimedia**: sendfile, tcp_nopush, Range Requests
-- **Upload directo**: Los archivos van directo a NGINX, no pasan por .NET para ahorrar recursos
-
-### Base de Datos
-- **SQLite**: Ligera, portable, ideal para offline
-- Un archivo .db por nodo MESH
-- Administrada con Entity Framework Core
-
-## 📌 Arquitectura de Archivos Implementada
-
-### Estructura del Proyecto
-```
-proyecto/
-├── Back/
-├── Front/
-├── Data/
-│   └── media/
-│       ├── uploads/
-│       │   ├── images/
-│       │   ├── videos/
-│       │   ├── audio/
-│       │   └── documents/
-│       ├── processed/
-│       │   ├── images/
-│       │   │   ├── thumbnails/
-│       │   │   └── optimized/
-│       │   ├── videos/
-│       │   │   └── compressed/
-│       │   └── audio/
-│       │       └── compressed/
-│       └── temp/
-│           └── uploads/
-│               ├── images/
-│               ├── videos/
-│               └── audio/
-├── Infrastructure/
-│   └── nginx/
-│       ├── nginx.conf
-│       ├── sites-available/
-│       │   └── centro-cultural.conf
-│       └── scripts/
-│           └── cleanup-media.sh
-├── back.sln
-└── README.md
-```
-
-## 📌 Configuración NGINX Implementada
-
-### nginx.conf (Configuración Global)
-```nginx
-worker_processes auto;
-worker_cpu_affinity auto;
-worker_rlimit_nofile 65535;
-
-events {
-    worker_connections 1024;
-    use epoll;
-    multi_accept on;
-    accept_mutex off;
-}
-
-http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-    
-    # Cache de archivos del SO
-    open_file_cache max=10000 inactive=5m;
-    open_file_cache_valid 2m;
-    open_file_cache_min_uses 2;
-    open_file_cache_errors on;
-    
-    # Compresión inteligente (solo texto)
-    gzip on;
-    gzip_vary on;
-    gzip_comp_level 3;
-    gzip_min_length 1000;
-    gzip_proxied any;
-    gzip_types
-        text/plain text/css text/xml text/javascript
-        application/javascript application/json application/xml+rss
-        application/atom+xml image/svg+xml;
-    
-    # Buffers optimizados
-    client_body_buffer_size 16k;
-    client_header_buffer_size 1k;
-    large_client_header_buffers 4 8k;
-    output_buffers 2 32k;
-    postpone_output 1460;
-    
-    # Timeouts balanceados
-    client_body_timeout 12s;
-    client_header_timeout 12s;
-    keepalive_timeout 65s;
-    send_timeout 10s;
-    keepalive_requests 1000;
-    
-    # Proxy optimizado
-    proxy_buffering on;
-    proxy_buffer_size 8k;
-    proxy_buffers 16 8k;
-    proxy_busy_buffers_size 16k;
-    
-    # Backend pool
-    upstream backend {
-        server 127.0.0.1:5000;
-        keepalive 32;
-    }
-    
-    # Cache paths
-    proxy_cache_path /tmp/nginx-cache-static 
-        levels=1:2 keys_zone=static_cache:10m 
-        max_size=100m inactive=24h use_temp_path=off;
-    
-    proxy_cache_path /tmp/nginx-cache-media 
-        levels=1:2 keys_zone=media_cache:50m 
-        max_size=500m inactive=7d use_temp_path=off;
-    
-    # Logging optimizado
-    log_format optimized '$remote_addr - $remote_user [$time_local] '
-                        '"$request" $status $body_bytes_sent '
-                        '"$http_referer" rt=$request_time';
-    
-    access_log /var/log/nginx/access.log optimized;
-    error_log /var/log/nginx/error.log warn;
-    
-    # Rate limiting
-    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/m;
-    limit_req_zone $binary_remote_addr zone=upload_limit:10m rate=5r/m;
-    
-    include /etc/nginx/sites-enabled/*;
-}
-```
-
-### centro-cultural.conf (Configuración del Sitio)
-**Características implementadas**:
-- **Archivos multimedia**: Servicio directo desde NGINX sin pasar por .NET
-- **Upload optimizado**: Archivos van directo a disco, solo metadata pasa por .NET
-- **Cache diferenciado**: 30d imágenes, 7d videos, 14d audio
-- **Range requests**: Streaming eficiente para video/audio
-- **Rate limiting**: Protección anti-spam específica por tipo
-- **Validación por extensión**: Filtrado antes de procesamiento
-- **Cleanup automático**: Endpoint para limpiar archivos temporales
-
-### Rutas Configuradas
-- `GET /media/*`: Servicio directo de archivos multimedia
-- `POST /upload/images`: Upload de imágenes (máx 20MB)
-- `POST /upload/videos`: Upload de videos (máx 500MB)
-- `POST /upload/audio`: Upload de audio (máx 100MB)
-- `POST /cleanup`: Limpieza automática de temporales
-- `GET|POST /api/*`: Proxy hacia backend .NET
-- `GET /*`: Frontend SPA con cache inteligente
-
-## 📌 Integración Backend Implementada
-
-### Endpoints Requeridos en .NET
-```csharp
-[ApiController]
-[Route("api/[controller]")]
-public class UploadController : ControllerBase
-{
-    [HttpPost("images")]
-    [Authorize]
-    public async Task<IActionResult> ProcessImageUpload()
-    {
-        // NGINX pasa archivo en X-File-Path header
-        var tempFilePath = Request.Headers["X-File-Path"].FirstOrDefault();
-        
-        // Validar, procesar y mover de /temp/ a /uploads/
-        // Generar thumbnail, guardar metadata en BD
-        // Retornar URL final para el frontend
-    }
-    
-    [HttpPost("videos")]
-    [Authorize] 
-    public async Task<IActionResult> ProcessVideoUpload()
-    {
-        // Procesamiento asíncrono para archivos grandes
-        // Retorna uploadId para tracking de progreso
-    }
-    
-    [HttpPost("audio")]
-    [Authorize]
-    public async Task<IActionResult> ProcessAudioUpload()
-    
-    [HttpPost("cleanup")]
-    [AllowAnonymous] // Solo localhost
-    public async Task<IActionResult> CleanupTempFiles()
-    
-    [HttpGet("status/{uploadId}")]
-    public async Task<IActionResult> GetUploadStatus(Guid uploadId)
-    
-    [HttpDelete("{mediaId}")]
-    [Authorize]
-    public async Task<IActionResult> DeleteMedia(int mediaId)
-    
-    [HttpGet]
-    public async Task<IActionResult> GetMediaList([FromQuery] MediaFilterDto filter)
-}
-```
-
-### Modelos de Datos
-```csharp
-public class MediaEntity
-{
-    public int Id { get; set; }
-    public string FileName { get; set; }
-    public string RelativePath { get; set; }
-    public string ThumbnailPath { get; set; }
-    public MediaType Type { get; set; } // Image, Video, Audio
-    public long SizeBytes { get; set; }
-    public int? DurationSeconds { get; set; }
-    public string MimeType { get; set; }
-    public string CreatedBy { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public Dictionary<string, object> Metadata { get; set; }
-}
-
-public enum MediaType { Image = 1, Video = 2, Audio = 3, Document = 4 }
-```
-
-## 📌 Flujo de Trabajo Multimedia
-
-### Upload Process (Optimizado para Recursos)
-1. **Frontend** → Upload a `/upload/images|videos|audio`
-2. **NGINX** → Valida extensión y guarda archivo en `/temp/`
-3. **NGINX** → Proxy a .NET con header `X-File-Path`
-4. **.NET** → Valida, procesa y mueve archivo a `/uploads/`
-5. **.NET** → Genera thumbnails/compresión si necesario
-6. **.NET** → Guarda metadata en SQLite
-7. **.NET** → Retorna URL final para frontend
-8. **Cleanup** → Cron job limpia `/temp/` cada hora
-
-### Streaming Process
-1. **Frontend** → Solicita `/media/videos/archivo.mp4`
-2. **NGINX** → Servicio directo con Range Requests
-3. **No pasa por .NET** → Máximo rendimiento
-
-## 📌 Requisitos del Sistema
-
-### Funcionales
-- Registro y autenticación de usuarios con roles
-- Acceso a calendario de eventos
-- Descarga y visualización de materiales multimedia
-- Notificaciones locales en red MESH
-- Inscripción a talleres y actividades
-- Personalización de perfil
-- Gestión administrativa (CRUD eventos)
-- Búsqueda y filtros en catálogo
-
-### No Funcionales
-- **Disponibilidad**: Modo offline con red MESH
-- **Rendimiento**: <2s respuesta, 50+ usuarios concurrentes
-- **Seguridad**: Autenticación por roles, HTTPS, cifrado contraseñas
-- **Escalabilidad**: Backend desacoplado, arquitectura modular
-- **Accesibilidad**: Dispositivos gama baja, buenas prácticas web
-- **Resiliencia**: Manejo fallos BD, red MESH como respaldo
-
-### Permisos y Seguridad
-- **Contenido público**: Todos los archivos multimedia son públicos (sin autenticación para acceso)
-- **Gestión privada**: Solo usuarios autenticados pueden subir/crear contenido
-- **Sin información privada**: Excepto credenciales de docentes
-- **Roles**: Usuarios básicos vs administradores/docentes
-
-## 📌 Optimizaciones Implementadas
-
-### Rendimiento
-- **sendfile**: Transferencia kernel-level
-- **tcp_nopush/nodelay**: Optimización TCP
-- **Range Requests**: Streaming eficiente
-- **ETag**: Validación de cache inteligente
-- **Keepalive pools**: Conexiones persistentes
-- **Rate limiting**: Protección recursos
-
-### Cache Strategy
-- **Imágenes**: 30 días, immutable
-- **Videos**: 7 días, public
-- **Audio**: 14 días, public
-- **CSS/JS**: 1 año con versioning
-- **HTML**: 1 hora, must-revalidate
-- **API**: 5min para GET responses
-
-### Compresión
-- **Solo texto**: CSS, JS, JSON, SVG
-- **Nunca multimedia**: JPG, MP4, MP3 ya comprimidos
-- **Nivel 3**: Balance CPU vs tamaño
-- **Gzip estático**: Archivos pre-comprimidos
-
-## 📌 Siguiente Paso: Testing y Validación
-
-Necesidades pendientes:
-1. **Pruebas funcionales**: Upload, streaming, API endpoints
-2. **Pruebas no funcionales**: Carga, concurrencia, recursos
-3. **Configuración producción**: SSL, logs, monitoreo
-4. **Scripts deployment**: Instalación automática
-5. **Documentación**: Guías de usuario y mantenimiento
-
-## 📌 Estructura de Archivos Creada
-
+#### Frontend (Principal)
 ```bash
-# Directorios ya creados en desarrollo
-~/ccpvj/Data/media/
-├── uploads/
-├── processed/
-│   ├── images/
-│   │   ├── thumbnails/
-│   │   └── optimized/
-│   ├── videos/compressed/
-│   └── audio/compressed/
-└── temp/
-    └── uploads/
+cd Front/
+npm install
+npm run dev
+# Disponible en: http://localhost:5173
+```
+
+#### Backend (Opcional)
+```bash
+cd Back/
+dotnet restore
+dotnet run
+# Disponible en: http://localhost:5251
+```
+
+## 🛠️ Tecnologías
+
+- **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS
+- **Base de Datos**: SQLite (`Data/ccpvj.db`)
+- **Backend**: .NET 8 (opcional/legacy)
+- **Autenticación**: Sistema JWT (JSON Web Tokens)
+
+## 📁 Estructura del Proyecto
+
+```
+ccpvj/
+├── Front/                    # Frontend SvelteKit (Principal)
+│   ├── src/routes/          # Páginas y APIs
+│   ├── src/lib/components/  # Componentes Svelte
+│   └── src/lib/services/    # Servicios frontend
+├── Back/                    # Backend .NET (Opcional)
+│   ├── CentroCultural.API/
+│   ├── CentroCultural.Application/
+│   ├── CentroCultural.Domain/
+│   ├── CentroCultural.Infrastructure/
+│   └── Data/                # Archivos del backend
+│       └── media/           # ⚠️ Archivos multimedia (imágenes, videos, documentos)
+├── Data/                    # Base de datos
+│   └── ccpvj.db            # SQLite database
+└── Documentation/          # Documentación completa
+```
+
+## ✅ Estado Actual - Correcciones Recientes (Septiembre 2025)
+
+### **Problemas Críticos Resueltos**
+
+#### **Backend (.NET 8)**
+1. **Mapeo de Entidades Corregido**:
+   - ✅ Course Entity: Agregados atributos `[Table]` y `[Column]` faltantes
+   - ✅ ModulePost Entity: Tipos de datos unificados (`AuthorId`: int → string, `UpdatedAt`: DateTime → long)
+   - ✅ Mapeo snake_case (BD) ↔ PascalCase (C#) funcional
+
+2. **Servicios Unificados**:
+   - ✅ CourseService: Corregido manejo de unix timestamps (`DateTimeOffset.FromUnixTimeSeconds()`)
+   - ✅ WorkItemService: Eliminado uso inconsistente de `DateTime.UtcNow`
+   - ✅ DTOs: Conversiones correctas entre unix timestamps y DateTime
+
+#### **Base de Datos**
+- ✅ **Foreign Keys**: `PRAGMA foreign_keys = ON` funcionando
+- ✅ **Consistencia**: Esquemas Drizzle y .NET unificados
+- ✅ **Tipos de datos**: Unix timestamps manejados correctamente
+
+#### **Sistema Funcionando**
+- ✅ **Autenticación**: Login/logout con JWT operativo
+- ✅ **APIs**: Endpoints course/module/workitem funcionales
+- ✅ **Upload**: Sistema multimedia con limpieza automática
+- ✅ **Frontend**: Componentes conectados correctamente
+- ✅ **DELETE CASCADE**: Eliminación en cascada con limpieza multimedia implementada
+
+#### **🗑️ DELETE CASCADE HIERARCHY (Septiembre 2025)**
+```
+Course → Modules → Posts → Multimedia Files
+  ├── DELETE Course: Elimina todos los módulos, posts y archivos multimedia
+  ├── DELETE Module: Elimina todos los posts y archivos multimedia del módulo
+  └── DELETE Post: Elimina el post y todos sus archivos multimedia
+```
+
+**Características implementadas:**
+- ✅ **Eliminación completa en cascada** con limpieza de archivos multimedia
+- ✅ **Seguridad transaccional** - Base de datos primero, archivos después
+- ✅ **Resistencia a errores** - Fallos en eliminación de archivos no rompen el proceso
+- ✅ **Logging detallado** - Para troubleshooting y monitoreo
+
+## 📚 Documentación
+
+### Documentos Principales
+- **[README Completo](Documentation/README.md)** - Documentación técnica detallada
+- **[Configuración](Documentation/CONFIGURATION.md)** - Variables de entorno y configuración
+- **[Esquema BD](Documentation/DATABASE_SCHEMA.md)** - Estructura de base de datos
+- **[Deployment](Documentation/DEPLOYMENT_UBUNTU_STEPBYSTEP.md)** - Guía de despliegue
+- **[Claude Context](Documentation/CLAUDE.md)** - Contexto técnico para IA
+
+### Documentos Técnicos Específicos
+- **[Estructura Proyecto](Documentation/PROJECT_STRUCTURE.md)** - Organización del código
+- **[Gestión Cursos](Documentation/COURSE_MANAGEMENT.md)** - Sistema educativo
+- **[WorkItems](Documentation/WORKITEMS_DOCUMENTATION.md)** - Elementos de trabajo
+
+## 🚨 Información Importante
+
+### **Credenciales de Prueba**
+```
+Usuario: admin
+Contraseña: admin123
+Rol: administrador
+```
+
+### **Puertos Estándar**
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5251`
+- Base de datos: `Data/ccpvj.db`
+
+### **Comandos Útiles**
+```bash
+# Frontend
+cd Front/
+npm run db:studio          # GUI base de datos
+npm run build             # Build producción
+npm run check             # Verificar TypeScript
+
+# Backend
+cd Back/
+dotnet build              # Compilar
+dotnet test               # Ejecutar tests
+```
+
+## 🔄 Flujo de Desarrollo
+
+1. **Desarrollar**: Usar frontend en `http://localhost:5173`
+2. **Probar**: APIs disponibles en ambos puertos
+3. **Base de datos**: SQLite en `Data/ccpvj.db`
+4. **Documentar**: Actualizar archivos en `Documentation/`
+
+## 🤝 Contribuir
+
+1. Fork del repositorio
+2. Crear branch para tu feature
+3. Desarrollar y probar cambios
+4. Actualizar documentación si es necesario
+5. Pull request con descripción detallada
+
+## 🎥 Sistema Multimedia
+
+### 📂 Ubicación de Archivos
+**⚠️ IMPORTANTE**: Los archivos multimedia se almacenan en `Back/Data/media/`, **NO** en `Data/media/`
+
+```
+Back/Data/media/
+├── library/                         # Biblioteca Digital
+│   └── {itemId}_{timestamp}_{nombre}.ext
+├── material-apoyo/                  # Material de Apoyo
+│   └── {id}/
+│       ├── banner.jpg               # Imagen de portada
+│       └── modules/{moduleId}/
+│           └── posts/{postId}/
+│               ├── images/          # Imágenes del post
+│               ├── videos/          # Videos del post
+│               └── audios/          # Audios del post
+└── blog/                            # Blog y Noticias
+    └── {postId}/
         ├── images/
         ├── videos/
-        └── audio/
+        └── audios/
 ```
 
-**Status actual**: Pipeline NGINX completamente configurado, falta implementar endpoints .NET y testing.
+### 📋 Especificaciones
+- **Formatos soportados**:
+  - Imágenes: JPG, PNG, WebP, GIF
+  - Videos: MP4, WebM, AVI
+  - Audio: MP3, WAV, OGG
+  - Documentos: PDF, DOC, DOCX, TXT
+- **Límites de tamaño**:
+  - Imágenes: 20MB
+  - Videos: 20GB (para películas educativas)
+  - Audio: 100MB
+  - Documentos: 20GB
+- **Limpieza automática**: Eliminación de archivos huérfanos cada hora
+- **Eliminación en cascada**: Al eliminar contenido, se eliminan automáticamente los archivos físicos asociados
+- **Nginx compatible**: Para uploads grandes en producción
+
+---
+
+## 📞 Contacto
+
+Proyecto desarrollado para el Centro Cultural Víctor Jara - Bogotá, Colombia.
+
+**Estado**: ✅ Funcional tras correcciones de inconsistencias (Septiembre 2025)

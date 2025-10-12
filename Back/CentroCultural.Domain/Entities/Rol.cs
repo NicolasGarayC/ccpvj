@@ -19,7 +19,6 @@ namespace CentroCultural.Domain.Entities
         [Column("Descripcion")]
         public string? Descripcion { get; set; }
 
-        // Navigation property
-        public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+        // Navigation property removed to avoid EF automatic foreign key generation issues
     }
 }

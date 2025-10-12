@@ -1,3 +1,76 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+:root {
+  /* Color System */
+  --color-primary: #10b981;
+  --color-primary-light: #d1fae5;
+  --color-primary-dark: #059669;
+  --color-primary-rgb: 16, 185, 129;
+
+  --color-secondary: #0891b2;
+  --color-secondary-light: #cffafe;
+  --color-secondary-dark: #0e7490;
+
+  --color-accent: #f59e0b;
+  --color-accent-light: #fef3c7;
+  --color-accent-dark: #d97706;
+
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+  --color-error-dark: #dc2626;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #d97706;
+
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-success-dark: #059669;
+
+  /* Text Colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+
+  /* Background Colors */
+  --color-background: #ffffff;
+  --color-background-alt: #f9fafb;
+
+  /* Border Colors */
+  --color-border: #e5e7eb;
+}
+
+/* Button Styles */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 focus:ring-emerald-500;
+}
+
+.btn-outline {
+  @apply bg-transparent text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-500;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700 focus:ring-red-500;
+}
+
+.btn-warning {
+  @apply bg-yellow-600 text-white border-yellow-600 hover:bg-yellow-700 hover:border-yellow-700 focus:ring-yellow-500;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+.btn:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}

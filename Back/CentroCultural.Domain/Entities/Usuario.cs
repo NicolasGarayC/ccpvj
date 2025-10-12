@@ -8,8 +8,7 @@ namespace CentroCultural.Domain.Entities
     {
         [Key]
         [Column("IdUsuario")]
-        public int IdUsuario { get; set; }
-
+        public int IdUsuario { get; set; } = 0;
         [Required]
         [MaxLength(100)]
         [Column("NombreUsuario")]
@@ -19,10 +18,6 @@ namespace CentroCultural.Domain.Entities
         [MaxLength(255)]
         [Column("Contrasena")]
         public string Contrasena { get; set; } = string.Empty;
-
-        [Required]
-        [Column("FechaRegistro")]
-        public string FechaRegistro { get; set; } = string.Empty;
 
         [MaxLength(100)]
         [Column("Nombre")]
@@ -38,10 +33,51 @@ namespace CentroCultural.Domain.Entities
 
         [Required]
         [Column("IdRol")]
-        public int IdRol { get; set; }
+        public int IdRol { get; set; } = 3;
 
-        // Navigation property
-        [ForeignKey("IdRol")]
-        public virtual Rol Rol { get; set; } = null!;
+        [Column("FechaCreacion")]
+        public string FechaCreacion { get; set; } = string.Empty;
+
+        [Column("FechaActualizacion")]
+        public string? FechaActualizacion { get; set; }
+
+        // Propiedades para compatibilidad con código existente
+        [NotMapped]
+        public int Id => IdUsuario;
+
+        [NotMapped]
+        public bool EsActivo { get; set; } = true;
+
+        // Para compatibilidad con código que espera Role string
+        [NotMapped]
+        public string RoleString
+        {
+            get => IdRol switch
+            {
+                1 => "Asistente",
+                2 => "Colaborador",
+                3 => "Administrador",
+                _ => "Asistente"
+            };
+            set => IdRol = value switch
+            {
+                "Administrador" => 3,
+                "Colaborador" => 2,
+                "Asistente" => 1,
+                _ => 1
+            };
+        }
+
+        [NotMapped]
+        public string Role => RoleString;
+
+        [NotMapped]
+        public string FechaRegistro
+        {
+            get => FechaCreacion;
+            set => FechaCreacion = value;
+        }
+
+        // Rol navigation property removed to avoid EF issues
     }
 }

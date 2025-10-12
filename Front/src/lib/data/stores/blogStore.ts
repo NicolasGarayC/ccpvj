@@ -10,8 +10,8 @@ export const currentBlogPost = writable<BlogPost | null>(null);
 const initialBlogPosts: BlogPost[] = [
   { 
     id: 1, 
-    title: 'Inauguración Centro Cultural Víctor Jara', 
-    content: '<p>Nos complace anunciar la apertura oficial de nuestro Centro Cultural Comunitario. Este espacio ha sido creado con el objetivo de proporcionar recursos educativos y culturales a nuestra comunidad.</p><p>El centro cuenta con una biblioteca digital, cursos presenciales, y materiales audiovisuales para apoyar el aprendizaje en diversas áreas.</p><p>Funcionamos completamente en nuestra red local sin necesidad de conexión a internet, garantizando acceso constante a nuestros recursos.</p>',
+    title: 'Inauguración Centro Cultural Víctor Jara',
+    content: '<p>Nos complace anunciar la apertura oficial de nuestro Centro Cultural Comunitario. Este espacio ha sido creado con el objetivo de proporcionar recursos educativos y culturales a nuestra comunidad.</p><p>El centro cuenta con una biblioteca digital, proyectos presenciales, y materiales audiovisuales para apoyar el aprendizaje en diversas áreas.</p><p>Funcionamos completamente en nuestra red local sin necesidad de conexión a internet, garantizando acceso constante a nuestros recursos.</p>',
     excerpt: 'Celebramos la apertura oficial del Centro Cultural Víctor Jara, un espacio dedicado a la educación y cultura comunitaria.',
     publishDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     slug: 'inauguracion-centro-cultural',
@@ -21,18 +21,18 @@ const initialBlogPosts: BlogPost[] = [
     tags: ['inauguración', 'centro cultural', 'comunidad'],
     isPublished: true
   },
-  { 
-    id: 2, 
-    title: 'Nuevos Cursos y Talleres Disponibles', 
-    content: '<p>Ampliamos nuestra oferta educativa con tres nuevos cursos: Pre Universitario, Computación Básica y Taller de Artesanía.</p><p>Cada curso cuenta con módulos estructurados, material de apoyo y seguimiento personalizado.</p><p>Los estudiantes pueden acceder a estos recursos desde cualquier dispositivo conectado a nuestra red local.</p>',
-    excerpt: 'Conoce los nuevos cursos disponibles: Pre Universitario, Computación Básica y Taller de Artesanía, diseñados para toda la comunidad.',
+  {
+    id: 2,
+    title: 'Nuevos Proyectos y Talleres Disponibles',
+    content: '<p>Ampliamos nuestra oferta educativa con tres nuevos proyectos: Pre Universitario, Computación Básica y Taller de Artesanía.</p><p>Cada proyecto cuenta con módulos estructurados, material de apoyo y seguimiento personalizado.</p><p>Los estudiantes pueden acceder a estos recursos desde cualquier dispositivo conectado a nuestra red local.</p>',
+    excerpt: 'Conoce los nuevos proyectos disponibles: Pre Universitario, Computación Básica y Taller de Artesanía, diseñados para toda la comunidad.',
     publishDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    slug: 'nuevos-cursos-disponibles',
-    featuredMedia: 'blog/nuevos-cursos.mp4',
-    videoPoster: 'blog/nuevos-cursos-poster.jpg',
+    slug: 'nuevos-proyectos-disponibles',
+    featuredMedia: 'blog/nuevos-proyectos.mp4',
+    videoPoster: 'blog/nuevos-proyectos-poster.jpg',
     mediaType: 'video',
     authorName: 'Equipo Académico',
-    tags: ['cursos', 'educación', 'talleres'],
+    tags: ['proyectos', 'educación', 'talleres'],
     isPublished: true
   },
   { 

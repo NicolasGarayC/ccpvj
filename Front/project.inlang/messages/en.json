@@ -1,0 +1,19 @@
+{
+  "login": "Login",
+  "username": "Username",
+  "password": "Password", 
+  "home": "Home",
+  "dashboard": "Dashboard",
+  "logout": "Logout",
+  "centroTitle": "Victor Jara Cultural Center",
+  "loginSubtitle": "Community Learning Network",
+  "usernamePlaceholder": "Enter your username",
+  "passwordPlaceholder": "Enter your password",
+  "loggingIn": "Logging in...",
+  "redirecting": "Redirecting...",
+  "loginSuccess": "Login successful. Redirecting...",
+  "loginError": "Login error",
+  "connectionError": "Connection error. Please verify the server is running.",
+  "backToHome": "Back to home",
+  "footerText": "All rights reserved"
+}

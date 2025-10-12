@@ -11,7 +11,6 @@ node_modules
 
 # OS
 .DS_Store
-Thumbs.db
 
 # Env
 .env
@@ -25,9 +24,9 @@ vite.config.ts.timestamp-*
 
 # Paraglide
 src/lib/paraglide
+Front/src/lib/paraglide
+Front/project.inlang/cache
 
-# SQLite
-*.db
 
 *storybook.log
 storybook-static
@@ -74,3 +73,11 @@ TestResults/
 packages/
 *.nuget.props
 *.nuget.targets
+tests/Back.Tests/bin/Debug/
+tests/Back.Tests/obj/
+tests/Back.Tests/obj
+tests/Back.Tests/obj/Debug/net9.0/ref/Back.Tests.dll
+Back/Data/media/
+Back/Data/media
+Back/wwwroot/
+Front/Data/media/content/
