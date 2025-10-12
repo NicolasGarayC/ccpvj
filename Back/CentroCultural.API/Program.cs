@@ -47,6 +47,8 @@ builder.Services.AddHostedService<CentroCultural.Infrastructure.Services.OrphanF
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<CentroCultural.Infrastructure.Configuration.JwtSettings>();
+if (jwtSettings == null)
+    throw new InvalidOperationException("JwtSettings configuration is missing");
 var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
 builder.Services.AddAuthentication(options =>

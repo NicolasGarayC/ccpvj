@@ -97,10 +97,11 @@
   <div class="page-header">
     <div class="header-content">
       <h1 class="page-title">
-        📰 {t('newsAndAnnouncements') || 'Noticias y Anuncios'}
+        <span class="icon">📰</span>
+        <span class="gradient-text">{t('newsAndAnnouncements') || 'Noticias y Anuncios'}</span>
       </h1>
       <p class="page-description">
-        {t('stayUpdated') || 'Mantente informado sobre las últimas actividades, cursos y eventos de nuestra comunidad educativa.'}
+        {t('stayUpdated') || 'Mantente informado sobre las últimas actividades, proyectos y eventos de nuestra comunidad educativa.'}
       </p>
     </div>
   </div>
@@ -158,7 +159,17 @@
     font-size: 2.5rem;
     font-weight: 700;
     color: #111827;
-    background: linear-gradient(to right, #1e40af, #3b82f6);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .icon {
+    font-size: 2.5rem;
+  }
+
+  .gradient-text {
+    background: linear-gradient(to right, #1e40af, #111827);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

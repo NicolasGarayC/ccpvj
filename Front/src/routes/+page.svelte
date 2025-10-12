@@ -7,6 +7,7 @@
 	import { blogService } from '$lib/services/blog/blogService';
 	import { materialApoyoService } from '$lib/services/materialApoyoService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { analyticsService } from '$lib/services/analytics/analyticsService';
 	import type { BlogPost, Course } from '$lib/data/models/interfaces';
 
 	import { t, t_params } from '$lib/i18n';
@@ -24,22 +25,39 @@
 
 	let latestBlogPosts: BlogPost[] = [];
 	let featuredCourses: Course[] = [];
+	let allCourses: Course[] = [];
+	let totalModulesCount = 0;
+	let totalVisitors = 0;
 
-	$: educationalModules = [
-		{ id: 'matematicas', title: t('mathematics') || '🔢 Matemáticas', modules: 5, icon: 'fa-calculator', color: 'from-blue-400 to-purple-600' },
-		{ id: 'fisica', title: t('physics') || '⚛️ Física', modules: 4, icon: 'fa-atom', color: 'from-green-400 to-blue-600' },
-		{ id: 'computacion', title: t('basicComputing') || '💻 Computación Básica', modules: 6, icon: 'fa-laptop-code', color: 'from-purple-400 to-pink-600' },
-		{ id: 'sociales', title: t('socialStudies') || '🌍 Ciencias Sociales', modules: 4, icon: 'fa-globe', color: 'from-orange-400 to-red-600' },
-		{ id: 'economia', title: t('economics') || '💰 Economía', modules: 3, icon: 'fa-coins', color: 'from-yellow-400 to-orange-600' },
-		{ id: 'artesania', title: t('craftWorkshop') || '🎨 Taller de Artesanías', modules: 5, icon: 'fa-paint-brush', color: 'from-pink-400 to-purple-600' },
-		{ id: 'musica', title: t('music') || '🎵 Música', modules: 3, icon: 'fa-music', color: 'from-indigo-400 to-purple-600' },
-		{ id: 'arte-digital', title: t('digitalArt') || '🎨 Arte Digital', modules: 4, icon: 'fa-palette', color: 'from-cyan-400 to-blue-600' }
+	// Colores para los proyectos en la vista de grid
+	const courseColors = [
+		{ color: 'from-blue-400 to-purple-600', icon: 'fa-book' },
+		{ color: 'from-green-400 to-blue-600', icon: 'fa-graduation-cap' },
+		{ color: 'from-purple-400 to-pink-600', icon: 'fa-laptop-code' },
+		{ color: 'from-orange-400 to-red-600', icon: 'fa-globe' },
+		{ color: 'from-yellow-400 to-orange-600', icon: 'fa-lightbulb' },
+		{ color: 'from-pink-400 to-purple-600', icon: 'fa-paint-brush' },
+		{ color: 'from-indigo-400 to-purple-600', icon: 'fa-music' },
+		{ color: 'from-cyan-400 to-blue-600', icon: 'fa-palette' }
 	];
 
 	onMount(async () => {
 		try {
 			latestBlogPosts = await blogService.getLatestPosts();
 			featuredCourses = await materialApoyoService.getFeaturedMaterialApoyo();
+			allCourses = await materialApoyoService.getAllMaterialApoyo();
+
+			// Calcular total de módulos
+			totalModulesCount = allCourses.reduce((sum, course) => sum + (course.moduleCount || 0), 0);
+
+			// Cargar estadísticas de visitantes
+			try {
+				const analytics = await analyticsService.getSummary();
+				totalVisitors = analytics.totalVisitors;
+			} catch (err) {
+				console.error('Error cargando analytics:', err);
+				totalVisitors = 0;
+			}
 		} catch (error) {
 			console.error('Error cargando datos iniciales:', error);
 		}
@@ -142,23 +160,23 @@
 		<div class="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-8 animate-fade-in-up" style="animation-delay: 1s;">
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse">📚</div>
-				<div class="text-3xl font-bold mb-1">8</div>
+				<div class="text-3xl font-bold mb-1">{allCourses.length || 0}</div>
 				<div class="text-pink-100 text-sm">{t('availableCourses')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 0.5s;">📝</div>
-				<div class="text-3xl font-bold mb-1">32</div>
+				<div class="text-3xl font-bold mb-1">{totalModulesCount || 0}</div>
 				<div class="text-pink-100 text-sm">{t('totalModules')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
-				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1s;">🌟</div>
-				<div class="text-3xl font-bold mb-1">150+</div>
-				<div class="text-pink-100 text-sm">{t('communityMembers')}</div>
+				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1s;">📰</div>
+				<div class="text-3xl font-bold mb-1">{latestBlogPosts.length || 0}</div>
+				<div class="text-pink-100 text-sm">{t('recentNews')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
-				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1.5s;">🎨</div>
-				<div class="text-3xl font-bold mb-1">25</div>
-				<div class="text-pink-100 text-sm">{t('activeProjects')}</div>
+				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1.5s;">👥</div>
+				<div class="text-3xl font-bold mb-1">{totalVisitors || 0}</div>
+				<div class="text-pink-100 text-sm">{t('uniqueVisitors')}</div>
 			</div>
 		</div>
 	</div>
@@ -219,7 +237,7 @@
 							{t('noBlogPostsYet')}
 						</h3>
 						<p class="text-purple-600 max-w-md mx-auto">
-							¡Estamos trabajando en contenido súper genial para compartir contigo muy pronto!
+							{t('noBlogPostsMessage')}
 						</p>
 
 						<!-- Elementos decorativos -->
@@ -261,7 +279,7 @@
 			</h2>
 			<div class="mx-auto h-2 w-40 rounded-full bg-gradient-to-r from-orange-400 to-red-400 mb-4"></div>
 			<p class="mx-auto max-w-2xl text-lg text-gray-700 font-medium">
-				¡No te pierdas los eventos más divertidos del centro!
+				{t('upcomingEventsMessage')}
 			</p>
 		</div>
 
@@ -315,65 +333,78 @@
 
 		<!-- Grid de materias súper cool -->
 		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{#each educationalModules as module, index}
-				<div class="group relative transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
-				     style="animation-delay: {index * 0.2}s;">
+			{#if allCourses.length > 0}
+				{#each allCourses.slice(0, 8) as course, index}
+					{@const colorScheme = courseColors[index % courseColors.length]}
+					<div class="group relative transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
+						 style="animation-delay: {index * 0.2}s;">
 
-					<!-- Sombra colorida -->
-					<div class="absolute inset-0 rounded-3xl bg-gradient-to-r {module.color} opacity-20 blur-xl group-hover:opacity-40 group-hover:scale-110 transition-all duration-500"></div>
+						<!-- Sombra colorida -->
+						<div class="absolute inset-0 rounded-3xl bg-gradient-to-r {colorScheme.color} opacity-20 blur-xl group-hover:opacity-40 group-hover:scale-110 transition-all duration-500"></div>
 
-					<!-- Tarjeta principal -->
-					<div class="relative bg-white rounded-3xl p-6 shadow-2xl border-4 border-transparent group-hover:border-white overflow-hidden">
+						<!-- Tarjeta principal -->
+						<div class="relative bg-white rounded-3xl p-6 shadow-2xl border-4 border-transparent group-hover:border-white overflow-hidden">
 
-						<!-- Background gradient -->
-						<div class="absolute inset-0 bg-gradient-to-br {module.color} opacity-10 group-hover:opacity-20 transition-opacity duration-300"></div>
+							<!-- Background gradient -->
+							<div class="absolute inset-0 bg-gradient-to-br {colorScheme.color} opacity-10 group-hover:opacity-20 transition-opacity duration-300"></div>
 
-						<!-- Contenido -->
-						<div class="relative z-10">
-							<!-- Icono grande central -->
-							<div class="text-center mb-6">
-								<div class="inline-block w-20 h-20 rounded-full bg-gradient-to-r {module.color} flex items-center justify-center text-3xl text-white shadow-lg transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-									<i class="{module.icon}"></i>
+							<!-- Contenido -->
+							<div class="relative z-10">
+								<!-- Icono grande central -->
+								<div class="text-center mb-6">
+									<div class="inline-block w-20 h-20 rounded-full bg-gradient-to-r {colorScheme.color} flex items-center justify-center text-3xl text-white shadow-lg transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+										<i class="{colorScheme.icon}"></i>
+									</div>
+								</div>
+
+								<!-- Título -->
+								<h3 class="text-xl font-bold text-center mb-3 text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2">
+									{course.title}
+								</h3>
+
+								<!-- Descripción genial -->
+								<div class="text-center mb-6">
+									<div class="inline-block bg-gradient-to-r {colorScheme.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
+										{course.moduleCount || 0} {course.moduleCount === 1 ? t('module') : t('modules')}
+									</div>
+								</div>
+
+								<!-- Botón de acceso épico -->
+								<div class="text-center">
+									<a href={`/material-apoyo/${course.id}`}
+									   class="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r {colorScheme.color} text-white font-bold text-sm rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
+										<span class="relative z-10">{t('accessMaterials')}</span>
+										<div class="text-lg animate-bounce group-hover/btn:translate-x-1 transition-transform duration-300">🎯</div>
+									</a>
 								</div>
 							</div>
 
-							<!-- Título con emoji -->
-							<h3 class="text-xl font-bold text-center mb-3 text-gray-800 group-hover:text-gray-900 transition-colors">
-								{module.title}
-							</h3>
-
-							<!-- Descripción genial -->
-							<div class="text-center mb-6">
-								<div class="inline-block bg-gradient-to-r {module.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
-									{t_params('moduleCountLabel', { count: module.modules })}
-								</div>
+							<!-- Decoraciones flotantes -->
+							<div class="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-all duration-300 animate-spin">
+								⭐
 							</div>
-
-							<!-- Botón de acceso épico -->
-							<div class="text-center">
-								<a href={`/material-apoyo/${module.id}`}
-								   class="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r {module.color} text-white font-bold text-sm rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
-									<span class="relative z-10">{t('accessMaterials')}</span>
-									<div class="text-lg animate-bounce group-hover/btn:translate-x-1 transition-transform duration-300">🎯</div>
-								</a>
+							<div class="absolute -bottom-2 -left-2 w-6 h-6 bg-pink-400 rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-all duration-300 animate-pulse">
+								💎
 							</div>
 						</div>
 
-						<!-- Decoraciones flotantes -->
-						<div class="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-all duration-300 animate-spin">
-							⭐
-						</div>
-						<div class="absolute -bottom-2 -left-2 w-6 h-6 bg-pink-400 rounded-full flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-all duration-300 animate-pulse">
-							💎
+						<!-- Número de orden divertido -->
+						<div class="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg animate-bounce z-20">
+							{index + 1}
 						</div>
 					</div>
-
-					<!-- Número de orden divertido -->
-					<div class="absolute -top-4 -left-4 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg animate-bounce z-20">
-						{index + 1}
-					</div>
+				{/each}
+			{:else}
+				<div class="col-span-full text-center py-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-dashed border-purple-300">
+					<div class="text-8xl mb-6 animate-bounce">📚</div>
+					<h3 class="text-2xl font-bold text-purple-800 mb-4">
+						{t('noCoursesYet')}
+					</h3>
+					<p class="text-purple-600 max-w-md mx-auto">
+						{t('noCoursesMessage')}
+					</p>
 				</div>
-			{/each}
+			{/if}
 		</div>
 
 		<!-- Sección de Quick Actions -->
@@ -384,12 +415,12 @@
 
 			<div class="flex flex-wrap justify-center gap-4">
 				<a href="/material-apoyo" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
-					<span class="relative z-10">🚀 Explorar Todos los Cursos</span>
+					<span class="relative z-10">🚀 {t('exploreAllProjects')}</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 				</a>
 
 				<a href="/library" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
-					<span class="relative z-10">📖 Ver Biblioteca</span>
+					<span class="relative z-10">📖 {t('viewLibrary')}</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 				</a>
 			</div>
@@ -397,7 +428,7 @@
 	</div>
 </section>
 
-<!-- Cursos Más Populares - Súper Geniales -->
+<!-- Proyectos Más Populares - Súper Geniales -->
 <section class="py-20 bg-gradient-to-b from-indigo-50 via-purple-50 to-pink-50">
 	<div class="container mx-auto px-4">
 		<!-- Encabezado estrella -->
@@ -417,7 +448,7 @@
 			</p>
 		</div>
 
-		<!-- Cursos destacados con diseño juvenil -->
+		<!-- Proyectos destacados con diseño juvenil -->
 		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
 			{#if featuredCourses.length > 0}
 				{#each featuredCourses as course, index}
@@ -459,20 +490,22 @@
 								</p>
 
 								<!-- Estadísticas mini -->
-								<div class="flex items-center gap-4 mb-6 text-sm text-gray-500">
-									<div class="flex items-center gap-1">
-										<span class="text-purple-500">📚</span>
-										<span>{Math.floor(Math.random() * 5) + 3} módulos</span>
+								{#if course.moduleCount || course.educatorName}
+									<div class="flex items-center gap-4 mb-6 text-sm text-gray-500">
+										{#if course.moduleCount}
+											<div class="flex items-center gap-1">
+												<span class="text-purple-500">📚</span>
+												<span>{course.moduleCount} {course.moduleCount === 1 ? t('module') : t('modules')}</span>
+											</div>
+										{/if}
+										{#if course.educatorName}
+											<div class="flex items-center gap-1">
+												<span class="text-blue-500">👨‍🏫</span>
+												<span class="truncate max-w-[150px]">{course.educatorName}</span>
+											</div>
+										{/if}
 									</div>
-									<div class="flex items-center gap-1">
-										<span class="text-green-500">👥</span>
-										<span>{Math.floor(Math.random() * 50) + 20} estudiantes</span>
-									</div>
-									<div class="flex items-center gap-1">
-										<span class="text-yellow-500">⭐</span>
-										<span>4.{Math.floor(Math.random() * 9) + 1}</span>
-									</div>
-								</div>
+								{/if}
 
 								<!-- Botón épico -->
 								<a href={`/material-apoyo/${course.id}`}
@@ -508,7 +541,7 @@
 							{t('noCoursesYet')}
 						</h3>
 						<p class="text-purple-600 max-w-lg mx-auto text-lg">
-							¡Estamos preparando los cursos más geniales del universo para ti!
+							{t('noCoursesMessage')}
 						</p>
 
 						<!-- Loading dots -->
@@ -522,7 +555,7 @@
 			{/if}
 		</div>
 
-		<!-- Botón para ver todos los cursos -->
+		<!-- Botón para ver todos los proyectos -->
 		<div class="mt-20 text-center">
 			<a href="/material-apoyo" class="group relative inline-flex items-center gap-4 px-12 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-500 hover:scale-110 hover:shadow-indigo-300/50">
 				<span class="relative z-10">{t('viewAllCourses')}</span>
@@ -636,7 +669,7 @@
 			<a href="/library" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-green-400 to-cyan-500 px-12 py-5 font-black text-xl text-white shadow-2xl transition-all duration-500 hover:scale-125 hover:shadow-green-300/50 transform hover:-rotate-2">
 				<span class="relative z-10 flex items-center gap-3">
 					<span class="text-3xl animate-bounce">📖</span>
-					Ver Biblioteca
+					{t('viewLibrary')}
 					<span class="text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
 				</span>
 				<div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-full"></div>
@@ -655,7 +688,7 @@
 		<!-- Mensaje final -->
 		<div class="mt-12 animate-fade-in-up" style="animation-delay: 2s;">
 			<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
-				¡Tu aventura de aprendizaje comienza AHORA! 🎉
+				{t('adventureStartsNow')} 🎉
 			</p>
 		</div>
 	</div>

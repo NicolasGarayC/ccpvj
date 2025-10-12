@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { t } from '$lib/i18n';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import DigitalLibraryCard from '$lib/components/library/DigitalLibraryCard.svelte';
@@ -59,7 +60,7 @@
 
 			pagedResult = await digitalLibraryService.getItems(searchDto);
 		} catch (e) {
-			error = 'Error al cargar recursos de la biblioteca';
+			error = t('error.loading_resources');
 			console.error(error, e);
 		} finally {
 			isLoading = false;
@@ -101,7 +102,7 @@
 			// Recargar stats para actualizar contador
 			await loadStats();
 		} catch (e) {
-			error = 'Error al descargar el archivo';
+			error = t('error.downloading_file');
 		}
 	}
 
@@ -115,20 +116,20 @@
 	}
 
 	async function handleDelete(item: LibraryItemDto) {
-		if (!confirm('¿Estás seguro de que quieres eliminar este recurso?')) return;
+		if (!confirm(t('deleteConfirm'))) return;
 
 		try {
 			await digitalLibraryService.deleteItem(item.id);
 			await loadLibraryData();
 			await loadStats();
 		} catch (e) {
-			error = 'Error al eliminar el recurso';
+			error = t('error.deleting_resource');
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Biblioteca - Centro Cultural</title>
+	<title>{t('library.title')} - Centro Cultural</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
@@ -145,11 +146,11 @@
 				<h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
 					<span class="text-4xl mr-3">📖</span>
 					<span class="bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-800 bg-clip-text text-transparent">
-						Biblioteca Digital
+						{t('library.title')}
 					</span>
 				</h1>
 				<p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-medium mb-8">
-					🌟 ¡Explora un mundo de conocimiento increíble! Encuentra libros, videos, audios y recursos súper geniales para aprender y crear cosas asombrosas
+					{t('library.description')}
 				</p>
 
 				{#if canManage}
@@ -159,7 +160,7 @@
 							class="group inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-10 py-5 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold border-2 border-green-400"
 						>
 							<span class="text-2xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-							Agregar Recurso Genial
+							{t('library.addResource')}
 							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
 						</a>
 					</div>
@@ -172,9 +173,9 @@
 			<div class="text-center mb-8">
 				<h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
 					<span class="text-3xl">📊</span>
-					¡Datos Súper Geniales!
+					{t('library.stats')}
 				</h2>
-				<p class="text-gray-600 font-medium">Mira todo lo increíble que tenemos en nuestra biblioteca</p>
+				<p class="text-gray-600 font-medium">{t('library.statsDescription')}</p>
 			</div>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
@@ -186,9 +187,9 @@
 						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
 							<span class="text-2xl">📁</span>
 						</div>
-						<p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Total Recursos</p>
+						<p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">{t('library.totalResources')}</p>
 						<p class="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.totalItems}</p>
-						<p class="text-xs text-blue-600 font-semibold">¡Recursos geniales! 🚀</p>
+						<p class="text-xs text-blue-600 font-semibold">{t('library.awesomeResources')}</p>
 					</div>
 				</div>
 
@@ -199,9 +200,9 @@
 						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
 							<span class="text-2xl">📄</span>
 						</div>
-						<p class="text-sm font-bold text-red-700 mb-2 uppercase tracking-wide">Documentos</p>
+						<p class="text-sm font-bold text-red-700 mb-2 uppercase tracking-wide">{t('library.documents')}</p>
 						<p class="text-4xl font-black bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">{stats.fileTypeDistribution.document || 0}</p>
-						<p class="text-xs text-red-600 font-semibold">¡Documentos épicos! 📚</p>
+						<p class="text-xs text-red-600 font-semibold">{t('library.epicDocuments')}</p>
 					</div>
 				</div>
 
@@ -212,9 +213,9 @@
 						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
 							<span class="text-2xl">🎬</span>
 						</div>
-						<p class="text-sm font-bold text-purple-700 mb-2 uppercase tracking-wide">Videos</p>
+						<p class="text-sm font-bold text-purple-700 mb-2 uppercase tracking-wide">{t('library.videos')}</p>
 						<p class="text-4xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">{stats.fileTypeDistribution.video || 0}</p>
-						<p class="text-xs text-purple-600 font-semibold">¡Videos increíbles! 🎥</p>
+						<p class="text-xs text-purple-600 font-semibold">{t('library.amazingVideos')}</p>
 					</div>
 				</div>
 
@@ -225,9 +226,9 @@
 						<div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
 							<span class="text-2xl">⬇️</span>
 						</div>
-						<p class="text-sm font-bold text-green-700 mb-2 uppercase tracking-wide">Descargas</p>
+						<p class="text-sm font-bold text-green-700 mb-2 uppercase tracking-wide">{t('library.downloads')}</p>
 						<p class="text-4xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">{stats.totalDownloads}</p>
-						<p class="text-xs text-green-600 font-semibold">¡Súper populares! ⭐</p>
+						<p class="text-xs text-green-600 font-semibold">{t('library.superPopular')}</p>
 					</div>
 				</div>
 			</div>
@@ -250,9 +251,9 @@
 				<div class="text-center mb-8">
 					<h2 class="text-2xl font-black text-gray-800 mb-2 flex items-center justify-center gap-3">
 						<span class="text-2xl">🔍</span>
-						¡Encuentra lo que Buscas!
+						{t('library.findWhat')}
 					</h2>
-					<p class="text-gray-600 font-medium">Explora entre todos nuestros recursos increíbles</p>
+					<p class="text-gray-600 font-medium">{t('library.exploreResources')}</p>
 				</div>
 
 				<div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
@@ -261,7 +262,7 @@
 						<div class="relative group">
 							<input
 								type="text"
-								placeholder="🚀 Busca recursos, autores, tags súper geniales..."
+								placeholder="{t('library.searchPlaceholder')}"
 								bind:value={searchTerm}
 								on:input={handleSearch}
 								class="w-full pl-16 pr-8 py-5 text-lg border-3 border-indigo-200 rounded-2xl focus:ring-6 focus:ring-indigo-300/30 focus:border-indigo-400 transition-all duration-300 bg-white/80 focus:bg-white shadow-lg font-medium placeholder:text-gray-400"
@@ -273,7 +274,7 @@
 								<button
 									on:click={() => { searchTerm = ''; handleSearch(); }}
 									class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
-									aria-label="Limpiar búsqueda"
+									aria-label="{t('common.clearSearch')}"
 								>
 									<i class="fas fa-times text-lg"></i>
 								</button>
@@ -290,25 +291,25 @@
 								on:click={() => viewMode = 'grid'}
 							>
 								<span class="text-lg group-hover:rotate-12 transition-transform duration-300">🧩</span>
-								<span class="hidden sm:inline">Grid</span>
+								<span class="hidden sm:inline">{t('library.viewGrid')}</span>
 							</button>
 							<button
 								class="group px-4 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 font-bold {viewMode === 'list' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'}"
 								on:click={() => viewMode = 'list'}
 							>
 								<span class="text-lg group-hover:scale-110 transition-transform duration-300">📋</span>
-								<span class="hidden sm:inline">Lista</span>
+								<span class="hidden sm:inline">{t('library.viewList')}</span>
 							</button>
 						</div>
 
 						<!-- Ordenamiento mejorado -->
 						<div class="relative">
 							<select bind:value={sortBy} on:change={handleSortChange} class="appearance-none px-6 py-3 pr-10 border-2 border-indigo-200 rounded-2xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
-								<option value="created_at">✨ Más recientes</option>
-								<option value="title">🔤 Nombre A-Z</option>
-								<option value="download_count">🔥 Más populares</option>
-								<option value="view_count">👁️ Más vistos</option>
-								<option value="publish_year">📅 Por año</option>
+								<option value="created_at">✨ {t('library.sortMostRecent')}</option>
+								<option value="title">🔤 {t('library.sortNameAZ')}</option>
+								<option value="download_count">🔥 {t('library.sortMostPopular')}</option>
+								<option value="view_count">👁️ {t('library.sortMostViewed')}</option>
+								<option value="publish_year">📅 {t('library.sortByYear')}</option>
 							</select>
 							<div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-indigo-400 pointer-events-none">
 								<i class="fas fa-chevron-down"></i>
@@ -318,7 +319,7 @@
 						<button
 							on:click={() => { sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; handleSortChange(); }}
 							class="group p-3 border-2 border-indigo-200 bg-white/80 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-							title={sortOrder === 'asc' ? '⬆️ Orden ascendente' : '⬇️ Orden descendente'}
+							title={sortOrder === 'asc' ? t('library.orderAsc') : t('library.orderDesc')}
 						>
 							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">
 								{sortOrder === 'asc' ? '⬆️' : '⬇️'}
@@ -333,14 +334,14 @@
 						{#if pagedResult && pagedResult.totalCount === 0}
 							<p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
 								<span class="text-2xl">😔</span>
-								No encontramos nada súper genial
+								{t('library.nothingFound')}
 							</p>
 						{:else if pagedResult}
 							<div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl px-6 py-3">
 								<span class="text-xl">🎯</span>
 								<p class="font-bold text-gray-700">
-									Mostrando <span class="text-indigo-600 font-black">{((pagedResult.page - 1) * pagedResult.pageSize) + 1} - {Math.min(pagedResult.page * pagedResult.pageSize, pagedResult.totalCount)}</span>
-									de <span class="text-purple-600 font-black">{pagedResult.totalCount}</span> recursos súper geniales
+									{t('library.showing')} <span class="text-indigo-600 font-black">{((pagedResult.page - 1) * pagedResult.pageSize) + 1} - {Math.min(pagedResult.page * pagedResult.pageSize, pagedResult.totalCount)}</span>
+									{t('library.of')} <span class="text-purple-600 font-black">{pagedResult.totalCount}</span> {t('library.resources')}
 								</p>
 							</div>
 						{/if}
@@ -358,7 +359,7 @@
 				<button
 					on:click={() => error = null}
 					class="ml-auto text-red-500 hover:text-red-700"
-					aria-label="Cerrar mensaje de error"
+					aria-label="{t('common.closeError')}"
 				>
 					<i class="fas fa-times"></i>
 				</button>
@@ -387,12 +388,12 @@
 					</div>
 					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
 						<span class="text-3xl">🚀</span>
-						¡Cargando Recursos Increíbles!
+						{t('library.loading')}
 					</h3>
-					<p class="text-lg text-gray-600 mb-4 font-medium">Preparando la mejor experiencia de aprendizaje para ti</p>
+					<p class="text-lg text-gray-600 mb-4 font-medium">{t('library.loadingMessage')}</p>
 					<div class="flex items-center justify-center gap-2 text-indigo-600 font-bold">
 						<span class="animate-pulse">✨</span>
-						<span>Buscando contenido súper genial</span>
+						<span>{t('library.searchingContent')}</span>
 						<span class="animate-pulse">✨</span>
 					</div>
 				</div>
@@ -426,19 +427,19 @@
 
 					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
 						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
-							🤔 ¡Oops! No encontramos nada súper genial
+							{t('library.noResults')}
 						{:else}
-							📖 Biblioteca esperando contenido increíble
+							{t('library.waitingForContent')}
 						{/if}
 					</h3>
 
 					<p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
 						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
-							🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar algo súper genial.
+							{t('library.tryOtherTerms')}
 						{:else if canManage}
-							🌟 ¡Sé el primero en compartir conocimiento increíble! Agrega el primer recurso y dale vida a esta biblioteca.
+							{t('library.beFirst')}
 						{:else}
-							⏰ Pronto tendremos recursos súper geniales para que explores y aprendas cosas increíbles.
+							{t('library.soonContent')}
 						{/if}
 					</p>
 
@@ -448,7 +449,7 @@
 							class="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
 						>
 							<span class="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
-							Limpiar filtros y empezar de nuevo
+							{t('action.clearFilters')}
 							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
 						</button>
 					{:else if canManage}
@@ -457,7 +458,7 @@
 							class="group inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
 						>
 							<span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-							Agregar el primer recurso genial
+							{t('library.addFirstResource')}
 							<i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
 						</a>
 					{/if}
@@ -488,7 +489,7 @@
 						on:click={() => handlePageChange(1)}
 						disabled={pagedResult.page === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
-						aria-label="Ir a la primera página"
+						aria-label="{t('common.goToFirstPage')}"
 					>
 						<i class="fas fa-angle-double-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
@@ -497,7 +498,7 @@
 						on:click={() => handlePageChange(Math.max(1, pagedResult.page - 1))}
 						disabled={pagedResult.page === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
-						aria-label="Página anterior"
+						aria-label="{t('common.previousPage')}"
 					>
 						<i class="fas fa-angle-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
@@ -523,7 +524,7 @@
 						on:click={() => handlePageChange(Math.min(pagedResult.totalPages, pagedResult.page + 1))}
 						disabled={pagedResult.page === pagedResult.totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
-						aria-label="Página siguiente"
+						aria-label="{t('common.nextPage')}"
 					>
 						<i class="fas fa-angle-right text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
@@ -532,7 +533,7 @@
 						on:click={() => handlePageChange(pagedResult.totalPages)}
 						disabled={pagedResult.page === pagedResult.totalPages}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
-						aria-label="Ir a la última página"
+						aria-label="{t('common.goToLastPage')}"
 					>
 						<i class="fas fa-angle-double-right text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>

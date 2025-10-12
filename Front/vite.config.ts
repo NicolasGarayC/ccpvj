@@ -19,6 +19,14 @@ export default defineConfig({
 		strictPort: true, // Fail if port is not available
 		proxy: {
 			'/api': {
+				// Exclude routes that SvelteKit handles directly
+				bypass: (req) => {
+					// Let SvelteKit handle upload and cleanup endpoints
+					if (req.url?.startsWith('/api/upload/') || req.url?.startsWith('/api/cleanup/')) {
+						return req.url; // Return the URL to bypass proxy
+					}
+					// Everything else goes to backend .NET
+				},
 				target: 'http://localhost:5251',
 				changeOrigin: true,
 				secure: false,

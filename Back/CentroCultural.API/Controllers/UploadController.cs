@@ -21,7 +21,7 @@ namespace CentroCultural.API.Controllers
         /// Cleanup orphan files that were uploaded but not saved
         /// </summary>
         [HttpPost("cleanup")]
-        public async Task<IActionResult> CleanupOrphanFiles([FromBody] CleanupRequest request)
+        public IActionResult CleanupOrphanFiles([FromBody] CleanupRequest request)
         {
             _logger.LogInformation("Cleanup request received for {Count} files", request.Files?.Count ?? 0);
 

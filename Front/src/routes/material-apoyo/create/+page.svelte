@@ -19,7 +19,7 @@
 		canCreate = user?.role === 'colaborador' || user?.role === 'administrador';
 
 		if (!canCreate) {
-			error = 'No tienes permisos para crear cursos';
+			error = 'No tienes permisos para crear proyectos';
 			return;
 		}
 	});
@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-	<title>Crear Material de Apoyo - Centro Cultural Víctor Jara</title>
+	<title>Crear Proyecto - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -55,11 +55,11 @@
 				<h1 class="text-3xl md:text-4xl font-black mb-4">
 					<span class="text-2xl mr-3">✨</span>
 					<span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-						Crear Nuevo Material de Apoyo
+						Crear Nuevo Proyecto
 					</span>
 				</h1>
 				<p class="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
-					Comparte tu conocimiento creando material educativo que inspire y eduque a nuestra comunidad
+					Comparte tu conocimiento creando proyectos educativos que inspiren y eduquen a nuestra comunidad
 				</p>
 			</div>
 		</div>
@@ -81,7 +81,7 @@
 						class="px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-colors font-semibold"
 						on:click={() => goto('/material-apoyo')}
 					>
-						Volver a Material de Apoyo
+						Volver a Proyectos
 					</button>
 				</div>
 			</div>
@@ -120,7 +120,7 @@
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="15,18 9,12 15,6"></polyline>
 				</svg>
-				Volver a Material de Apoyo
+				Volver a Proyectos
 			</button>
 		</div>
 	</div>

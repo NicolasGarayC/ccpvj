@@ -102,7 +102,7 @@
 
 		<div class="course-meta">
 			<div class="educator">
-				<span class="label">Educador:</span>
+				<span class="label">Encargado:</span>
 				<span class="value">{materialApoyo.educatorName}</span>
 			</div>
 

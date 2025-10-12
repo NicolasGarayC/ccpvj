@@ -7,6 +7,7 @@
 
 	export let visible = false;
 	export let post: PostDetail | null = null;
+	export let moduleId: string | null = null;
 
 	const dispatch = createEventDispatcher();
 
@@ -88,11 +89,14 @@
 			case 'text':
 				return element.content || 'Sin contenido';
 			case 'image':
-				return element.filePath ? { type: 'image', src: postElementService.getFileUrl(element.filePath), alt: element.fileName || 'Imagen' } : null;
+				// Images don't need tracking (displayed inline)
+				return element.filePath ? { type: 'image', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, false), alt: element.fileName || 'Imagen' } : null;
 			case 'video':
-				return element.filePath ? { type: 'video', src: postElementService.getFileUrl(element.filePath) } : null;
+				// Videos should be tracked
+				return element.filePath ? { type: 'video', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true) } : null;
 			case 'audio':
-				return element.filePath ? { type: 'audio', src: postElementService.getFileUrl(element.filePath) } : null;
+				// Audio should be tracked
+				return element.filePath ? { type: 'audio', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true) } : null;
 			default:
 				return null;
 		}

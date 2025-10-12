@@ -113,7 +113,6 @@
 	onDestroy(async () => {
 		// Cleanup orphan files when leaving page without saving
 		if (uploadedFilePath && !itemSaved) {
-			console.log('🧹 Page destroyed without save - cleaning up orphan file');
 			await contextualUploadService.cleanupOrphanFiles([uploadedFilePath]);
 		}
 	});
@@ -200,11 +199,10 @@
 
 			// Cleanup uploaded file on error
 			if (uploadedFilePath && !itemSaved) {
-				console.log('🧹 Cleaning up uploaded file due to error');
 				await contextualUploadService.cleanupOrphanFiles([uploadedFilePath]);
 				uploadedFilePath = null;
 			}
-		} finally {
+		} finally{
 			loading = false;
 			isUploading = false;
 		}

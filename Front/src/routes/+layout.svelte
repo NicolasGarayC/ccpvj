@@ -2,10 +2,12 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
 	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
 	import { browser } from '$app/environment';
 	import { t } from '$lib/i18n';
 	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
+	import { analyticsService } from '$lib/services/analytics/analyticsService.js';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -16,7 +18,7 @@
 	// Estado del menú móvil
 	let mobileMenuOpen = false;
 
-	// Calcular si es educador (administrador puede crear contenido)
+	// Calcular si es encargado (administrador puede crear contenido)
 	$: isEducator =
 		isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
 
@@ -47,6 +49,18 @@
 		userRole = isLoggedIn ? user?.role || '' : '';
 	}
 
+	// Función para rastrear visitas de página
+	async function trackPageVisit(pageUrl: string) {
+		if (!browser) return;
+
+		try {
+			await analyticsService.trackVisitor(pageUrl);
+		} catch (error) {
+			// Silenciosamente ignorar errores de tracking para no afectar la UX
+			console.debug('Analytics tracking error:', error);
+		}
+	}
+
 	// Inicialización del componente
 	onMount(() => {
 		// Solo actualizar el estado de autenticación si NO estamos en la página de login
@@ -65,6 +79,16 @@
 			// Configuración simple de idioma
 			const browserLang = navigator.language?.split('-')[0] || 'es';
 			currentLocale = ['es', 'en'].includes(browserLang) ? browserLang : 'es';
+
+			// Rastrear visita inicial de la página
+			trackPageVisit($page.url.pathname);
+		}
+	});
+
+	// Rastrear cada navegación de página
+	afterNavigate((navigation) => {
+		if (browser && navigation.to) {
+			trackPageVisit(navigation.to.url.pathname);
 		}
 	});
 
@@ -171,11 +195,11 @@
 						<a
 							href="/material-apoyo"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="Material de Apoyo"
+							title="{t('materialApoyo')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline whitespace-nowrap">Material de Apoyo</span>
+								<span class="hidden lg:inline whitespace-nowrap">{t('materialApoyo')}</span>
 							</span>
 						</a>
 					</div>
@@ -188,7 +212,7 @@
 						{#if canManageUsers}
 							<a href="/dashboard" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
 								<i class="fas fa-users-cog text-lg"></i>
-								<span class="hidden lg:inline">Panel</span>
+								<span class="hidden lg:inline">{t('panel')}</span>
 							</a>
 						{/if}
 						
@@ -210,7 +234,7 @@
 								class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 							>
 								<i class="fas fa-sign-out-alt text-lg"></i>
-								<span class="hidden lg:inline">Salir</span>
+								<span class="hidden lg:inline">{t('logout')}</span>
 							</button>
 						</form>
 					{:else}
@@ -289,7 +313,7 @@
 					<a href="/material-apoyo" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-graduation-cap text-lg"></i>
-							<span>Material de Apoyo</span>
+							<span>{t('materialApoyo')}</span>
 						</span>
 					</a>
 
@@ -299,7 +323,7 @@
 							<a href="/dashboard" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 								<span class="flex items-center gap-3">
 									<i class="fas fa-users-cog text-lg"></i>
-									<span>Panel Admin</span>
+									<span>{t('panelAdmin')}</span>
 								</span>
 							</a>
 						{/if}
@@ -326,7 +350,7 @@
 							>
 								<span class="flex items-center gap-3 justify-center">
 									<i class="fas fa-sign-out-alt text-lg"></i>
-									<span>Cerrar Sesión</span>
+									<span>{t('dashboard.closeSession')}</span>
 								</span>
 							</button>
 						</form>

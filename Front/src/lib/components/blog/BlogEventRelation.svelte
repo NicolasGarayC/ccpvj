@@ -9,7 +9,6 @@
 	let loading = false;
 	let error: string | null = null;
 	let searchTerm = '';
-	let showDropdown = false;
 
 	// Available events to select from
 	let allEvents: EventSummary[] = [];
@@ -20,6 +19,10 @@
 
 	onMount(async () => {
 		await loadAvailableEvents();
+		// If editing an existing blog post, load already related events
+		if (blogPostId) {
+			await loadRelatedEvents();
+		}
 	});
 
 	async function loadAvailableEvents() {
@@ -34,6 +37,18 @@
 			console.error('Error loading events:', err);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadRelatedEvents() {
+		if (!blogPostId) return;
+
+		try {
+			const relatedEvents = await calendarService.getEventsByBlogPost(blogPostId);
+			selectedEventIds = relatedEvents.map(event => event.id);
+			console.log('📅 Eventos ya relacionados cargados:', selectedEventIds);
+		} catch (err) {
+			console.error('Error loading related events:', err);
 		}
 	}
 
@@ -143,8 +158,6 @@
 			<input
 				type="text"
 				bind:value={searchTerm}
-				on:focus={() => (showDropdown = true)}
-				on:blur={() => setTimeout(() => (showDropdown = false), 200)}
 				placeholder="Buscar eventos por título..."
 				class="search-input"
 			/>
@@ -153,7 +166,7 @@
 				<div class="loading-spinner"></div>
 			{/if}
 
-			{#if showDropdown && !loading}
+			{#if !loading}
 				<div class="dropdown">
 					{#if filteredEvents.length === 0}
 						<div class="empty-state">
@@ -192,7 +205,7 @@
 					{/if}
 				</div>
 			{/if}
-		</div}
+		</div>
 
 		<div class="help-text">
 			Selecciona los eventos que deseas relacionar con este artículo del blog

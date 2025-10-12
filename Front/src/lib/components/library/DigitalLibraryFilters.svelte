@@ -2,6 +2,7 @@
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import type { LibrarySearchDto } from '$lib/services/digitalLibraryService';
+	import { t } from '$lib/i18n';
 
 	const dispatch = createEventDispatcher<{
 		filtersChange: LibrarySearchDto;
@@ -78,23 +79,50 @@
 	}
 
 	const fileTypeOptions = [
-		{ value: 'image', label: '🖼️ Imágenes', color: 'from-green-400 to-green-600' },
-		{ value: 'video', label: '🎥 Videos', color: 'from-amber-400 to-orange-600' },
-		{ value: 'audio', label: '🎵 Audio', color: 'from-purple-400 to-purple-600' },
-		{ value: 'document', label: '📄 Documentos', color: 'from-red-400 to-red-600' }
+		{ value: 'image', color: 'from-green-400 to-green-600' },
+		{ value: 'video', color: 'from-amber-400 to-orange-600' },
+		{ value: 'audio', color: 'from-purple-400 to-purple-600' },
+		{ value: 'document', color: 'from-red-400 to-red-600' }
 	];
 
 	const categoryOptions = [
-		{ value: 'victor-jara', label: '🎸 Víctor Jara', color: 'from-red-400 to-red-600' },
-		{ value: 'nueva-cancion', label: '🎶 Nueva Canción', color: 'from-blue-400 to-blue-600' },
-		{ value: 'educacion-popular', label: '📚 Educación Popular', color: 'from-green-400 to-green-600' },
-		{ value: 'memoria-historica', label: '🏛️ Memoria Histórica', color: 'from-purple-400 to-purple-600' },
-		{ value: 'talleres-eventos', label: '🎭 Talleres y Eventos', color: 'from-indigo-400 to-indigo-600' },
-		{ value: 'archivo-prensa', label: '📰 Archivo de Prensa', color: 'from-yellow-400 to-yellow-600' },
-		{ value: 'audiovisual', label: '🎬 Audiovisual', color: 'from-pink-400 to-pink-600' },
-		{ value: 'literatura', label: '📖 Literatura', color: 'from-teal-400 to-teal-600' },
-		{ value: 'general', label: '📁 General', color: 'from-gray-400 to-gray-600' }
+		{ value: 'victor-jara', color: 'from-red-400 to-red-600' },
+		{ value: 'nueva-cancion', color: 'from-blue-400 to-blue-600' },
+		{ value: 'educacion-popular', color: 'from-green-400 to-green-600' },
+		{ value: 'memoria-historica', color: 'from-purple-400 to-purple-600' },
+		{ value: 'talleres-eventos', color: 'from-indigo-400 to-indigo-600' },
+		{ value: 'archivo-prensa', color: 'from-yellow-400 to-yellow-600' },
+		{ value: 'audiovisual', color: 'from-pink-400 to-pink-600' },
+		{ value: 'literatura', color: 'from-teal-400 to-teal-600' },
+		{ value: 'general', color: 'from-gray-400 to-gray-600' }
 	];
+
+	// Helper function to get file type label
+	function getFileTypeLabel(value: string): string {
+		const labelMap: Record<string, string> = {
+			'image': t('filters.fileType.image'),
+			'video': t('filters.fileType.video'),
+			'audio': t('filters.fileType.audio'),
+			'document': t('filters.fileType.document')
+		};
+		return labelMap[value] || value;
+	}
+
+	// Helper function to get category label
+	function getCategoryLabel(value: string): string {
+		const labelMap: Record<string, string> = {
+			'victor-jara': t('filters.category.victorJara'),
+			'nueva-cancion': t('filters.category.nuevaCancion'),
+			'educacion-popular': t('filters.category.educacionPopular'),
+			'memoria-historica': t('filters.category.memoriaHistorica'),
+			'talleres-eventos': t('filters.category.talleresEventos'),
+			'archivo-prensa': t('filters.category.archivoPrensa'),
+			'audiovisual': t('filters.category.audiovisual'),
+			'literatura': t('filters.category.literatura'),
+			'general': t('filters.category.general')
+		};
+		return labelMap[value] || value;
+	}
 </script>
 
 <div class="relative bg-gradient-to-br from-white/95 to-indigo-50/95 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-indigo-100 p-6 mb-8 overflow-hidden">

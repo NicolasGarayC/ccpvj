@@ -25,7 +25,7 @@
 		canEdit = user?.role === 'colaborador' || user?.role === 'administrador';
 
 		if (!canEdit) {
-			error = 'No tienes permisos para editar cursos';
+			error = 'No tienes permisos para editar proyectos';
 			loading = false;
 			return;
 		}
@@ -40,7 +40,7 @@
 			error = '';
 			course = await materialApoyoService.getMaterialApoyoById(courseId);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Error cargando el curso';
+			error = err instanceof Error ? err.message : 'Error cargando el proyecto';
 			console.error('Error loading course:', err);
 		} finally {
 			loading = false;

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	export let isOpen = false;
-	export let title = '¿Confirmar acción?';
-	export let message = '¿Estás seguro de que deseas continuar?';
-	export let confirmText = 'Confirmar';
-	export let cancelText = 'Cancelar';
+	export let title = t('modal.confirmAction');
+	export let message = t('modal.confirmMessage');
+	export let confirmText = t('modal.confirm');
+	export let cancelText = t('action.cancel');
 	export let type: 'danger' | 'warning' | 'info' = 'warning';
 	export let loading = false;
 
@@ -78,7 +79,7 @@
 					<button
 						class="modal-close"
 						on:click={handleCancel}
-						aria-label="Cerrar modal"
+						aria-label={t('modal.closeModal')}
 					>
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<line x1="18" y1="6" x2="6" y2="18"></line>

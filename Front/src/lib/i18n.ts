@@ -9,17 +9,17 @@ const translations = {
   'centroPurpose': '✨ Tu espacio de aprendizaje y creatividad ✨',
 
   // Action buttons
-  'educatorLogin': '👨‍🏫 Acceso Educadores',
+  'educatorLogin': '👨‍🏫 Acceso Encargados',
   'browseMaterials': '📚 Explorar Materiales',
-  'educatorDashboard': '📊 Panel Educador',
-  'createContent': '✨ Crear Contenido',
+  'educatorDashboard': ' Panel Encargado',
+  'createContent': ' Crear Contenido',
   'myMaterials': '🎒 Mis Materiales',
   'startLearning': '🚀 ¡Empezar a Aprender!',
   'joinCommunity': '🤝 Unirse a la Comunidad',
   'exploreLibrary': '📖 Explorar Biblioteca',
 
   // Statistics
-  'availableCourses': '📚 Cursos Disponibles',
+  'availableCourses': '📚 Proyectos Disponibles',
   'totalModules': '📝 Módulos Totales',
   'studentsServed': '👥 Estudiantes Atendidos',
   'activeProjects': '🎨 Proyectos Activos',
@@ -37,10 +37,10 @@ const translations = {
   'music': '🎵 Música',
 
   // News and blog
-  'latestNews': '📰 ¡Últimas Noticias!',
+  'latestNews': ' ¡Últimas Noticias!',
   'stayUpdated': 'Mantente al día con las últimas actividades del centro',
   'noBlogPostsYet': '¡Próximamente tendremos noticias increíbles!',
-  'viewAllNews': '👀 Ver Todas las Noticias',
+  'viewAllNews': ' Ver Todas las Noticias',
   'readMore': '📖 Leer Más',
   'newsAndAnnouncements': 'Noticias y Anuncios',
   'blogDescription': 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara',
@@ -54,24 +54,24 @@ const translations = {
   'createArticle': 'Crear Artículo',
 
   // Events and calendar
-  'upcomingEvents': '🎪 ¡Próximos Eventos Geniales!',
+  'upcomingEvents': ' ¡Próximos Eventos Geniales!',
   'noEventsYet': '¡Estamos preparando eventos súper divertidos!',
   'viewCalendar': 'Ver Calendario Completo',
   'registerEvent': '✅ ¡Inscríbete Ya!',
 
   // Educational materials
-  'educationalMaterials': '🎒 ¡Materiales de Aprendizaje!',
+  'educationalMaterials': ' ¡Materiales de Aprendizaje!',
   'accessCourseMaterials': 'Descubre recursos increíbles para aprender y crear',
   'moduleCountLabel': '📚 {count} módulos súper geniales',
   'accessMaterials': ' ¡Acceder Ya!',
   'modules': 'módulos',
 
   // Featured courses
-  'featuredCourses': '⭐ ¡Cursos Más Populares!',
-  'exploreCourseOfferings': 'Los cursos que más les gustan a nuestros estudiantes',
-  'noCoursesYet': '¡Estamos creando cursos increíbles para ti!',
-  'exploreCourseMaterials': '🎮 ¡Explorar Curso!',
-  'viewAllCourses': '🌟 Ver Todos los Cursos',
+  'featuredCourses': '⭐ ¡Proyectos Más Populares!',
+  'exploreCourseOfferings': 'Los proyectos que más les gustan a nuestros estudiantes',
+  'noCoursesYet': '¡Estamos creando proyectos increíbles para ti!',
+  'exploreCourseMaterials': ' ¡Explorar Proyecto!',
+  'viewAllCourses': ' Ver Todos los Proyectos',
 
   // Center information
   'aboutCenter': '🏛️ Sobre Nuestro Centro',
@@ -83,7 +83,7 @@ const translations = {
   // Final call to action
   'readyToStart': '🎯 ¿Listo para la Aventura?',
   'joinCommunityText': '¡Únete a nuestra comunidad de jóvenes creativos y empezemos juntos esta increíble experiencia de aprendizaje!',
-  'exploreCourses': 'Explorar Cursos',
+  'exploreCourses': 'Explorar Proyectos',
   'readLatestNews': 'Leer Noticias',
 
   // Special sections

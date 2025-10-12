@@ -202,7 +202,6 @@ namespace CentroCultural.Application.Services
                 await DeletePhysicalFile(filePathToDelete);
             }
 
-            Console.WriteLine($"Successfully deleted element {elementId} with file: {filePathToDelete ?? "no file"}");
             return true;
         }
 
@@ -278,7 +277,6 @@ namespace CentroCultural.Application.Services
                 await DeletePhysicalFile(filePath);
             }
 
-            Console.WriteLine($"Successfully deleted {elements.Count} elements with {filesToDelete.Count} files for post {postId}");
             return true;
         }
 
@@ -288,24 +286,15 @@ namespace CentroCultural.Application.Services
             {
                 try
                 {
-                    Console.WriteLine($"🗑️ Attempting to delete file: {relativePath}");
                     var fullPath = GetFullMediaPath(relativePath);
-                    Console.WriteLine($"🗑️ Full path resolved to: {fullPath}");
 
                     if (File.Exists(fullPath))
                     {
                         File.Delete(fullPath);
-                        Console.WriteLine($"✅ Successfully deleted physical file: {fullPath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ File not found for deletion: {fullPath}");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"⚠️ Warning: Could not delete file {relativePath}: {ex.Message}");
-                    Console.WriteLine($"⚠️ Exception details: {ex}");
                     // Continue execution even if file deletion fails
                 }
             });
@@ -320,10 +309,6 @@ namespace CentroCultural.Application.Services
             // Construct full path to media directory - files are in Back/Data/media
             var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
-
-            Console.WriteLine($"🔧 Debug - Current directory: {Directory.GetCurrentDirectory()}");
-            Console.WriteLine($"🔧 Debug - Media directory: {mediaDirectory}");
-            Console.WriteLine($"🔧 Debug - Full resolved path: {fullPath}");
 
             return fullPath;
         }

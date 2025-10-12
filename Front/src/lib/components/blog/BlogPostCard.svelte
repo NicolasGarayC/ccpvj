@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
   import { t } from '$lib/i18n';
+  import { blogPostElementService } from '$lib/services/blog/blogPostElementService';
+  import { getBlogMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
 
   export let post: BlogPost;
   export let showActions = false;
@@ -10,10 +12,35 @@
 
   const dispatch = createEventDispatcher();
 
-  // Función para obtener la URL completa del recurso desde nginx
+  let firstImagePath: string | null = null;
+
+  onMount(async () => {
+    // If there's no featured media, try to load the first image from elements
+    if (!post.featuredMedia) {
+      try {
+        const elements = await blogPostElementService.getElementsByBlogPostId(post.id);
+        const firstImage = elements.find(el => el.elementType === 'image' && el.filePath);
+        if (firstImage?.filePath) {
+          firstImagePath = firstImage.filePath;
+        }
+      } catch (error) {
+        console.error('Error loading post elements for preview:', error);
+      }
+    }
+  });
+
+  // Función para obtener la URL completa del recurso
+  // Para visualización inline (como en el card), no necesitamos tracking
+  // Solo para descargas explícitas
   function getMediaUrl(path: string) {
-    const NGINX_MEDIA_BASE = 'http://localhost:5251/media'; // Ajustar según tu configuración de nginx
-    return `${NGINX_MEDIA_BASE}/${path}`;
+    // Remove leading slash and /media/ prefix if present
+    const cleanPath = path.startsWith('/media/')
+      ? path.substring(7)
+      : path.startsWith('/')
+        ? path.slice(1)
+        : path;
+    // Use untracked URL for inline display (images/videos in cards)
+    return getUntrackedMediaUrl(cleanPath);
   }
 
   // Función para determinar si es un video
@@ -49,9 +76,9 @@
   </div>
 
   <!-- Media Content (Image or Video) con mejores estilos -->
-  {#if post.featuredMedia}
+  {#if post.featuredMedia || firstImagePath}
     <div class="aspect-video bg-gradient-to-br from-slate-100 to-gray-100 flex items-center justify-center overflow-hidden relative">
-      {#if isVideo(post.featuredMedia)}
+      {#if post.featuredMedia && isVideo(post.featuredMedia)}
         <div class="w-full h-full relative">
           <video
             class="w-full h-full object-cover rounded-t-2xl"
@@ -71,10 +98,10 @@
             </div>
           </div>
         </div>
-      {:else if isImage(post.featuredMedia)}
+      {:else if (post.featuredMedia && isImage(post.featuredMedia)) || firstImagePath}
         <div class="w-full h-full relative overflow-hidden">
           <img
-            src={getMediaUrl(post.featuredMedia)}
+            src={getMediaUrl(post.featuredMedia || firstImagePath || '')}
             alt={post.title}
             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"

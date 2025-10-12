@@ -51,10 +51,8 @@ namespace CentroCultural.Domain.Entities
         public string CreatedBy { get; set; } = string.Empty;
 
         // Navigation Properties
-        [ForeignKey("BlogPostId")]
-        public virtual BlogPost BlogPost { get; set; } = null!;
+        public virtual BlogPost? BlogPost { get; set; }
 
-        [ForeignKey("EventId")]
-        public virtual Event Event { get; set; } = null!;
+        public virtual Event? Event { get; set; }
     }
 }

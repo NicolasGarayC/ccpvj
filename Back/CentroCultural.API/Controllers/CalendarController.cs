@@ -158,19 +158,19 @@ namespace CentroCultural.API.Controllers
             }
         }
 
-        // GET: api/calendar/course/{courseId}
-        [HttpGet("course/{courseId}")]
-        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetEventsByCourse(Guid courseId)
+        // GET: api/calendar/project/{projectId}
+        [HttpGet("project/{projectId}")]
+        public async Task<ActionResult<IEnumerable<EventSummaryDto>>> GetEventsByProject(Guid projectId)
         {
             try
             {
-                var events = await _calendarService.GetEventsByCourseAsync(courseId);
+                var events = await _calendarService.GetEventsByProjectAsync(projectId);
                 return Ok(events);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving events by course {CourseId}", courseId);
-                return StatusCode(500, "Error retrieving events by course");
+                _logger.LogError(ex, "Error retrieving events by project {ProjectId}", projectId);
+                return StatusCode(500, "Error retrieving events by project");
             }
         }
 

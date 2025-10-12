@@ -179,7 +179,6 @@ namespace CentroCultural.Application.Services
                 await DeletePhysicalFile(filePathToDelete);
             }
 
-            Console.WriteLine($"Successfully deleted blog element {elementId} with file: {filePathToDelete ?? "no file"}");
             return true;
         }
 
@@ -273,8 +272,6 @@ namespace CentroCultural.Application.Services
             {
                 await DeletePhysicalFile(filePath);
             }
-
-            Console.WriteLine($"Successfully deleted {elements.Count} blog elements with {filesToDelete.Count} files for post {blogPostId}");
         }
 
         private async Task DeletePhysicalFile(string relativePath)
@@ -283,24 +280,15 @@ namespace CentroCultural.Application.Services
             {
                 try
                 {
-                    Console.WriteLine($"🗑️ Attempting to delete blog file: {relativePath}");
                     var fullPath = GetFullMediaPath(relativePath);
-                    Console.WriteLine($"🗑️ Full path resolved to: {fullPath}");
 
                     if (File.Exists(fullPath))
                     {
                         File.Delete(fullPath);
-                        Console.WriteLine($"✅ Successfully deleted physical blog file: {fullPath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ Blog file not found for deletion: {fullPath}");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"⚠️ Warning: Could not delete blog file {relativePath}: {ex.Message}");
-                    Console.WriteLine($"⚠️ Exception details: {ex}");
                     // Continue execution even if file deletion fails
                 }
             });
@@ -308,15 +296,19 @@ namespace CentroCultural.Application.Services
 
         private string GetFullMediaPath(string relativePath)
         {
-            // Convert relative path to full file system path
-            // Remove leading slash if present and normalize path
+            // Clean the path
             var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
-            // Construct full path to media directory - files are in Back/Data/media
+            // Remove 'media/' prefix if present
+            if (cleanPath.StartsWith("media" + Path.DirectorySeparatorChar))
+            {
+                cleanPath = cleanPath.Substring(("media" + Path.DirectorySeparatorChar).Length);
+            }
+
+            // Build full path: Back/Data/media/{relativePath}
             var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
 
-            Console.WriteLine($"🔧 Debug - Blog media path: {fullPath}");
             return fullPath;
         }
     }

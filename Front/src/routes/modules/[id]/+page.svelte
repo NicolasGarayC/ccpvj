@@ -47,9 +47,7 @@
 			const authResult = await materialApoyoService.checkAuthStatus();
 
 			canManagePosts = authResult.canManage;
-			console.log('[DEBUG] Auth check result:', authResult);
 		} catch (error) {
-			console.log('[DEBUG] Auth check error:', error);
 			canManagePosts = false;
 		}
 	}
@@ -96,7 +94,6 @@
 
 	function handleDeletePost(event: CustomEvent) {
 		const postId = event.detail;
-		console.log('handleDeletePost called with postId:', postId);
 
 		// Get the full post data from the PostList component
 		const postData = postListComponent?.posts?.find((p: any) => p.id === postId);
@@ -115,36 +112,27 @@
 			updatedAt: null
 		};
 
-		console.log('Setting showDeleteModal to true for post:', deletingPost.title);
 		showDeleteModal = true;
 	}
 
 	async function confirmDeletePost() {
-		console.log('confirmDeletePost called, deletingPost:', deletingPost);
 		if (!deletingPost) {
-			console.log('No deletingPost found, returning');
 			return;
 		}
 
 		try {
-			console.log('Calling modulePostService.deletePost with ID:', deletingPost.id);
 			await modulePostService.deletePost(deletingPost.id);
-			console.log('Post deleted successfully');
 
 			showDeleteModal = false;
 
 			// Remove post from the list
 			if (postListComponent) {
-				console.log('Removing post from list:', deletingPost.id);
 				postListComponent.removePostFromList(deletingPost.id);
-			} else {
-				console.log('postListComponent not found');
 			}
 
 			// Update post count
 			postCount--;
 			deletingPost = null;
-			console.log('Delete process completed, new postCount:', postCount);
 		} catch (error) {
 			console.error('Error deleting post:', error);
 			// You might want to show an error message to the user
@@ -209,7 +197,6 @@
 	}
 
 	function handlePostDeleted(event: CustomEvent) {
-		console.log('Post deleted:', event.detail);
 		// The PostList component will handle updating its own posts array
 		// We just need to update the post count here
 		postCount--;
@@ -221,7 +208,6 @@
 	}
 
 	function handlePostsReordered(event: CustomEvent) {
-		console.log('Posts reordered:', event.detail);
 		// Optionally show success message
 	}
 
@@ -247,7 +233,7 @@
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="15,18 9,12 15,6"></polyline>
 				</svg>
-				Volver al Curso
+				Volver al Proyecto
 			</button>
 		</div>
 
@@ -339,6 +325,7 @@
 <PostViewer
 	visible={showPostViewer}
 	post={viewingPost}
+	moduleId={moduleId}
 	on:close={handleViewerClose}
 />
 

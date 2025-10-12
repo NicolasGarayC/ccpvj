@@ -4,6 +4,7 @@
  */
 
 import { jwtService } from './auth/jwtService.js';
+import { getLibraryDownloadUrl } from '$lib/utils/mediaUtils.js';
 
 export interface LibraryItemDto {
     id: string;
@@ -349,10 +350,14 @@ class DigitalLibraryService {
             // Increment download count
             await this.incrementDownloadCount(item.id);
 
-            // Create download link using the file path
+            // Extract clean file path (remove /media/ prefix if present)
+            const cleanPath = item.filePath.startsWith('/media/')
+                ? item.filePath.substring(7)
+                : item.filePath;
+
+            // Create download link with tracking
             const link = document.createElement('a');
-            // item.filePath already includes /media/ prefix, so use it directly
-            link.href = item.filePath.startsWith('/media/') ? item.filePath : `/media${item.filePath}`;
+            link.href = getLibraryDownloadUrl(item.id, cleanPath);
             link.download = item.fileName || (item.title + this.getFileExtension(item.fileType));
             link.target = '_blank';
             document.body.appendChild(link);
@@ -431,7 +436,6 @@ class DigitalLibraryService {
                 throw new Error(result.error || 'Upload failed');
             }
 
-            console.log(`✅ Library file uploaded successfully: ${result.relativePath}`);
             return result;
 
         } catch (error) {

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { t } from '$lib/i18n';
 	import CalendarView from '$lib/components/calendar/CalendarView.svelte';
 	import EventList from '$lib/components/calendar/EventList.svelte';
 	import { calendarService, type EventSummary, type CalendarView as CalendarViewType } from '$lib/services/calendar/calendarService';
@@ -27,13 +28,6 @@
 		isAuthenticated = jwtService.isAuthenticated();
 		user = jwtService.getUser();
 
-		console.log('[DEBUG] Calendar Auth State:', {
-			isAuthenticated,
-			user,
-			userRole: user?.role,
-			canManageFromService: jwtService.canManageContent()
-		});
-
 		// Si hay token pero no usuario, intentar validarlo con el servidor
 		if (isAuthenticated && !user) {
 			const validatedUser = await jwtService.validateToken();
@@ -46,8 +40,6 @@
 
 		// Set canCreateEvents using the service method
 		canCreateEvents = isAuthenticated && jwtService.canManageContent();
-
-		console.log('[DEBUG] Final canCreateEvents:', canCreateEvents);
 	}
 
 	// Cargar datos iniciales
@@ -69,7 +61,7 @@
 			error = '';
 		} catch (err) {
 			console.error('Error al cargar vista de calendario:', err);
-			error = 'Error al cargar el calendario. Inténtalo de nuevo.';
+			error = t('errorLoadingCalendar');
 		} finally {
 			loading = false;
 		}
@@ -110,11 +102,8 @@
 		if (canCreateEvents) {
 			const formattedDate = clickedDate.toISOString().split('T')[0];
 			goto(`/calendar/create?date=${formattedDate}`);
-		} else {
-			// Si no puede crear eventos, mostrar un mensaje o navegar a la vista de día
-			console.log('Fecha clickeada:', clickedDate);
-			// Podría mostrar eventos de ese día o un mensaje informativo
 		}
+		// If user cannot create events, clicking a date has no action
 	}
 
 	// Cambiar vista
@@ -127,7 +116,7 @@
 		if (!isAuthenticated) {
 			goto('/auth/login?redirect=/calendar/create');
 		} else if (!canCreateEvents) {
-			alert('No tienes permisos para crear eventos. Contacta al administrador.');
+			alert(t('auth.no_permissions_create_events'));
 		} else {
 			goto('/calendar/create');
 		}
@@ -135,17 +124,17 @@
 
 	// Obtener mensaje de estado
 	function getStatusMessage(): string {
-		if (loading) return 'Cargando calendario...';
+		if (loading) return t('loadingCalendar');
 		if (error) return error;
 		if (!calendarData?.events || calendarData.events.length === 0) {
-			return 'No hay eventos programados para este período.';
+			return t('noEventsScheduled');
 		}
-		return `${calendarData.events.length} evento${calendarData.events.length !== 1 ? 's' : ''} encontrado${calendarData.events.length !== 1 ? 's' : ''}`;
+		return t('eventsFound', { count: calendarData.events.length });
 	}
 </script>
 
 <svelte:head>
-	<title>Calendario - Centro Cultural Víctor Jara</title>
+	<title>{t('calendarTitle')} - Centro Cultural Víctor Jara</title>
 	<meta name="description" content="Calendario de eventos, clases y actividades del Centro Cultural Víctor Jara" />
 </svelte:head>
 
@@ -164,11 +153,11 @@
 						<h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-4">
 							<span class="text-4xl mr-3">🎪</span>
 							<span class="bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-800 bg-clip-text text-transparent">
-								Calendario de Eventos
+								{t('calendarTitle')}
 							</span>
 						</h1>
 						<p class="text-lg md:text-xl text-gray-700 max-w-2xl leading-relaxed font-medium">
-							✨ Descubre todas las actividades, clases y eventos increíbles que tenemos preparados para ti en nuestro centro cultural
+							{t('calendarDescription')}
 						</p>
 					</div>
 
@@ -185,7 +174,7 @@
 								<svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
 								</svg>
-								📅 Calendario
+								📅 {t('calendar')}
 							</button>
 							<button
 								on:click={() => setView('list')}
@@ -197,7 +186,7 @@
 								<svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
 								</svg>
-								📋 Lista
+								📋 {t('list')}
 							</button>
 						</div>
 
@@ -210,7 +199,7 @@
 								<svg class="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/>
 								</svg>
-								<span class="text-lg">✨ Crear Evento</span>
+								<span class="text-lg">✨ {t('createEvent')}</span>
 							</button>
 						{/if}
 					</div>
@@ -230,7 +219,7 @@
 				{#if loading}
 					<div class="bg-white rounded-lg shadow p-8 text-center">
 						<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-						<p class="text-gray-600">Cargando calendario...</p>
+						<p class="text-gray-600">{t('loadingCalendar')}</p>
 					</div>
 				{:else if error}
 					<div class="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -239,13 +228,13 @@
 								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
 							</svg>
 							<div>
-								<h3 class="text-sm font-medium text-red-800">Error al cargar el calendario</h3>
+								<h3 class="text-sm font-medium text-red-800">{t('errorLoadingCalendar')}</h3>
 								<p class="mt-1 text-sm text-red-700">{error}</p>
 								<button
 									on:click={loadCalendarView}
 									class="mt-3 bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded text-sm font-medium transition-colors"
 								>
-									Reintentar
+									{t('action.retry')}
 								</button>
 							</div>
 						</div>
@@ -279,7 +268,7 @@
 								<svg class="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
 									<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
 								</svg>
-								Eventos Destacados
+								{t('featuredEvents')}
 							</h3>
 						</div>
 						<div class="p-4 space-y-4">
@@ -328,7 +317,7 @@
 								<svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
 								</svg>
-								Próximos Eventos
+								{t('upcomingEventsTitle')}
 							</h3>
 						</div>
 						<div class="p-4 space-y-3">
@@ -368,7 +357,7 @@
 										on:click={() => setView('list')}
 										class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
 									>
-										Ver todos los eventos ({upcomingEvents.length})
+										{t('viewAllEvents')} ({upcomingEvents.length})
 									</button>
 								</div>
 							{/if}
@@ -376,31 +365,49 @@
 					</div>
 				{/if}
 
-				<!-- Leyenda de colores -->
-				<div class="bg-white rounded-lg shadow">
-					<div class="p-4 border-b border-gray-200">
-						<h3 class="text-lg font-semibold text-gray-900">Tipos de Eventos</h3>
+				<!-- Leyenda de colores mejorada -->
+				<div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg border-2 border-blue-100 overflow-hidden">
+					<div class="bg-gradient-to-r from-blue-500 to-purple-500 p-4">
+						<h3 class="text-lg font-bold text-white flex items-center">
+							<span class="text-xl mr-2">🎨</span>
+							{t('eventTypes')}
+						</h3>
 					</div>
 					<div class="p-4 space-y-3">
-						<div class="flex items-center space-x-3">
-							<div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-							<span class="text-sm text-gray-700">Clases</span>
+						<div class="group flex items-center space-x-3 p-2 rounded-xl hover:bg-blue-100 transition-all duration-300 cursor-pointer">
+							<div class="relative">
+								<div class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20"></div>
+								<div class="relative w-4 h-4 bg-blue-500 rounded-full shadow-md"></div>
+							</div>
+							<span class="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">{t('eventType.class')}</span>
 						</div>
-						<div class="flex items-center space-x-3">
-							<div class="w-3 h-3 bg-green-500 rounded-full"></div>
-							<span class="text-sm text-gray-700">Talleres</span>
+						<div class="group flex items-center space-x-3 p-2 rounded-xl hover:bg-green-100 transition-all duration-300 cursor-pointer">
+							<div class="relative">
+								<div class="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-20"></div>
+								<div class="relative w-4 h-4 bg-green-500 rounded-full shadow-md"></div>
+							</div>
+							<span class="text-sm font-semibold text-gray-700 group-hover:text-green-600 transition-colors">{t('eventType.workshop')}</span>
 						</div>
-						<div class="flex items-center space-x-3">
-							<div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-							<span class="text-sm text-gray-700">Conferencias</span>
+						<div class="group flex items-center space-x-3 p-2 rounded-xl hover:bg-purple-100 transition-all duration-300 cursor-pointer">
+							<div class="relative">
+								<div class="absolute inset-0 bg-purple-500 rounded-full animate-ping opacity-20"></div>
+								<div class="relative w-4 h-4 bg-purple-500 rounded-full shadow-md"></div>
+							</div>
+							<span class="text-sm font-semibold text-gray-700 group-hover:text-purple-600 transition-colors">{t('eventType.conference')}</span>
 						</div>
-						<div class="flex items-center space-x-3">
-							<div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-							<span class="text-sm text-gray-700">Eventos Culturales</span>
+						<div class="group flex items-center space-x-3 p-2 rounded-xl hover:bg-yellow-100 transition-all duration-300 cursor-pointer">
+							<div class="relative">
+								<div class="absolute inset-0 bg-yellow-500 rounded-full animate-ping opacity-20"></div>
+								<div class="relative w-4 h-4 bg-yellow-500 rounded-full shadow-md"></div>
+							</div>
+							<span class="text-sm font-semibold text-gray-700 group-hover:text-yellow-600 transition-colors">{t('eventType.event')}</span>
 						</div>
-						<div class="flex items-center space-x-3">
-							<div class="w-3 h-3 bg-gray-500 rounded-full"></div>
-							<span class="text-sm text-gray-700">General</span>
+						<div class="group flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-300 cursor-pointer">
+							<div class="relative">
+								<div class="absolute inset-0 bg-gray-500 rounded-full animate-ping opacity-20"></div>
+								<div class="relative w-4 h-4 bg-gray-500 rounded-full shadow-md"></div>
+							</div>
+							<span class="text-sm font-semibold text-gray-700 group-hover:text-gray-600 transition-colors">{t('eventType.general')}</span>
 						</div>
 					</div>
 				</div>

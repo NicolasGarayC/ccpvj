@@ -36,50 +36,26 @@ export interface TrackDownloadRequest {
 }
 
 class AnalyticsService extends BaseHttpService {
-  constructor() {
-    super('/api/analytics');
-  }
+  private readonly basePath = '/analytics';
 
-  /**
-   * Get analytics summary (visitors, downloads, resources count)
-   */
+  // Override base get method to use correct path
   async getSummary(): Promise<AnalyticsSummary> {
-    return this.get<AnalyticsSummary>('/summary');
+    return await this.get<AnalyticsSummary>(`${this.basePath}/summary`);
   }
 
-  /**
-   * Get visitors chart data for specified number of days
-   * @param days Number of days to retrieve (default: 30)
-   */
   async getVisitorsChart(days: number = 30): Promise<VisitorsChart> {
-    return this.get<VisitorsChart>(`/visitors?days=${days}`);
+    return await this.get<VisitorsChart>(`${this.basePath}/visitors?days=${days}`);
   }
 
-  /**
-   * Get top downloaded resources
-   * @param limit Number of top resources to retrieve (default: 5)
-   */
   async getTopDownloads(limit: number = 5): Promise<TopResources> {
-    return this.get<TopResources>(`/top-downloads?limit=${limit}`);
+    return await this.get<TopResources>(`${this.basePath}/top-downloads?limit=${limit}`);
   }
 
-  /**
-   * Track a visitor page visit
-   * @param pageVisited The page that was visited
-   */
   async trackVisitor(pageVisited: string): Promise<void> {
     const request: TrackVisitorRequest = { pageVisited };
-    await this.post<void>('/track-visitor', request);
+    await this.post<void>(`${this.basePath}/track-visitor`, request);
   }
 
-  /**
-   * Track a file download
-   * @param resourceId ID of the resource being downloaded
-   * @param resourceType Type of resource (library_item, blog_media, course_media)
-   * @param fileName Name of the file being downloaded
-   * @param filePath Optional path to the file
-   * @param fileSize Optional size of the file in bytes
-   */
   async trackDownload(
     resourceId: string,
     resourceType: string,
@@ -94,7 +70,7 @@ class AnalyticsService extends BaseHttpService {
       filePath,
       fileSize
     };
-    await this.post<void>('/track-download', request);
+    await this.post<void>(`${this.basePath}/track-download`, request);
   }
 }
 

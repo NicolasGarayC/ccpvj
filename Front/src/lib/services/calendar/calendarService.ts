@@ -16,14 +16,13 @@ export interface Event {
 	currentAttendees: number;
 	requiresRegistration: boolean;
 	registrationDeadline?: Date;
-	imagePath?: string;
-	pdfPath?: string;
 	isRecurring: boolean;
 	recurrencePattern?: string;
 	recurrenceInterval?: number;
 	recurrenceEndDate?: Date;
 	recurrenceDaysOfWeek?: string;
-	relatedCourseId?: string;
+	relatedProjectId?: string;
+	relatedBlogPostId?: string;
 	createdAt: Date;
 	updatedAt?: Date;
 	organizerId: string;
@@ -48,21 +47,20 @@ export interface EventSummary {
   location?: string;
   eventType: string;
   isFeatured: boolean;
-  imagePath?: string;
-  requiresRegistration: boolean;
-  maxAttendees?: number;
-  currentAttendees: number;
-  registrationDeadline?: Date;
 }
 
 export interface EventDetail extends EventSummary {
-  pdfPath?: string;
   isRecurring: boolean;
   recurrencePattern?: string;
   recurrenceInterval?: number;
   recurrenceEndDate?: Date;
   recurrenceDaysOfWeek?: string;
-  relatedCourseId?: string;
+  relatedProjectId?: string;
+  relatedBlogPostId?: string;
+  relatedProjectTitle?: string;
+  relatedBlogPostTitle?: string;
+  relatedBlogPostSlug?: string;
+  organizerName?: string;
   createdAt: Date;
   updatedAt?: Date;
   organizerId: string;
@@ -77,17 +75,13 @@ export interface CreateEventData {
   location?: string;
   eventType: string;
   isFeatured: boolean;
-  maxAttendees?: number;
-  requiresRegistration: boolean;
-  registrationDeadline?: Date;
-  imagePath?: string;
-  pdfPath?: string;
   isRecurring: boolean;
   recurrencePattern?: string;
   recurrenceInterval?: number;
   recurrenceEndDate?: Date;
   recurrenceDaysOfWeek?: string;
-  relatedCourseId?: string;
+  relatedProjectId?: string | undefined;
+  relatedBlogPostId?: string | undefined;
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {
@@ -157,12 +151,7 @@ class CalendarService {
       isAllDay: backendEvent.isAllDay,
       location: backendEvent.location,
       eventType: backendEvent.eventType,
-      isFeatured: backendEvent.isFeatured,
-      imagePath: backendEvent.imagePath,
-      requiresRegistration: backendEvent.requiresRegistration,
-      maxAttendees: backendEvent.maxAttendees,
-      currentAttendees: backendEvent.currentAttendees || 0,
-      registrationDeadline: backendEvent.registrationDeadline ? new Date(backendEvent.registrationDeadline) : undefined
+      isFeatured: backendEvent.isFeatured
     };
   }
 
@@ -207,13 +196,17 @@ class CalendarService {
         const backendEvent = await response.json();
         return {
           ...this.adaptBackendToFrontend(backendEvent),
-          pdfPath: backendEvent.pdfPath,
           isRecurring: backendEvent.isRecurring,
           recurrencePattern: backendEvent.recurrencePattern,
           recurrenceInterval: backendEvent.recurrenceInterval,
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
-          relatedCourseId: backendEvent.relatedCourseId,
+          relatedProjectId: backendEvent.relatedProjectId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
+          relatedProjectTitle: backendEvent.relatedProjectTitle,
+          relatedBlogPostTitle: backendEvent.relatedBlogPostTitle,
+          relatedBlogPostSlug: backendEvent.relatedBlogPostSlug,
+          organizerName: backendEvent.organizerName,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -275,22 +268,29 @@ class CalendarService {
 
   async createEvent(data: CreateEventData): Promise<EventDetail> {
     try {
+      // Limpiar strings vacíos para campos opcionales de tipo GUID
+      const cleanData = {
+        ...data,
+        relatedProjectId: data.relatedProjectId || undefined,
+        relatedBlogPostId: data.relatedBlogPostId || undefined
+      };
+
       const response = await fetch(`${this.baseURL}/calendar`, await this.getRequestOptions({
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify(cleanData)
       }));
 
       if (response.ok) {
         const backendEvent = await response.json();
         return {
           ...this.adaptBackendToFrontend(backendEvent),
-          pdfPath: backendEvent.pdfPath,
           isRecurring: backendEvent.isRecurring,
           recurrencePattern: backendEvent.recurrencePattern,
           recurrenceInterval: backendEvent.recurrenceInterval,
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
-          relatedCourseId: backendEvent.relatedCourseId,
+          relatedProjectId: backendEvent.relatedProjectId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -314,13 +314,13 @@ class CalendarService {
         const backendEvent = await response.json();
         return {
           ...this.adaptBackendToFrontend(backendEvent),
-          pdfPath: backendEvent.pdfPath,
           isRecurring: backendEvent.isRecurring,
           recurrencePattern: backendEvent.recurrencePattern,
           recurrenceInterval: backendEvent.recurrenceInterval,
           recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
           recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
-          relatedCourseId: backendEvent.relatedCourseId,
+          relatedProjectId: backendEvent.relatedProjectId,
+          relatedBlogPostId: backendEvent.relatedBlogPostId,
           createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
@@ -346,6 +346,45 @@ class CalendarService {
       console.error('Error eliminando evento:', error);
       throw error;
     }
+  }
+
+  async getEventsByProject(projectId: string): Promise<EventSummary[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/calendar/project/${projectId}`, await this.getRequestOptions());
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          return data.map(this.adaptBackendToFrontend);
+        }
+        return [];
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error cargando eventos por proyecto:', error);
+      throw error;
+    }
+  }
+
+  async getEventsByBlogPost(blogPostId: string): Promise<EventSummary[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/calendar/blog/${blogPostId}`, await this.getRequestOptions());
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+          return data.map(this.adaptBackendToFrontend);
+        }
+        return [];
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      console.error('Error cargando eventos por blog post:', error);
+      throw error;
+    }
+  }
+
+
+  async getEvent(eventId: string): Promise<EventDetail | null> {
+    return this.getEventById(eventId);
   }
 }
 

@@ -44,10 +44,9 @@ async function cleanupOldFile(filePath: string): Promise<void> {
     try {
         if (existsSync(filePath)) {
             unlinkSync(filePath);
-            console.log(`🗑️ Deleted old library file: ${filePath}`);
         }
     } catch (error) {
-        console.error(`⚠️ Failed to delete old library file ${filePath}:`, error);
+        console.error(`Failed to delete old library file ${filePath}:`, error);
     }
 }
 
@@ -126,8 +125,6 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
         // Return simplified path for database storage (compatible with old format)
         const relativePath = `${category}/${config.folder}/${filename}`;
-
-        console.log(`✅ Library ${fileType} uploaded: ${relativePath}`);
 
         return json({
             success: true,

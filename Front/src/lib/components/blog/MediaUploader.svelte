@@ -55,7 +55,7 @@
       video: 500 * 1024 * 1024,   // 500MB
       audio: 100 * 1024 * 1024,   // 100MB
       pdf: 50 * 1024 * 1024,      // 50MB
-      document: 100 * 1024 * 1024 // 100MB
+      document: 1024 * 1024 * 1024 // 1GB
     };
 
     if (!validTypes[mediaType]?.includes(file.type)) {
@@ -357,7 +357,7 @@
         {:else if mediaType === 'pdf'}
           Formato: PDF (máx. 50MB)
         {:else if mediaType === 'document'}
-          Formatos: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX) (máx. 100MB)
+          Formatos: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX) (máx. 1GB)
         {/if}
       </p>
       <button

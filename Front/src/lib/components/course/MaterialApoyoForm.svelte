@@ -107,8 +107,6 @@
 		formData.imagePath = result.relativePath;
 		isUploadingMedia = false;
 
-		console.log('✅ Course image uploaded:', result);
-
 		// Auto-save when image is uploaded if editing
 		if (isEditing && course) {
 			autoSaveImagePath(result.relativePath);
@@ -155,7 +153,7 @@
 	<form on:submit|preventDefault={handleSubmit}>
 		<div class="form-group">
 			<label for="title">
-				Título del curso <span class="required">*</span>
+				Título del proyecto <span class="required">*</span>
 			</label>
 			<input
 				id="title"
@@ -163,7 +161,7 @@
 				bind:value={formData.title}
 				class="input"
 				class:error={formErrors.title}
-				placeholder="Ingresa el título del curso"
+				placeholder="Ingresa el título del proyecto"
 				maxlength="200"
 				disabled={submitting || loading}
 			/>
@@ -185,7 +183,7 @@
 				bind:value={formData.description}
 				class="textarea"
 				class:error={formErrors.description}
-				placeholder="Describe el contenido y objetivos del curso"
+				placeholder="Describe el contenido y objetivos del proyecto"
 				rows="6"
 				maxlength="1000"
 				disabled={submitting || loading}
@@ -205,7 +203,7 @@
 				contentId={tempId}
 				currentMedia={formData.imagePath}
 				disabled={submitting || loading}
-				label="Imagen del Material de Apoyo"
+				label="Imagen del Proyecto"
 				on:uploadStart={handleUploadStart}
 				on:uploadSuccess={handleImageUpload}
 				on:uploadError={handleUploadError}
@@ -224,10 +222,10 @@
 					class="checkbox"
 					disabled={submitting || loading}
 				/>
-				Marcar como curso destacado
+				Marcar como proyecto destacado
 			</label>
 			<p class="help-text">
-				Los cursos destacados aparecen en la sección principal de cursos.
+				Los proyectos destacados aparecen en la sección principal de proyectos.
 			</p>
 		</div>
 

@@ -242,7 +242,17 @@ namespace CentroCultural.Application.Services
             else if (wasPublished && !willBePublished)
                 post.PublishedAt = null;
 
-            // Update elements - remove existing and add new ones
+            // Update elements - collect file paths for cleanup before removing
+            var oldFilesToDelete = new List<string>();
+            foreach (var oldElement in post.Elements)
+            {
+                if (!string.IsNullOrEmpty(oldElement.FilePath))
+                {
+                    oldFilesToDelete.Add(oldElement.FilePath);
+                }
+            }
+
+            // Remove existing elements from database
             _context.BlogPostElement.RemoveRange(post.Elements);
 
             foreach (var elementDto in updateDto.Elements)
@@ -268,6 +278,22 @@ namespace CentroCultural.Application.Services
 
             await _context.SaveChangesAsync();
 
+            // Delete old files that are no longer used (not in the new elements)
+            var newFilePaths = updateDto.Elements
+                .Where(e => !string.IsNullOrEmpty(e.FilePath))
+                .Select(e => e.FilePath!)
+                .ToHashSet();
+
+            var filesToDelete = oldFilesToDelete
+                .Where(oldPath => !newFilePaths.Contains(oldPath))
+                .ToList();
+
+            if (filesToDelete.Any())
+            {
+                _logger.LogInformation($"🧹 Cleaning up {filesToDelete.Count} old file(s) after blog post update");
+                await DeleteMultiMediaFiles(filesToDelete);
+            }
+
             return await GetBlogPostByIdAsync(id);
         }
 
@@ -285,11 +311,26 @@ namespace CentroCultural.Application.Services
             if (user == null || (post.AuthorId != userId && user.RoleString != "administrador"))
                 throw new UnauthorizedAccessException("No tienes permisos para eliminar este post");
 
+            // Collect all media file paths before deletion
+            var mediaFilesToDelete = new List<string>();
+            foreach (var element in post.Elements)
+            {
+                if (!string.IsNullOrEmpty(element.FilePath))
+                {
+                    mediaFilesToDelete.Add(element.FilePath);
+                    _logger.LogInformation($"Marcando archivo para eliminar: {element.FilePath}");
+                }
+            }
+
             // Remove elements first
             _context.BlogPostElement.RemoveRange(post.Elements);
             _context.BlogPost.Remove(post);
 
             await _context.SaveChangesAsync();
+
+            // Delete physical files after successful DB commit
+            await DeleteMultiMediaFiles(mediaFilesToDelete);
+
             return true;
         }
 
@@ -538,6 +579,52 @@ namespace CentroCultural.Application.Services
                     UpdatedAt = e.UpdatedAt
                 }).ToList()
             };
+        }
+
+        // File cleanup methods
+        private async Task DeleteMultiMediaFiles(List<string> filePaths)
+        {
+            foreach (var filePath in filePaths.Where(f => !string.IsNullOrEmpty(f)))
+            {
+                try
+                {
+                    var fullPath = GetFullMediaPath(filePath);
+                    if (File.Exists(fullPath))
+                    {
+                        File.Delete(fullPath);
+                        _logger.LogInformation($"🗑️ Archivo eliminado: {fullPath}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"⚠️ Archivo no encontrado (ya eliminado o nunca existió): {fullPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"⚠️ Error al eliminar archivo {filePath}: {ex.Message}");
+                    // Continue with other files even if one fails
+                }
+            }
+
+            await Task.CompletedTask; // Maintain async signature for consistency
+        }
+
+        private string GetFullMediaPath(string relativePath)
+        {
+            // Clean the path
+            var cleanPath = relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+
+            // Remove 'media/' prefix if present
+            if (cleanPath.StartsWith("media" + Path.DirectorySeparatorChar))
+            {
+                cleanPath = cleanPath.Substring(("media" + Path.DirectorySeparatorChar).Length);
+            }
+
+            // Build full path: Back/Data/media/{relativePath}
+            var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
+            var fullPath = Path.Combine(mediaDirectory, cleanPath);
+
+            return fullPath;
         }
     }
 }

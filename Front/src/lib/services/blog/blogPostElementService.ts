@@ -31,7 +31,7 @@ export interface InsertBlogPostElement {
 	isActive?: boolean;
 }
 
-export type ElementType = 'title' | 'text' | 'image' | 'video' | 'audio';
+export type ElementType = 'title' | 'text' | 'image' | 'video' | 'audio' | 'document';
 
 export interface CreateElementDto {
 	blogPostId: string;
@@ -255,7 +255,7 @@ class BlogPostElementService {
 			const elementData = { ...elementWithFile.element };
 
 			// Validate that media elements have the required file information
-			if (['image', 'video', 'audio'].includes(elementData.elementType)) {
+			if (['image', 'video', 'audio', 'document'].includes(elementData.elementType)) {
 				if (!elementData.filePath) {
 					console.warn(`Media element ${elementData.elementType} missing filePath. Files should be uploaded via ContextualMediaUploader first.`);
 				}

@@ -4,7 +4,8 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync, unlinkSync } from 'fs';
 import path from 'path';
 
-const BASE_UPLOAD_DIR = 'Data/media/content/material-apoyo';
+// Use absolute path to Back/Data/media/content/material-apoyo
+const BASE_UPLOAD_DIR = path.resolve(process.cwd(), '../Back/Data/media/content/material-apoyo');
 
 // File type and size limits by media type
 const MEDIA_CONFIG = {
@@ -15,13 +16,31 @@ const MEDIA_CONFIG = {
     },
     video: {
         types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov'],
-        maxSize: 500 * 1024 * 1024, // 500MB
+        maxSize: 20 * 1024 * 1024 * 1024, // 20GB for movies
         folder: 'videos'
     },
     audio: {
         types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
         maxSize: 100 * 1024 * 1024, // 100MB
         folder: 'audio'
+    },
+    document: {
+        types: [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+            'application/msword', // .doc
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+            'application/vnd.ms-powerpoint', // .ppt
+            'text/plain', // .txt
+            'application/rtf', // .rtf
+            'application/vnd.oasis.opendocument.text', // .odt
+            'application/vnd.oasis.opendocument.spreadsheet', // .ods
+            'application/vnd.oasis.opendocument.presentation' // .odp
+        ],
+        maxSize: 1024 * 1024 * 1024, // 1GB
+        folder: 'documents'
     }
 };
 
@@ -29,10 +48,9 @@ async function cleanupOldFile(filePath: string): Promise<void> {
     try {
         if (existsSync(filePath)) {
             unlinkSync(filePath);
-            console.log(`🗑️ Deleted old file: ${filePath}`);
         }
     } catch (error) {
-        console.error(`⚠️ Failed to delete old file ${filePath}:`, error);
+        console.error(`Failed to delete old file ${filePath}:`, error);
     }
 }
 
@@ -56,7 +74,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
         }
 
         if (!mediaType || !MEDIA_CONFIG[mediaType as keyof typeof MEDIA_CONFIG]) {
-            return json({ error: 'Invalid media type. Must be: image, video, or audio' }, { status: 400 });
+            return json({ error: 'Invalid media type. Must be: image, video, audio, or document' }, { status: 400 });
         }
 
         if (!courseId || !moduleId) {
@@ -74,9 +92,13 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
         // Validate file size
         if (file.size > config.maxSize) {
-            const maxSizeMB = Math.round(config.maxSize / (1024 * 1024));
+            const maxSizeGB = config.maxSize / (1024 * 1024 * 1024);
+            const maxSizeMB = config.maxSize / (1024 * 1024);
+            const sizeLabel = maxSizeGB >= 1
+                ? `${Math.round(maxSizeGB)}GB`
+                : `${Math.round(maxSizeMB)}MB`;
             return json({
-                error: `File too large. Maximum size for ${mediaType} is ${maxSizeMB}MB.`
+                error: `File too large. Maximum size for ${mediaType} is ${sizeLabel}.`
             }, { status: 400 });
         }
 
@@ -95,7 +117,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
         // Clean up old file if exists
         if (oldFilePath) {
-            const oldFileFullPath = path.join('Data/media', oldFilePath);
+            const oldFileFullPath = path.resolve(process.cwd(), '../Back/Data/media', oldFilePath);
             await cleanupOldFile(oldFileFullPath);
         }
 
@@ -106,8 +128,6 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
         // Return contextual path for database storage
         const relativePath = `content/material-apoyo/${courseId}/modules/${moduleId}/posts/${postId}/${config.folder}/${filename}`;
-
-        console.log(`✅ Post ${mediaType} uploaded: ${relativePath}`);
 
         return json({
             success: true,

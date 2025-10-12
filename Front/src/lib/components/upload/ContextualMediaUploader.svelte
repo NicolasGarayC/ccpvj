@@ -4,7 +4,7 @@
 	import type { UploadResult } from '$lib/services/contextualUploadService';
 
 	export let context: 'course' | 'material-apoyo' | 'post' | 'blog';
-	export let mediaType: 'image' | 'video' | 'audio' = 'image';
+	export let mediaType: 'image' | 'video' | 'audio' | 'document' = 'image';
 	export let courseId: string = ''; // deprecated, use contentId
 	export let materialApoyoId: string = ''; // deprecated, use contentId
 	export let contentId: string = ''; // Generic content ID
@@ -44,14 +44,16 @@
 			const typeMap = {
 				image: 'Imagen del artículo',
 				video: 'Video del artículo',
-				audio: 'Audio del artículo'
+				audio: 'Audio del artículo',
+				document: 'Documento del artículo'
 			};
 			return typeMap[type] || 'Archivo multimedia';
 		} else {
 			const typeMap = {
 				image: 'Imagen',
 				video: 'Video',
-				audio: 'Audio'
+				audio: 'Audio',
+				document: 'Documento'
 			};
 			return typeMap[type] || 'Archivo multimedia';
 		}
@@ -95,9 +97,26 @@
 		dispatch('uploadStart');
 
 		try {
-			// Create preview for images
-			if (mediaType === 'image') {
+			// Create preview immediately for visual feedback
+			if (mediaType === 'image' || mediaType === 'video') {
 				previewUrl = URL.createObjectURL(file);
+			}
+
+			// Simulate progress for large files
+			const fileSizeMB = file.size / (1024 * 1024);
+			const isLargeFile = fileSizeMB > 50; // Files larger than 50MB
+
+			let progressInterval: number | undefined;
+			if (isLargeFile) {
+				// Simulate progress for large files
+				let currentProgress = 0;
+				progressInterval = window.setInterval(() => {
+					// Slow down as we approach 90% to avoid reaching 100 before upload completes
+					if (currentProgress < 90) {
+						currentProgress += Math.random() * 5;
+						uploadProgress = Math.min(90, currentProgress);
+					}
+				}, 500);
 			}
 
 			let result: UploadResult;
@@ -126,7 +145,16 @@
 				});
 			}
 
+			// Clear progress interval
+			if (progressInterval) {
+				clearInterval(progressInterval);
+			}
+
 			uploadProgress = 100;
+
+			// Brief delay to show 100% before finishing
+			await new Promise(resolve => setTimeout(resolve, 300));
+
 			dispatch('uploadSuccess', result);
 
 		} catch (err) {
@@ -193,7 +221,7 @@
 	}
 
 	function getMaxSizeInfo(type: string): string {
-		const sizes = {
+		const sizes: Record<string, string> = {
 			image: '20MB',
 			video: '20GB',
 			audio: '100MB'
@@ -218,17 +246,46 @@
 		on:dragleave={handleDragLeave}>
 
 		{#if isUploading}
-			<!-- Upload Progress -->
-			<div class="upload-progress">
-				<div class="progress-icon">
-					{getFileIcon(mediaType)}
-				</div>
-				<div class="progress-info">
-					<p>Subiendo {displayLabel.toLowerCase()}...</p>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {uploadProgress}%"></div>
+			<!-- Upload Progress with Preview -->
+			<div class="uploading-container">
+				{#if previewUrl && (mediaType === 'image' || mediaType === 'video')}
+					<!-- Show preview while uploading -->
+					<div class="media-preview uploading">
+						{#if mediaType === 'image'}
+							<img src={previewUrl} alt="Preview" class="preview-image" />
+						{:else if mediaType === 'video'}
+							<video src={previewUrl} controls class="preview-video"></video>
+						{/if}
+
+						<!-- Upload overlay -->
+						<div class="upload-overlay">
+							<div class="upload-progress-compact">
+								<div class="progress-icon-small">
+									{getFileIcon(mediaType)}
+								</div>
+								<div class="progress-info-compact">
+									<p class="progress-text">Subiendo... {Math.round(uploadProgress)}%</p>
+									<div class="progress-bar-small">
+										<div class="progress-fill" style="width: {uploadProgress}%"></div>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
-				</div>
+				{:else}
+					<!-- Fallback for audio or files without preview -->
+					<div class="upload-progress">
+						<div class="progress-icon">
+							{getFileIcon(mediaType)}
+						</div>
+						<div class="progress-info">
+							<p>Subiendo {displayLabel.toLowerCase()}... {Math.round(uploadProgress)}%</p>
+							<div class="progress-bar">
+								<div class="progress-fill" style="width: {uploadProgress}%"></div>
+							</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 		{:else if hasCurrentMedia || previewUrl}
@@ -408,6 +465,13 @@
 		opacity: 0.8;
 	}
 
+	.upload-hint {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+		margin-top: 0.25rem;
+		font-style: italic;
+	}
+
 	.upload-progress {
 		display: flex;
 		align-items: center;
@@ -445,10 +509,63 @@
 		transition: width 0.3s ease;
 	}
 
+	.uploading-container {
+		width: 100%;
+	}
+
 	.media-preview {
 		position: relative;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.media-preview.uploading {
+		opacity: 0.9;
+	}
+
+	.upload-overlay {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6));
+		padding: 1rem;
+		backdrop-filter: blur(4px);
+	}
+
+	.upload-progress-compact {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.progress-icon-small {
+		font-size: 1.5rem;
+		opacity: 0.9;
+	}
+
+	.progress-info-compact {
+		flex: 1;
+	}
+
+	.progress-text {
+		margin: 0 0 0.25rem 0;
+		color: white;
+		font-weight: 600;
+		font-size: 0.875rem;
+	}
+
+	.progress-bar-small {
+		width: 100%;
+		height: 4px;
+		background: rgba(255, 255, 255, 0.3);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.progress-bar-small .progress-fill {
+		background: linear-gradient(90deg, #4ade80, #22c55e);
+		box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 	}
 
 	.preview-image {

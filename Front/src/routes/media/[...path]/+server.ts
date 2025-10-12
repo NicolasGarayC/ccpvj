@@ -1,9 +1,12 @@
 import type { RequestHandler } from './$types';
 import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, statSync } from 'fs';
 import path from 'path';
 import { error } from '@sveltejs/kit';
+import { API_BASE_URL } from '$lib/config';
+
 // Use process.cwd() to get current working directory, then navigate to Back/Data/media
+// When running from Front/ directory, go up one level to root, then to Back/Data/media
 const MEDIA_DIR = path.resolve(process.cwd(), '../Back/Data/media');
 
 // MIME type mapping
@@ -31,7 +34,45 @@ const MIME_TYPES: Record<string, string> = {
     '.txt': 'text/plain'
 };
 
-export const GET: RequestHandler = async ({ params }) => {
+/**
+ * Track download analytics
+ */
+async function trackDownload(
+    resourceId: string,
+    resourceType: string,
+    filePath: string,
+    fileName: string,
+    fileSize: number,
+    ipAddress: string,
+    token: string | null
+): Promise<void> {
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        await fetch(`${API_BASE_URL}/api/analytics/track-download`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                resourceId,
+                resourceType,
+                filePath,
+                fileName,
+                fileSize
+            })
+        });
+    } catch (error) {
+        // Silently fail - don't block file serving if analytics fails
+        console.debug('Analytics tracking error:', error);
+    }
+}
+
+export const GET: RequestHandler = async ({ params, url, request, getClientAddress }) => {
     try {
         const { path: mediaPath } = params;
 
@@ -52,6 +93,36 @@ export const GET: RequestHandler = async ({ params }) => {
         // Check if file exists
         if (!existsSync(normalizedPath)) {
             throw error(404, 'File not found');
+        }
+
+        // Get file stats for size
+        const fileStats = statSync(normalizedPath);
+        const fileName = path.basename(normalizedPath);
+
+        // Check for tracking parameters
+        const resourceId = url.searchParams.get('resourceId');
+        const resourceType = url.searchParams.get('resourceType');
+        const shouldTrack = url.searchParams.get('track') === 'true';
+
+        // Track download if parameters are present
+        if (shouldTrack && resourceId && resourceType) {
+            const token = request.headers.get('cookie')
+                ?.split(';')
+                .find(c => c.trim().startsWith('token='))
+                ?.split('=')[1] || null;
+
+            const ipAddress = getClientAddress();
+
+            // Track asynchronously without waiting
+            trackDownload(
+                resourceId,
+                resourceType,
+                decodedPath,
+                fileName,
+                fileStats.size,
+                ipAddress,
+                token
+            ).catch(err => console.debug('Download tracking failed:', err));
         }
 
         // Read file

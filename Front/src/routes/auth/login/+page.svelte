@@ -1,17 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	let username = '';
 	let password = '';
 	let isLoading = false;
 	let error = '';
+	let sessionExpiredMessage = '';
 
 	onMount(() => {
 		// If user is already authenticated, redirect to home
 		if (jwtService.isAuthenticated()) {
 			goto('/');
+			return;
+		}
+
+		// Check if coming from session expiration
+		const message = $page.url.searchParams.get('message');
+		if (message === 'session-expired') {
+			sessionExpiredMessage = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
 		}
 	});
 
@@ -60,6 +69,12 @@
 		</div>
 
 		<form on:submit|preventDefault={handleLogin} class="login-form">
+			{#if sessionExpiredMessage}
+				<div class="warning-message" role="alert">
+					⏱️ {sessionExpiredMessage}
+				</div>
+			{/if}
+
 			<div class="form-group">
 				<label for="username">Usuario</label>
 				<input
@@ -192,6 +207,17 @@
 		border-radius: 8px;
 		font-size: 14px;
 		text-align: center;
+	}
+
+	.warning-message {
+		background-color: #fef3c7;
+		border: 1px solid #fde68a;
+		color: #92400e;
+		padding: 12px 16px;
+		border-radius: 8px;
+		font-size: 14px;
+		text-align: center;
+		font-weight: 500;
 	}
 
 	.login-button {

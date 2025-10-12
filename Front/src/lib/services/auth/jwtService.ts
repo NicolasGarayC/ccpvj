@@ -99,12 +99,6 @@ class JwtService {
             const expirationTime = payload.exp * 1000; // Convert to milliseconds
             const currentTime = Date.now();
 
-            console.log('[DEBUG] Token expiration check:', {
-                expirationTime: new Date(expirationTime).toISOString(),
-                currentTime: new Date(currentTime).toISOString(),
-                isExpired: currentTime >= expirationTime
-            });
-
             return currentTime >= expirationTime;
         } catch (error) {
             console.error('Error checking token expiration:', error);
@@ -124,7 +118,6 @@ class JwtService {
         }
 
         if (this.isTokenExpired(token)) {
-            console.log('[DEBUG] Token expired, logging out automatically');
             this.removeToken(); // Auto-logout if token is expired
             authModalStore.showSessionExpired(); // Show modal
             return false;
@@ -142,44 +135,26 @@ class JwtService {
     // Login with username and password
     async login(username: string, password: string): Promise<LoginResponse> {
         try {
-            console.log('[DEBUG] JwtService.login called', { username, hasPassword: !!password });
-
-            const requestBody = JSON.stringify({ username, password });
-            console.log('[DEBUG] JwtService request body:', requestBody);
-
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: requestBody
+                body: JSON.stringify({ username, password })
             });
 
-            console.log('[DEBUG] JwtService response status:', response.status);
-            console.log('[DEBUG] JwtService response ok:', response.ok);
-            console.log('[DEBUG] JwtService response headers:', Object.fromEntries(response.headers.entries()));
-
             const data = await response.json();
-            console.log('[DEBUG] JwtService response data:', data);
 
             if (data.success && data.token) {
-                console.log('[DEBUG] Login successful, setting token');
                 this.setToken(data.token);
                 if (data.user) {
                     this.setUser(data.user);
                 }
-            } else {
-                console.log('[DEBUG] Login failed:', data.message);
             }
 
             return data;
         } catch (error) {
-            console.error('[DEBUG] JwtService login error:', error);
-            console.error('[DEBUG] Error details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
+            console.error('Login error:', error);
             return {
                 success: false,
                 message: 'Error de conexión: ' + error.message
@@ -284,7 +259,6 @@ class JwtService {
             // Only clean token if all tabs are being closed (browser closing)
             // We detect this by checking if sessionStorage persists across tabs
             if (!sessionStorage.getItem('app_session_active')) {
-                console.log('[DEBUG] Browser closing, cleaning up authentication tokens');
                 this.removeToken();
             }
         };
@@ -304,14 +278,12 @@ class JwtService {
                     sessionStorage.removeItem('test_browser_close');
                 } catch (e) {
                     // Browser is closing, sessionStorage is being destroyed
-                    console.log('[DEBUG] Browser closing detected, cleaning up authentication tokens');
                     this.removeToken();
                 }
             }, 10);
         });
 
         this.isUnloadListenerAdded = true;
-        console.log('[DEBUG] Browser close listeners setup successfully (tab-close safe)');
     }
 
     // Remove unload listeners (useful for testing or cleanup)
@@ -325,7 +297,6 @@ class JwtService {
         // We don't need to manually remove them in this case
 
         this.isUnloadListenerAdded = false;
-        console.log('[DEBUG] Browser close listeners removed');
     }
 
     // Public method to manually clean token and remove listeners

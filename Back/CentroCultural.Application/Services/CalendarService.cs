@@ -25,7 +25,46 @@ namespace CentroCultural.Application.Services
                 var eventEntity = await _context.Events
                     .FirstOrDefaultAsync(e => e.Id == id.ToString() && e.IsActive);
 
-                return eventEntity == null ? null : MapToEventDto(eventEntity);
+                if (eventEntity == null) return null;
+
+                // Load related blog post if exists
+                string? relatedBlogPostTitle = null;
+                string? relatedBlogPostSlug = null;
+                if (!string.IsNullOrEmpty(eventEntity.RelatedBlogPostId))
+                {
+                    var blogPost = await _context.BlogPost
+                        .FirstOrDefaultAsync(b => b.Id == eventEntity.RelatedBlogPostId && b.IsActive);
+                    if (blogPost != null)
+                    {
+                        relatedBlogPostTitle = blogPost.Title;
+                        relatedBlogPostSlug = blogPost.Slug;
+                    }
+                }
+
+                // Load related project if exists
+                string? relatedProjectTitle = null;
+                if (!string.IsNullOrEmpty(eventEntity.RelatedProjectId))
+                {
+                    var project = await _context.MaterialApoyo
+                        .FirstOrDefaultAsync(c => c.Id == eventEntity.RelatedProjectId && c.IsActive);
+                    if (project != null)
+                    {
+                        relatedProjectTitle = project.Title;
+                    }
+                }
+
+                // Load organizer name if exists
+                string organizerName = "Organizer";
+                if (!string.IsNullOrEmpty(eventEntity.OrganizerId) && int.TryParse(eventEntity.OrganizerId, out var organizerId))
+                {
+                    var organizer = await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == organizerId);
+                    if (organizer != null)
+                    {
+                        organizerName = organizer.Nombre ?? organizer.NombreUsuario;
+                    }
+                }
+
+                return MapToEventDto(eventEntity, relatedBlogPostTitle, relatedBlogPostSlug, relatedProjectTitle, organizerName);
             }
             catch (Exception ex)
             {
@@ -70,14 +109,9 @@ namespace CentroCultural.Application.Services
                     query = query.Where(e => e.IsFeatured == searchDto.IsFeatured.Value);
                 }
 
-                if (searchDto.RequiresRegistration.HasValue)
+                if (searchDto.RelatedProjectId.HasValue)
                 {
-                    query = query.Where(e => e.RequiresRegistration == searchDto.RequiresRegistration.Value);
-                }
-
-                if (searchDto.RelatedCourseId.HasValue)
-                {
-                    query = query.Where(e => e.RelatedCourseId == searchDto.RelatedCourseId.ToString());
+                    query = query.Where(e => e.RelatedProjectId == searchDto.RelatedProjectId.ToString());
                 }
 
                 // Apply sorting
@@ -144,17 +178,38 @@ namespace CentroCultural.Application.Services
                 var startTimestamp = new DateTimeOffset(startDate).ToUnixTimeSeconds();
                 var endTimestamp = new DateTimeOffset(endDate).ToUnixTimeSeconds();
 
-                var events = await _context.Events
-                    .Where(e => e.IsActive && e.StartDateTime >= startTimestamp && e.StartDateTime < endTimestamp)
+                // Obtener eventos no recurrentes que caen en el rango
+                var nonRecurringEvents = await _context.Events
+                    .Where(e => e.IsActive && !e.IsRecurring && e.StartDateTime >= startTimestamp && e.StartDateTime < endTimestamp)
                     .OrderBy(e => e.StartDateTime)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                // Obtener eventos recurrentes activos que puedan tener ocurrencias en el rango
+                var recurringEvents = await _context.Events
+                    .Where(e => e.IsActive && e.IsRecurring &&
+                                (e.RecurrenceEndDate == null || e.RecurrenceEndDate >= startTimestamp))
+                    .ToListAsync();
+
+                var allEvents = new List<EventSummaryDto>();
+
+                // Agregar eventos no recurrentes
+                allEvents.AddRange(nonRecurringEvents.Select(e => MapToEventSummaryDto(e)));
+
+                // Expandir eventos recurrentes en múltiples instancias
+                foreach (var recurringEvent in recurringEvents)
+                {
+                    var occurrences = GenerateRecurringOccurrences(recurringEvent, startDate, endDate);
+                    allEvents.AddRange(occurrences);
+                }
+
+                // Ordenar todos los eventos por fecha
+                allEvents = allEvents.OrderBy(e => e.StartDateTime).ToList();
 
                 return new CalendarViewDto
                 {
                     ViewDate = viewDate,
                     ViewType = viewType,
-                    Events = events
+                    Events = allEvents
                 };
             }
             catch (Exception ex)
@@ -162,6 +217,134 @@ namespace CentroCultural.Application.Services
                 _logger.LogError(ex, "Error retrieving calendar view for {ViewDate} with type {ViewType}", viewDate, viewType);
                 throw;
             }
+        }
+
+        private List<EventSummaryDto> GenerateRecurringOccurrences(Event recurringEvent, DateTime rangeStart, DateTime rangeEnd)
+        {
+            var occurrences = new List<EventSummaryDto>();
+
+            var eventStart = DateTimeOffset.FromUnixTimeSeconds(recurringEvent.StartDateTime).DateTime;
+            var eventEnd = recurringEvent.EndDateTime.HasValue
+                ? DateTimeOffset.FromUnixTimeSeconds(recurringEvent.EndDateTime.Value).DateTime
+                : eventStart;
+            var recurrenceEnd = recurringEvent.RecurrenceEndDate.HasValue
+                ? DateTimeOffset.FromUnixTimeSeconds(recurringEvent.RecurrenceEndDate.Value).DateTime
+                : rangeEnd;
+
+            var interval = recurringEvent.RecurrenceInterval ?? 1;
+            var duration = eventEnd - eventStart;
+
+            // Manejo especial para eventos semanales con días específicos
+            if (recurringEvent.RecurrencePattern?.ToLower() == "weekly" && !string.IsNullOrEmpty(recurringEvent.RecurrenceDaysOfWeek))
+            {
+                // Parsear los días de la semana seleccionados
+                var selectedDays = recurringEvent.RecurrenceDaysOfWeek
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(d => int.Parse(d.Trim()))
+                    .OrderBy(d => d)
+                    .ToList();
+
+                // Encontrar el lunes de la semana donde empieza el evento
+                var weekStart = eventStart.Date;
+                while (weekStart.DayOfWeek != DayOfWeek.Monday)
+                {
+                    weekStart = weekStart.AddDays(-1);
+                }
+
+                // Iterar semana por semana
+                var currentWeek = weekStart;
+                while (currentWeek <= recurrenceEnd)
+                {
+                    // Para cada día seleccionado en esta semana
+                    foreach (var selectedDay in selectedDays)
+                    {
+                        // Calcular la fecha de esta ocurrencia
+                        var occurrenceDate = currentWeek.AddDays(selectedDay == 0 ? 6 : selectedDay - 1); // 0=domingo se mapea a día 6 de la semana
+
+                        // Agregar la hora del evento original
+                        occurrenceDate = new DateTime(
+                            occurrenceDate.Year,
+                            occurrenceDate.Month,
+                            occurrenceDate.Day,
+                            eventStart.Hour,
+                            eventStart.Minute,
+                            eventStart.Second
+                        );
+
+                        // Verificar que esté dentro de todos los rangos
+                        if (occurrenceDate >= eventStart &&
+                            occurrenceDate <= recurrenceEnd &&
+                            occurrenceDate >= rangeStart &&
+                            occurrenceDate < rangeEnd)
+                        {
+                            occurrences.Add(new EventSummaryDto
+                            {
+                                Id = Guid.TryParse(recurringEvent.Id, out var guid) ? guid : Guid.Empty,
+                                Title = recurringEvent.Title,
+                                Description = recurringEvent.Description,
+                                StartDateTime = occurrenceDate,
+                                EndDateTime = occurrenceDate + duration,
+                                IsAllDay = recurringEvent.IsAllDay,
+                                Location = recurringEvent.Location,
+                                EventType = recurringEvent.EventType,
+                                IsFeatured = recurringEvent.IsFeatured,
+                                IsRecurring = true
+                            });
+                        }
+                    }
+
+                    // Avanzar a la siguiente semana según el intervalo
+                    currentWeek = currentWeek.AddDays(interval * 7);
+                }
+            }
+            else
+            {
+                // Para patrones daily, monthly, yearly (sin días específicos)
+                var current = eventStart;
+
+                while (current <= recurrenceEnd && current < rangeEnd.AddDays(1))
+                {
+                    // Verificar si esta ocurrencia cae dentro del rango de visualización
+                    if (current >= rangeStart && current < rangeEnd)
+                    {
+                        occurrences.Add(new EventSummaryDto
+                        {
+                            Id = Guid.TryParse(recurringEvent.Id, out var guid) ? guid : Guid.Empty,
+                            Title = recurringEvent.Title,
+                            Description = recurringEvent.Description,
+                            StartDateTime = current,
+                            EndDateTime = current + duration,
+                            IsAllDay = recurringEvent.IsAllDay,
+                            Location = recurringEvent.Location,
+                            EventType = recurringEvent.EventType,
+                            IsFeatured = recurringEvent.IsFeatured,
+                            IsRecurring = true
+                        });
+                    }
+
+                    // Avanzar al siguiente intervalo según el patrón
+                    switch (recurringEvent.RecurrencePattern?.ToLower())
+                    {
+                        case "daily":
+                            current = current.AddDays(interval);
+                            break;
+                        case "weekly":
+                            current = current.AddDays(interval * 7);
+                            break;
+                        case "monthly":
+                            current = current.AddMonths(interval);
+                            break;
+                        case "yearly":
+                            current = current.AddYears(interval);
+                            break;
+                        default:
+                            // Si no hay patrón válido, salir del bucle
+                            return occurrences;
+                    }
+                }
+            }
+
+            return occurrences;
         }
 
         public async Task<IEnumerable<EventSummaryDto>> GetFeaturedEventsAsync(int limit = 5)
@@ -220,13 +403,6 @@ namespace CentroCultural.Application.Services
                     Location = createEventDto.Location,
                     EventType = createEventDto.EventType,
                     IsFeatured = createEventDto.IsFeatured,
-                    MaxAttendees = createEventDto.MaxAttendees,
-                    RequiresRegistration = createEventDto.RequiresRegistration,
-                    RegistrationDeadline = createEventDto.RegistrationDeadline.HasValue
-                        ? new DateTimeOffset(createEventDto.RegistrationDeadline.Value).ToUnixTimeSeconds()
-                        : null,
-                    ImagePath = createEventDto.ImagePath,
-                    PdfPath = createEventDto.PdfPath,
                     IsRecurring = createEventDto.IsRecurring,
                     RecurrencePattern = createEventDto.RecurrencePattern,
                     RecurrenceInterval = createEventDto.RecurrenceInterval,
@@ -234,7 +410,7 @@ namespace CentroCultural.Application.Services
                         ? new DateTimeOffset(createEventDto.RecurrenceEndDate.Value).ToUnixTimeSeconds()
                         : null,
                     RecurrenceDaysOfWeek = createEventDto.RecurrenceDaysOfWeek,
-                    RelatedCourseId = createEventDto.RelatedCourseId?.ToString(),
+                    RelatedProjectId = createEventDto.RelatedProjectId?.ToString(),
                     RelatedBlogPostId = createEventDto.RelatedBlogPostId?.ToString(),
                     CreatedAt = currentTime,
                     OrganizerId = organizerId.ToString(),
@@ -279,13 +455,6 @@ namespace CentroCultural.Application.Services
                 eventEntity.Location = updateEventDto.Location;
                 eventEntity.EventType = updateEventDto.EventType;
                 eventEntity.IsFeatured = updateEventDto.IsFeatured;
-                eventEntity.MaxAttendees = updateEventDto.MaxAttendees;
-                eventEntity.RequiresRegistration = updateEventDto.RequiresRegistration;
-                eventEntity.RegistrationDeadline = updateEventDto.RegistrationDeadline.HasValue
-                    ? new DateTimeOffset(updateEventDto.RegistrationDeadline.Value).ToUnixTimeSeconds()
-                    : null;
-                eventEntity.ImagePath = updateEventDto.ImagePath;
-                eventEntity.PdfPath = updateEventDto.PdfPath;
                 eventEntity.IsRecurring = updateEventDto.IsRecurring;
                 eventEntity.RecurrencePattern = updateEventDto.RecurrencePattern;
                 eventEntity.RecurrenceInterval = updateEventDto.RecurrenceInterval;
@@ -293,7 +462,7 @@ namespace CentroCultural.Application.Services
                     ? new DateTimeOffset(updateEventDto.RecurrenceEndDate.Value).ToUnixTimeSeconds()
                     : null;
                 eventEntity.RecurrenceDaysOfWeek = updateEventDto.RecurrenceDaysOfWeek;
-                eventEntity.RelatedCourseId = updateEventDto.RelatedCourseId?.ToString();
+                eventEntity.RelatedProjectId = updateEventDto.RelatedProjectId?.ToString();
                 eventEntity.RelatedBlogPostId = updateEventDto.RelatedBlogPostId?.ToString();
                 eventEntity.UpdatedAt = currentTime;
 
@@ -340,10 +509,10 @@ namespace CentroCultural.Application.Services
 
         // Additional interface methods (simplified implementations)
 
-        public async Task<IEnumerable<EventSummaryDto>> GenerateRecurringEventsAsync(Guid eventId, DateTime startDate, DateTime endDate)
+        public Task<IEnumerable<EventSummaryDto>> GenerateRecurringEventsAsync(Guid eventId, DateTime startDate, DateTime endDate)
         {
             // TODO: Implement recurring event generation logic
-            return new List<EventSummaryDto>();
+            return Task.FromResult<IEnumerable<EventSummaryDto>>(new List<EventSummaryDto>());
         }
 
         public async Task<EventDto> UpdateRecurringEventAsync(Guid id, UpdateEventDto updateEventDto, int userId, bool updateSeries = false)
@@ -415,19 +584,19 @@ namespace CentroCultural.Application.Services
             }
         }
 
-        public async Task<IEnumerable<EventSummaryDto>> GetEventsByCourseAsync(Guid courseId)
+        public async Task<IEnumerable<EventSummaryDto>> GetEventsByProjectAsync(Guid projectId)
         {
             try
             {
                 return await _context.Events
-                    .Where(e => e.IsActive && e.RelatedCourseId == courseId.ToString())
+                    .Where(e => e.IsActive && e.RelatedProjectId == projectId.ToString())
                     .OrderBy(e => e.StartDateTime)
                     .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving events by course {CourseId}", courseId);
+                _logger.LogError(ex, "Error retrieving events by project {ProjectId}", projectId);
                 throw;
             }
         }
@@ -461,10 +630,10 @@ namespace CentroCultural.Application.Services
             return await Task.FromResult(false);
         }
 
-        public async Task<IEnumerable<EventSummaryDto>> GetUserRegisteredEventsAsync(int userId)
+        public Task<IEnumerable<EventSummaryDto>> GetUserRegisteredEventsAsync(int userId)
         {
             // TODO: Implement user registered events logic
-            return new List<EventSummaryDto>();
+            return Task.FromResult<IEnumerable<EventSummaryDto>>(new List<EventSummaryDto>());
         }
 
         public async Task<object> GetEventStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null)
@@ -489,14 +658,12 @@ namespace CentroCultural.Application.Services
                 var totalEvents = await query.CountAsync();
                 var upcomingEvents = await query.Where(e => e.StartDateTime >= currentTime).CountAsync();
                 var featuredEvents = await query.Where(e => e.IsFeatured).CountAsync();
-                var eventsWithRegistration = await query.Where(e => e.RequiresRegistration).CountAsync();
 
                 return new
                 {
                     TotalEvents = totalEvents,
                     UpcomingEvents = upcomingEvents,
-                    FeaturedEvents = featuredEvents,
-                    EventsWithRegistration = eventsWithRegistration
+                    FeaturedEvents = featuredEvents
                 };
             }
             catch (Exception ex)
@@ -535,7 +702,7 @@ namespace CentroCultural.Application.Services
 
         // Private helper methods
 
-        private static EventDto MapToEventDto(Event eventEntity)
+        private static EventDto MapToEventDto(Event eventEntity, string? relatedBlogPostTitle = null, string? relatedBlogPostSlug = null, string? relatedProjectTitle = null, string? organizerName = null)
         {
             return new EventDto
             {
@@ -551,14 +718,6 @@ namespace CentroCultural.Application.Services
                 EventType = eventEntity.EventType,
                 IsActive = eventEntity.IsActive,
                 IsFeatured = eventEntity.IsFeatured,
-                MaxAttendees = eventEntity.MaxAttendees,
-                CurrentAttendees = eventEntity.CurrentAttendees,
-                RequiresRegistration = eventEntity.RequiresRegistration,
-                RegistrationDeadline = eventEntity.RegistrationDeadline.HasValue
-                    ? DateTimeOffset.FromUnixTimeSeconds(eventEntity.RegistrationDeadline.Value).DateTime
-                    : null,
-                ImagePath = eventEntity.ImagePath,
-                PdfPath = eventEntity.PdfPath,
                 IsRecurring = eventEntity.IsRecurring,
                 RecurrencePattern = eventEntity.RecurrencePattern,
                 RecurrenceInterval = eventEntity.RecurrenceInterval,
@@ -566,17 +725,17 @@ namespace CentroCultural.Application.Services
                     ? DateTimeOffset.FromUnixTimeSeconds(eventEntity.RecurrenceEndDate.Value).DateTime
                     : null,
                 RecurrenceDaysOfWeek = eventEntity.RecurrenceDaysOfWeek,
-                RelatedCourseId = eventEntity.RelatedCourseId != null && Guid.TryParse(eventEntity.RelatedCourseId, out var courseGuid) ? courseGuid : null,
-                RelatedCourseTitle = null, // Navigation property removed - use manual lookup if needed
+                RelatedProjectId = eventEntity.RelatedProjectId != null && Guid.TryParse(eventEntity.RelatedProjectId, out var projectGuid) ? projectGuid : null,
+                RelatedProjectTitle = relatedProjectTitle,
                 RelatedBlogPostId = eventEntity.RelatedBlogPostId != null && Guid.TryParse(eventEntity.RelatedBlogPostId, out var blogGuid) ? blogGuid : null,
-                RelatedBlogPostTitle = null, // Navigation property removed - use manual lookup if needed
-                RelatedBlogPostSlug = null, // Navigation property removed - use manual lookup if needed
+                RelatedBlogPostTitle = relatedBlogPostTitle,
+                RelatedBlogPostSlug = relatedBlogPostSlug,
                 CreatedAt = DateTimeOffset.FromUnixTimeSeconds(eventEntity.CreatedAt).DateTime,
                 UpdatedAt = eventEntity.UpdatedAt.HasValue
                     ? DateTimeOffset.FromUnixTimeSeconds(eventEntity.UpdatedAt.Value).DateTime
                     : null,
                 OrganizerId = int.TryParse(eventEntity.OrganizerId, out var organizerId) ? organizerId : 0,
-                OrganizerName = "Organizer" // Navigation property removed - use manual lookup if needed
+                OrganizerName = organizerName ?? "Organizer"
             };
         }
 
@@ -595,11 +754,10 @@ namespace CentroCultural.Application.Services
                 Location = eventEntity.Location,
                 EventType = eventEntity.EventType,
                 IsFeatured = eventEntity.IsFeatured,
-                ImagePath = eventEntity.ImagePath,
                 IsRecurring = eventEntity.IsRecurring,
                 OrganizerName = "Organizer", // Navigation property removed - use manual lookup if needed
-                RelatedCourseId = eventEntity.RelatedCourseId != null && Guid.TryParse(eventEntity.RelatedCourseId, out var courseGuid) ? courseGuid : null,
-                RelatedCourseTitle = null, // Navigation property removed - use manual lookup if needed
+                RelatedProjectId = eventEntity.RelatedProjectId != null && Guid.TryParse(eventEntity.RelatedProjectId, out var projectGuid) ? projectGuid : null,
+                RelatedProjectTitle = null, // Navigation property removed - use manual lookup if needed
                 RelatedBlogPostId = eventEntity.RelatedBlogPostId != null && Guid.TryParse(eventEntity.RelatedBlogPostId, out var blogGuid) ? blogGuid : null,
                 RelatedBlogPostTitle = null, // Navigation property removed - use manual lookup if needed
                 RelatedBlogPostSlug = null // Navigation property removed - use manual lookup if needed

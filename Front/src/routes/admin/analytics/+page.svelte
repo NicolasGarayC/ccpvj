@@ -50,12 +50,17 @@
 
     } catch (error) {
       console.error('Error loading analytics:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        stack: error?.stack
+      });
 
       // Fallback to simulated data if API fails
       stats = {
-        totalVisitors: 1247,
-        totalDownloads: 583,
-        totalResources: 156
+        totalVisitors: 2,
+        totalDownloads: 3,
+        totalResources: 8
       };
 
       visitorsChart = Array.from({ length: 30 }, (_, i) => ({
@@ -66,13 +71,6 @@
         visitors: Math.floor(Math.random() * 50) + 20
       }));
 
-      topResources = [
-        { name: 'Manual de Guitarra Básica.pdf', downloads: 127, type: 'library' },
-        { name: 'Historia del Teatro Colombiano.pdf', downloads: 89, type: 'library' },
-        { name: 'Técnicas de Pintura.mp4', downloads: 76, type: 'blog' },
-        { name: 'Fotografía Digital.pdf', downloads: 64, type: 'course' },
-        { name: 'Música Folclórica.mp3', downloads: 52, type: 'library' }
-      ];
     } finally {
       loading = false;
     }
@@ -128,11 +126,11 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
-          <div class="p-3 rounded-lg {getStatColor('visitors')}">
-            <i class="{getStatIcon('visitors')} text-xl"></i>
+          <div class="p-3 rounded-lg bg-blue-100 text-blue-600">
+            <i class="fas fa-users text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Visitantes</p>
+            <p class="text-sm font-medium text-gray-500">Total Visitantes</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalVisitors.toLocaleString()}</p>
           </div>
         </div>
@@ -140,11 +138,11 @@
 
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
-          <div class="p-3 rounded-lg {getStatColor('downloads')}">
-            <i class="{getStatIcon('downloads')} text-xl"></i>
+          <div class="p-3 rounded-lg bg-green-100 text-green-600">
+            <i class="fas fa-download text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Descargas</p>
+            <p class="text-sm font-medium text-gray-500">Total Descargas</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalDownloads.toLocaleString()}</p>
           </div>
         </div>
@@ -152,12 +150,13 @@
 
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
-          <div class="p-3 rounded-lg {getStatColor('resources')}">
-            <i class="{getStatIcon('resources')} text-xl"></i>
+          <div class="p-3 rounded-lg bg-purple-100 text-purple-600">
+            <i class="fas fa-folder text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Recursos</p>
+            <p class="text-sm font-medium text-gray-500">Total Recursos</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalResources.toLocaleString()}</p>
+            <p class="text-xs text-gray-400 mt-1">Eventos, Proyectos, Módulos y Biblioteca</p>
           </div>
         </div>
       </div>
@@ -233,9 +232,10 @@
           </h3>
           <div class="mt-2 text-sm text-blue-700">
             <p>
-              • Los datos se actualizan cada hora<br>
-              • Las estadísticas incluyen únicamente usuarios únicos<br>
-              • Los recursos incluyen archivos de la biblioteca digital
+              • Los datos se cargan directamente de la base de datos<br>
+              • Total Visitantes: Visitantes únicos registrados en el sistema (basado en IP)<br>
+              • Total Descargas: Archivos multimedia descargados desde la plataforma<br>
+              • Total Recursos: Suma de eventos, proyectos, módulos e items de biblioteca activos
             </p>
           </div>
         </div>

@@ -22,7 +22,7 @@ namespace CentroCultural.Application.Interfaces
         Task<IEnumerable<EventSummaryDto>> GetEventsByTypeAsync(string eventType, DateTime? startDate = null, DateTime? endDate = null);
 
         // Eventos relacionados
-        Task<IEnumerable<EventSummaryDto>> GetEventsByCourseAsync(Guid courseId);
+        Task<IEnumerable<EventSummaryDto>> GetEventsByProjectAsync(Guid projectId);
         Task<IEnumerable<EventSummaryDto>> GetEventsByBlogPostAsync(Guid blogPostId);
 
         // Registraciones

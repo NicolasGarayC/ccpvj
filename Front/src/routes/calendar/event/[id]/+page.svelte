@@ -13,8 +13,6 @@
 	let error = '';
 	let event: EventDetail | null = null;
 	let relatedEvents: EventSummary[] = [];
-	let isRegistered = false;
-	let registering = false;
 	
 	// ✅ Estado de autorización
 	let isAuthenticated = false;
@@ -51,13 +49,8 @@
 
 			// ✅ Verificar si el usuario puede editar este evento
 			if (isAuthenticated && currentUser) {
-				canEditEvent = currentUser.role === 'Administrador' || 
+				canEditEvent = currentUser.role === 'Administrador' ||
 							  (event.organizerId === currentUser.id);
-			}
-
-			// Verificar si el usuario está registrado (solo si requiere registro)
-			if (event.requiresRegistration) {
-				// await checkRegistrationStatus();
 			}
 		} catch (err) {
 			console.error('Error al cargar evento:', err);
@@ -69,39 +62,15 @@
 
 	async function loadRelatedEvents() {
 		try {
-			if (event?.relatedCourseId) {
-				const courseEvents = await calendarService.getEventsByCourse(event.relatedCourseId);
-				relatedEvents = courseEvents.filter(e => e.id !== eventId).slice(0, 5);
+			if (event?.relatedProjectId) {
+				const projectEvents = await calendarService.getEventsByProject(event.relatedProjectId);
+				relatedEvents = projectEvents.filter(e => e.id !== eventId).slice(0, 5);
 			} else if (event?.relatedBlogPostId) {
 				const blogEvents = await calendarService.getEventsByBlogPost(event.relatedBlogPostId);
 				relatedEvents = blogEvents.filter(e => e.id !== eventId).slice(0, 5);
 			}
 		} catch (err) {
 			console.error('Error al cargar eventos relacionados:', err);
-		}
-	}
-
-	async function handleRegister() {
-		if (!event || registering) return;
-
-		try {
-			registering = true;
-			
-			if (isRegistered) {
-				await calendarService.unregisterFromEvent(eventId);
-				isRegistered = false;
-			} else {
-				await calendarService.registerToEvent(eventId);
-				isRegistered = true;
-			}
-
-			// Recargar evento para actualizar el contador
-			await loadEvent();
-		} catch (err) {
-			console.error('Error al registrar/desregistrar:', err);
-			alert('Error al procesar el registro. Inténtalo de nuevo.');
-		} finally {
-			registering = false;
 		}
 	}
 
@@ -119,9 +88,9 @@
 		goto(`/calendar/event/${relatedEventId}`);
 	}
 
-	function navigateToRelatedCourse() {
-		if (event?.relatedCourseId) {
-			goto(`/material-apoyo/${event.relatedCourseId}`);
+	function navigateToRelatedProject() {
+		if (event?.relatedProjectId) {
+			goto(`/material-apoyo/${event.relatedProjectId}`);
 		}
 	}
 
@@ -164,7 +133,8 @@
 			'Taller': 'bg-green-100 text-green-800',
 			'Conferencia': 'bg-purple-100 text-purple-800',
 			'Evento': 'bg-yellow-100 text-yellow-800',
-			'General': 'bg-gray-100 text-gray-800'
+			'General': 'bg-gray-100 text-gray-800',
+			'Otro': 'bg-indigo-100 text-indigo-800'
 		};
 		return colors[eventType] || 'bg-gray-100 text-gray-800';
 	}
@@ -175,14 +145,6 @@
 
 	function isPast(date: Date): boolean {
 		return new Date(date) < new Date();
-	}
-
-	function canRegister(): boolean {
-		if (!event || !event.requiresRegistration) return false;
-		if (isPast(event.startDateTime)) return false;
-		if (event.registrationDeadline && isPast(event.registrationDeadline)) return false;
-		if (event.maxAttendees && event.currentAttendees >= event.maxAttendees) return false;
-		return true;
 	}
 </script>
 
@@ -238,16 +200,6 @@
 					<div class="lg:col-span-2 space-y-6">
 						<!-- Header del evento -->
 						<div class="bg-white rounded-lg shadow-lg overflow-hidden">
-							{#if event.imagePath}
-								<div class="h-64 bg-gray-200">
-									<img 
-										src={event.imagePath} 
-										alt={event.title}
-										class="w-full h-full object-cover"
-									/>
-								</div>
-							{/if}
-
 							<div class="p-6">
 								<!-- Estado y tipo -->
 								<div class="flex items-center space-x-3 mb-4">
@@ -286,6 +238,45 @@
 
 								<!-- Título -->
 								<h1 class="text-3xl font-bold text-gray-900 mb-4">{event.title}</h1>
+
+								<!-- Banner informativo para eventos recurrentes -->
+								{#if event.isRecurring}
+									<div class="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+										<div class="flex">
+											<div class="flex-shrink-0">
+												<svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+													<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+												</svg>
+											</div>
+											<div class="ml-3">
+												<h3 class="text-sm font-medium text-blue-800">
+													🔄 Este es un evento recurrente
+												</h3>
+												<div class="mt-2 text-sm text-blue-700">
+													<p>
+														Patrón: <strong>
+															{#if event.recurrencePattern === 'daily'}Diario{/if}
+															{#if event.recurrencePattern === 'weekly'}Semanal{/if}
+															{#if event.recurrencePattern === 'monthly'}Mensual{/if}
+															{#if event.recurrencePattern === 'yearly'}Anual{/if}
+														</strong>
+														{#if event.recurrenceInterval && event.recurrenceInterval > 1}
+															(cada {event.recurrenceInterval} {event.recurrencePattern === 'daily' ? 'días' : event.recurrencePattern === 'weekly' ? 'semanas' : event.recurrencePattern === 'monthly' ? 'meses' : 'años'})
+														{/if}
+													</p>
+													{#if event.recurrenceEndDate}
+														<p class="mt-1">
+															Se repite hasta: <strong>{formatDateOnly(event.recurrenceEndDate)}</strong>
+														</p>
+													{/if}
+													<p class="mt-2 text-xs">
+														⚠️ <strong>Importante:</strong> Si eliminas este evento, se eliminarán todas las ocurrencias futuras.
+													</p>
+												</div>
+											</div>
+										</div>
+									</div>
+								{/if}
 
 								<!-- Información básica -->
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -335,25 +326,6 @@
 											<p class="text-sm text-gray-600">{event.organizerName}</p>
 										</div>
 									</div>
-
-									<!-- Capacidad -->
-									{#if event.requiresRegistration}
-										<div class="flex items-start space-x-3">
-											<svg class="w-5 h-5 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-											</svg>
-											<div>
-												<p class="font-medium text-gray-900">Asistentes</p>
-												<p class="text-sm text-gray-600">
-													{event.currentAttendees}
-													{#if event.maxAttendees}
-														/ {event.maxAttendees}
-													{/if}
-													registrados
-												</p>
-											</div>
-										</div>
-									{/if}
 								</div>
 
 								<!-- Descripción -->
@@ -365,46 +337,29 @@
 										</div>
 									</div>
 								{/if}
-
-								<!-- Archivo PDF -->
-								{#if event.pdfPath}
-									<div class="mb-6">
-										<a 
-											href={event.pdfPath}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-										>
-											<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-											</svg>
-											Descargar PDF
-										</a>
-									</div>
-								{/if}
 							</div>
 						</div>
 
 						<!-- Enlaces relacionados -->
-						{#if event.relatedCourseTitle || event.relatedBlogPostTitle}
+						{#if event.relatedProjectTitle || event.relatedBlogPostTitle}
 							<div class="bg-white rounded-lg shadow p-6">
 								<h3 class="text-lg font-semibold text-gray-900 mb-4">Contenido Relacionado</h3>
-								
+
 								<div class="space-y-3">
-									{#if event.relatedCourseTitle}
-										<div 
+									{#if event.relatedProjectTitle}
+										<div
 											class="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
-											on:click={navigateToRelatedCourse}
+											on:click={navigateToRelatedProject}
 											role="button"
 											tabindex="0"
-											on:keydown={(e) => e.key === 'Enter' && navigateToRelatedCourse()}
+											on:keydown={(e) => e.key === 'Enter' && navigateToRelatedProject()}
 										>
 											<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
 											</svg>
 											<div class="flex-1">
-												<p class="font-medium text-blue-900">Curso: {event.relatedCourseTitle}</p>
-												<p class="text-sm text-blue-700">Ver información del curso completo</p>
+												<p class="font-medium text-blue-900">Proyecto: {event.relatedProjectTitle}</p>
+												<p class="text-sm text-blue-700">Ver información del proyecto completo</p>
 											</div>
 											<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -443,22 +398,18 @@
 								
 								<div class="space-y-3">
 									{#each relatedEvents as relatedEvent}
-										<div 
+										<div
 											class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
 											on:click={() => navigateToRelatedEvent(relatedEvent.id)}
 											role="button"
 											tabindex="0"
 											on:keydown={(e) => e.key === 'Enter' && navigateToRelatedEvent(relatedEvent.id)}
 										>
-											{#if relatedEvent.imagePath}
-												<img src={relatedEvent.imagePath} alt={relatedEvent.title} class="w-12 h-12 object-cover rounded" />
-											{:else}
-												<div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-													<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
-													</svg>
-												</div>
-											{/if}
+											<div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+												<svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
+												</svg>
+											</div>
 											<div class="flex-1 min-w-0">
 												<p class="font-medium text-gray-900 truncate">{relatedEvent.title}</p>
 												<p class="text-sm text-gray-500">
@@ -485,44 +436,8 @@
 						<!-- Acciones -->
 						<div class="bg-white rounded-lg shadow p-6">
 							<h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones</h3>
-							
-							<div class="space-y-3">
-								<!-- Registro al evento -->
-								{#if event.requiresRegistration && canRegister()}
-									<button
-										on:click={handleRegister}
-										disabled={registering}
-										class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
-									>
-										{#if registering}
-											<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-												<path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-											</svg>
-											{isRegistered ? 'Cancelando...' : 'Registrando...'}
-										{:else}
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-											</svg>
-											<span>{isRegistered ? 'Cancelar Registro' : 'Registrarse'}</span>
-										{/if}
-									</button>
-								{:else if event.requiresRegistration && !canRegister()}
-									<div class="text-center p-3 bg-gray-100 rounded-lg">
-										<p class="text-sm text-gray-600">
-											{#if isPast(event.startDateTime)}
-												Evento finalizado
-											{:else if event.registrationDeadline && isPast(event.registrationDeadline)}
-												Registro cerrado
-											{:else if event.maxAttendees && event.currentAttendees >= event.maxAttendees}
-												Cupo completo
-											{:else}
-												Registro no disponible
-											{/if}
-										</p>
-									</div>
-								{/if}
 
+							<div class="space-y-3">
 								<!-- ✅ Editar evento solo para organizador/admin -->
 								{#if canEditEvent}
 									<button
@@ -548,51 +463,6 @@
 								</button>
 							</div>
 						</div>
-
-						<!-- Información adicional -->
-						{#if event.requiresRegistration}
-							<div class="bg-white rounded-lg shadow p-6">
-								<h3 class="text-lg font-semibold text-gray-900 mb-4">Información de Registro</h3>
-								
-								<div class="space-y-3">
-									{#if event.maxAttendees}
-										<div class="flex justify-between items-center">
-											<span class="text-sm text-gray-600">Capacidad máxima:</span>
-											<span class="font-medium">{event.maxAttendees} personas</span>
-										</div>
-									{/if}
-									
-									<div class="flex justify-between items-center">
-										<span class="text-sm text-gray-600">Registrados:</span>
-										<span class="font-medium">{event.currentAttendees} personas</span>
-									</div>
-
-									{#if event.registrationDeadline}
-										<div class="flex justify-between items-center">
-											<span class="text-sm text-gray-600">Fecha límite:</span>
-											<span class="font-medium text-sm">
-												{formatDateOnly(event.registrationDeadline)}
-											</span>
-										</div>
-									{/if}
-
-									{#if event.maxAttendees && event.currentAttendees > 0}
-										<div class="mt-3">
-											<div class="flex justify-between text-sm text-gray-600 mb-1">
-												<span>Disponibilidad</span>
-												<span>{event.currentAttendees}/{event.maxAttendees}</span>
-											</div>
-											<div class="w-full bg-gray-200 rounded-full h-2">
-												<div 
-													class="bg-blue-600 h-2 rounded-full" 
-													style="width: {Math.min((event.currentAttendees / event.maxAttendees) * 100, 100)}%"
-												></div>
-											</div>
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/if}
 
 						<!-- Información de recurrencia -->
 						{#if event.isRecurring}

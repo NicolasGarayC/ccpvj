@@ -5,6 +5,8 @@
 	import type { BlogPost } from '$lib/types/api';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
 	import { contextualUploadService, type UploadResult } from '$lib/services/contextualUploadService';
+	import BlogEventRelation from './BlogEventRelation.svelte';
+	import { calendarService } from '$lib/services/calendar/calendarService';
 
 	export let visible = false;
 	export let post: BlogPost | null = null;
@@ -19,6 +21,9 @@
 	// Track uploaded files for cleanup
 	let uploadedFiles: string[] = [];
 	let postSaved = false;
+
+	// Track active uploads to disable submit button
+	let activeUploads = 0;
 
 	interface ElementBlock {
 		id: string;
@@ -39,6 +44,7 @@
 
 	let elements: ElementBlock[] = [];
 	let draggedIndex: number | null = null;
+	let selectedEventIds: string[] = [];
 
 	$: isEdit = !!post;
 	$: modalTitle = isEdit ? 'Editar Artículo' : 'Crear Nuevo Artículo';
@@ -90,6 +96,23 @@
 
 	onMount(async () => {
 		// Initial load is now handled by reactive statement
+
+		// Listener para cerrar el modal cuando la sesión expire
+		const handleSessionExpired = () => {
+			console.log('🔒 Sesión expirada - cerrando modal de blog');
+			// Forzar cierre sin limpiar archivos (la sesión ya expiró)
+			postSaved = false;
+			uploadedFiles = [];
+			resetForm();
+			dispatch('close');
+		};
+
+		window.addEventListener('session-expired', handleSessionExpired);
+
+		// Cleanup del listener cuando el componente se destruye
+		return () => {
+			window.removeEventListener('session-expired', handleSessionExpired);
+		};
 	});
 
 	function resetForm() {
@@ -129,7 +152,7 @@
 					hasErrors = true;
 					break;
 				}
-			} else if (['image', 'video', 'audio'].includes(element.elementType)) {
+			} else if (['image', 'video', 'audio', 'document'].includes(element.elementType)) {
 				if (!element.file && !element.filePath) {
 					errors.elements = '⚠️ Los elementos multimedia requieren un archivo';
 					if (!errors.general) errors.general = '❌ Falta subir algunos archivos requeridos';
@@ -179,6 +202,8 @@
 				return '500MB';
 			case 'image':
 				return '200MB';
+			case 'document':
+				return '1GB';
 			default:
 				return '';
 		}
@@ -193,6 +218,8 @@
 				return `Audios largos permitidos (hasta ${limit})`;
 			case 'image':
 				return `Imágenes de alta resolución (hasta ${limit})`;
+			case 'document':
+				return `PDF, Word, Excel, PowerPoint (hasta ${limit})`;
 			default:
 				return '';
 		}
@@ -278,6 +305,9 @@
 				// Get updated post information
 				const updatedPost = await blogHttpService.getArticleById(post.id);
 
+				// Update event relations if any were selected
+				await updateEventRelations(post.id);
+
 				// Dispatch success with message
 				dispatch('updated', {
 					postId: post.id,
@@ -312,6 +342,9 @@
 
 				await blogPostElementService.createElementsInBatch(newPost.id, elementsWithFiles);
 
+				// Update event relations if any were selected
+				await updateEventRelations(newPost.id);
+
 				// Dispatch success with message
 				dispatch('created', {
 					...newPost,
@@ -330,8 +363,12 @@
 					errors.general = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
 				} else if (error.message.includes('permisos')) {
 					errors.general = error.message;
+				} else if (error.message.includes('slug ya está en uso')) {
+					errors.general = '⚠️ Ya existe un artículo con ese título. Por favor, usa un título diferente.';
+				} else if (error.message.includes('slug')) {
+					errors.general = '⚠️ Error con el título del artículo. Por favor, elige un título diferente.';
 				} else {
-					errors.general = `Error al ${isEdit ? 'actualizar' : 'crear'} el artículo. Inténtalo de nuevo.`;
+					errors.general = `❌ ${error.message || `Error al ${isEdit ? 'actualizar' : 'crear'} el artículo`}`;
 				}
 			}
 		} finally {
@@ -386,6 +423,11 @@
 				console.error('Error deleting element from database:', error);
 				return; // Don't remove from local array if database deletion failed
 			}
+		} else if (elementToRemove.filePath && !post?.id) {
+			// If it's a new element with an uploaded file that hasn't been saved to DB yet,
+			// track it for cleanup when the modal closes
+			uploadedFiles.push(elementToRemove.filePath);
+			console.log(`🗑️ Marked orphan file for cleanup: ${elementToRemove.filePath}`);
 		}
 
 		// Remove from local array
@@ -404,8 +446,15 @@
 		elements = [...elements];
 	}
 
+	function handleMediaUploadStart(index: number) {
+		activeUploads++;
+		console.log(`📤 Upload started for element ${index}. Active uploads: ${activeUploads}`);
+	}
+
 	function handleMediaUpload(index: number, event: CustomEvent<UploadResult>) {
 		const result = event.detail;
+		activeUploads = Math.max(0, activeUploads - 1);
+		console.log(`✅ Upload completed for element ${index}. Active uploads: ${activeUploads}`);
 
 		if (elements[index]) {
 			// Track uploaded file for potential cleanup
@@ -426,7 +475,8 @@
 
 	function handleMediaUploadError(index: number, event: CustomEvent<string>) {
 		const error = event.detail;
-		console.error(`Media upload error for element ${index}:`, error);
+		activeUploads = Math.max(0, activeUploads - 1);
+		console.error(`❌ Media upload error for element ${index}:`, error, `Active uploads: ${activeUploads}`);
 	}
 
 	function handleRemoveMedia(index: number) {
@@ -475,6 +525,87 @@
 	function handleDragEnd() {
 		isDragging = false;
 		draggedIndex = null;
+	}
+
+	function handleEventChange(eventIds: string[]) {
+		selectedEventIds = eventIds;
+		console.log('📅 Eventos relacionados actualizados:', selectedEventIds);
+	}
+
+	async function updateEventRelations(blogPostId: string) {
+		try {
+			// Get events that were previously related to this blog post
+			const previouslyRelatedEvents = await calendarService.getEventsByBlogPost(blogPostId);
+			const previouslyRelatedIds = previouslyRelatedEvents.map(e => e.id);
+
+			// Find events to remove (were related but no longer selected)
+			const eventsToRemove = previouslyRelatedIds.filter(id => !selectedEventIds.includes(id));
+
+			// Find events to add (are selected but weren't related before)
+			const eventsToAdd = selectedEventIds.filter(id => !previouslyRelatedIds.includes(id));
+
+			console.log(`📅 Actualizando relaciones: ${eventsToAdd.length} a agregar, ${eventsToRemove.length} a eliminar`);
+
+			// Remove relations from events that are no longer selected
+			for (const eventId of eventsToRemove) {
+				const event = await calendarService.getEventById(eventId);
+				if (!event) continue;
+
+				await calendarService.updateEvent({
+					id: eventId,
+					title: event.title,
+					description: event.description,
+					startDateTime: event.startDateTime,
+					endDateTime: event.endDateTime,
+					isAllDay: event.isAllDay,
+					location: event.location,
+					eventType: event.eventType,
+					isFeatured: event.isFeatured,
+					isRecurring: event.isRecurring,
+					recurrencePattern: event.recurrencePattern,
+					recurrenceInterval: event.recurrenceInterval,
+					recurrenceEndDate: event.recurrenceEndDate,
+					recurrenceDaysOfWeek: event.recurrenceDaysOfWeek,
+					relatedProjectId: event.relatedProjectId,
+					relatedBlogPostId: undefined // Remove the relation
+				});
+
+				console.log(`🗑️ Relación eliminada del evento "${event.title}"`);
+			}
+
+			// Add relations to newly selected events
+			for (const eventId of eventsToAdd) {
+				const event = await calendarService.getEventById(eventId);
+				if (!event) {
+					console.warn(`⚠️ Evento ${eventId} no encontrado, saltando...`);
+					continue;
+				}
+
+				await calendarService.updateEvent({
+					id: eventId,
+					title: event.title,
+					description: event.description,
+					startDateTime: event.startDateTime,
+					endDateTime: event.endDateTime,
+					isAllDay: event.isAllDay,
+					location: event.location,
+					eventType: event.eventType,
+					isFeatured: event.isFeatured,
+					isRecurring: event.isRecurring,
+					recurrencePattern: event.recurrencePattern,
+					recurrenceInterval: event.recurrenceInterval,
+					recurrenceEndDate: event.recurrenceEndDate,
+					recurrenceDaysOfWeek: event.recurrenceDaysOfWeek,
+					relatedProjectId: event.relatedProjectId,
+					relatedBlogPostId: blogPostId // Set the relation
+				});
+
+				console.log(`✅ Evento "${event.title}" relacionado con el blog post`);
+			}
+		} catch (error) {
+			console.error('❌ Error actualizando relaciones de eventos:', error);
+			// Don't throw - we don't want to fail the entire blog post save if event relations fail
+		}
 	}
 </script>
 
@@ -568,6 +699,13 @@
 									</svg>
 									Audio
 								</button>
+								<button type="button" class="btn btn-sm btn-outline" on:click={() => addElement('document')} disabled={isLoading}>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+										<polyline points="14,2 14,8 20,8"></polyline>
+									</svg>
+									Documento
+								</button>
 							</div>
 						</div>
 
@@ -584,7 +722,7 @@
 									<line x1="3" y1="10" x2="21" y2="10"></line>
 								</svg>
 								<p>Agrega elementos para crear el contenido de tu artículo</p>
-								<p class="hint">Puedes agregar títulos, texto, imágenes, videos y audios en cualquier orden</p>
+								<p class="hint">Puedes agregar títulos, texto, imágenes, videos, audios y documentos en cualquier orden</p>
 							</div>
 						{:else}
 							<div class="elements-list" class:dragging={isDragging}>
@@ -605,9 +743,10 @@
 													{element.elementType === 'title' ? 'Título' :
 													 element.elementType === 'text' ? 'Texto' :
 													 element.elementType === 'image' ? 'Imagen' :
-													 element.elementType === 'video' ? 'Video' : 'Audio'}
+													 element.elementType === 'video' ? 'Video' :
+													 element.elementType === 'audio' ? 'Audio' : 'Documento'}
 												</div>
-												{#if ['image', 'video', 'audio'].includes(element.elementType)}
+												{#if ['image', 'video', 'audio', 'document'].includes(element.elementType)}
 													<div class="file-limit-info">
 														{getFileLimitInfo(element.elementType)}
 													</div>
@@ -667,7 +806,7 @@
 														{element.content || 'Sin contenido'}
 													</div>
 												{/if}
-											{:else if ['image', 'video', 'audio'].includes(element.elementType)}
+											{:else if ['image', 'video', 'audio', 'document'].includes(element.elementType)}
 												<div class="media-uploader-container">
 													<ContextualMediaUploader
 														context="blog"
@@ -676,6 +815,7 @@
 														currentMedia={element.filePath || ''}
 														disabled={isLoading}
 														label=""
+														on:uploadStart={() => handleMediaUploadStart(index)}
 														on:uploadSuccess={(e) => handleMediaUpload(index, e)}
 														on:uploadError={(e) => handleMediaUploadError(index, e)}
 														on:mediaRemoved={() => handleRemoveMedia(index)}
@@ -693,14 +833,30 @@
 							</div>
 						{/if}
 					</div>
+
+					<!-- Event Relations Section -->
+					<div class="form-section">
+						<h4>Eventos Relacionados</h4>
+						<p class="section-description">
+							Relaciona este artículo con eventos del calendario para que los visitantes puedan ver el contenido vinculado.
+						</p>
+						<BlogEventRelation
+							blogPostId={post?.id}
+							onChange={handleEventChange}
+							compact={false}
+						/>
+					</div>
 				</div>
 
 				<div class="modal-footer">
-					<button type="button" class="btn btn-outline" on:click={handleClose} disabled={isLoading}>
+					<button type="button" class="btn btn-outline" on:click={handleClose} disabled={isLoading || activeUploads > 0}>
 						Cancelar
 					</button>
-					<button type="submit" class="btn btn-primary" disabled={isLoading}>
-						{#if isLoading}
+					<button type="submit" class="btn btn-primary" disabled={isLoading || activeUploads > 0}>
+						{#if activeUploads > 0}
+							<div class="loading-spinner"></div>
+							Subiendo archivos... ({activeUploads})
+						{:else if isLoading}
 							<div class="loading-spinner"></div>
 							{isEdit ? 'Actualizando...' : 'Creando...'}
 						{:else}
@@ -810,6 +966,13 @@
 		color: var(--color-text-primary);
 		border-bottom: 2px solid var(--color-primary);
 		padding-bottom: 0.5rem;
+	}
+
+	.section-description {
+		margin: 0.5rem 0 1rem 0;
+		font-size: 0.875rem;
+		color: var(--color-text-muted);
+		line-height: 1.5;
 	}
 
 	.form-group {

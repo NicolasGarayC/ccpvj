@@ -30,10 +30,8 @@ export async function deleteMediaFile(filePath: string): Promise<boolean> {
 		// Check if file exists before attempting deletion
 		if (fs.existsSync(fullPath)) {
 			fs.unlinkSync(fullPath);
-			console.log(`Successfully deleted media file: ${fullPath}`);
 			return true;
 		} else {
-			console.log(`File already doesn't exist: ${fullPath}`);
 			return true; // Consider success if file doesn't exist
 		}
 	} catch (error) {

@@ -26,14 +26,14 @@ export interface PostMediaUploadOptions {
     courseId: string;
     moduleId: string;
     file: File;
-    mediaType: 'image' | 'video' | 'audio';
+    mediaType: 'image' | 'video' | 'audio' | 'document';
     oldFilePath?: string;
 }
 
 export interface BlogMediaUploadOptions {
     blogPostId: string;
     file: File;
-    mediaType: 'image' | 'video' | 'audio';
+    mediaType: 'image' | 'video' | 'audio' | 'document';
     oldFilePath?: string;
 }
 
@@ -61,7 +61,6 @@ class ContextualUploadService {
                 throw new Error(result.error || 'Upload failed');
             }
 
-            console.log(`✅ Course image uploaded successfully: ${result.relativePath}`);
             return result;
 
         } catch (error) {
@@ -95,7 +94,6 @@ class ContextualUploadService {
                 throw new Error(result.error || 'Upload failed');
             }
 
-            console.log(`✅ Post ${mediaType} uploaded successfully: ${result.relativePath}`);
             return result;
 
         } catch (error) {
@@ -127,7 +125,6 @@ class ContextualUploadService {
                 throw new Error(result.error || 'Upload failed');
             }
 
-            console.log(`✅ Blog ${mediaType} uploaded successfully: ${result.relativePath}`);
             return result;
 
         } catch (error) {
@@ -149,7 +146,7 @@ class ContextualUploadService {
     /**
      * Validate file for upload
      */
-    validateFile(file: File, mediaType: 'image' | 'video' | 'audio'): { isValid: boolean; error?: string } {
+    validateFile(file: File, mediaType: 'image' | 'video' | 'audio' | 'document'): { isValid: boolean; error?: string } {
         const config = {
             image: {
                 types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
@@ -162,6 +159,23 @@ class ContextualUploadService {
             audio: {
                 types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
                 maxSize: 100 * 1024 * 1024 // 100MB
+            },
+            document: {
+                types: [
+                    'application/pdf',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                    'application/msword', // .doc
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+                    'application/vnd.ms-excel', // .xls
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+                    'application/vnd.ms-powerpoint', // .ppt
+                    'text/plain', // .txt
+                    'application/rtf', // .rtf
+                    'application/vnd.oasis.opendocument.text', // .odt
+                    'application/vnd.oasis.opendocument.spreadsheet', // .ods
+                    'application/vnd.oasis.opendocument.presentation' // .odp
+                ],
+                maxSize: 1024 * 1024 * 1024 // 1GB
             }
         };
 
@@ -175,10 +189,14 @@ class ContextualUploadService {
         }
 
         if (file.size > mediaConfig.maxSize) {
-            const maxSizeMB = Math.round(mediaConfig.maxSize / (1024 * 1024));
+            const maxSizeGB = mediaConfig.maxSize / (1024 * 1024 * 1024);
+            const maxSizeMB = mediaConfig.maxSize / (1024 * 1024);
+            const sizeLabel = maxSizeGB >= 1
+                ? `${Math.round(maxSizeGB)}GB`
+                : `${Math.round(maxSizeMB)}MB`;
             return {
                 isValid: false,
-                error: `Archivo demasiado grande. Tamaño máximo para ${mediaType}: ${maxSizeMB}MB`
+                error: `Archivo demasiado grande. Tamaño máximo para ${mediaType}: ${sizeLabel}`
             };
         }
 
@@ -205,8 +223,6 @@ class ContextualUploadService {
                 return { success: true, deletedCount: 0 };
             }
 
-            console.log(`🧹 Cleaning up ${files.length} orphan file(s)...`, files);
-
             const response = await fetch('/api/upload/cleanup', {
                 method: 'POST',
                 headers: {
@@ -220,7 +236,6 @@ class ContextualUploadService {
             }
 
             const result = await response.json();
-            console.log(`✅ Cleanup completed: ${result.message}`, result);
 
             return {
                 success: true,

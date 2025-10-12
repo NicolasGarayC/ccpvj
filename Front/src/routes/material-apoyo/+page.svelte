@@ -54,8 +54,6 @@
       isLoading = true;
       error = null;
       materialApoyo = await materialApoyoService.getAllMaterialApoyo();
-      console.log('Material apoyo loaded:', materialApoyo);
-      console.log('First material apoyo:', materialApoyo[0]);
     } catch (e: unknown) {
       error = 'Error al cargar el material de apoyo';
       console.error(error, e);
@@ -66,12 +64,9 @@
 
 
   function filterMaterialApoyo(materialApoyo: MaterialApoyoSummaryDto[], search: string, featuredOnly: boolean): MaterialApoyoSummaryDto[] {
-    console.log('Filtering material apoyo:', materialApoyo.length, 'items');
     const filtered = materialApoyo.filter(item => {
-      console.log('Material apoyo:', item.title, 'isActive:', item.isActive);
       // Temporary fix: don't filter by isActive if it's undefined
       if (item.isActive !== undefined && !item.isActive) {
-        console.log('Material apoyo filtered out due to isActive:', item.title);
         return false;
       }
 
@@ -92,7 +87,6 @@
 
       return true;
     });
-    console.log('Filtered result:', filtered.length, 'items');
     return filtered;
   }
 
@@ -141,7 +135,7 @@
 </script>
 
 <svelte:head>
-  <title>Material de Apoyo - Centro Cultural Víctor Jara</title>
+  <title>Proyectos - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -158,11 +152,11 @@
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
           <span class="text-4xl mr-3">🚀</span>
           <span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-            Material de Apoyo
+            Proyectos
           </span>
         </h1>
         <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-medium mb-8">
-          🌟 ¡Descubre un mundo de aprendizaje súper genial! Encuentra material de apoyo increíble que te ayudará a aprender, crear y brillar como nunca antes
+          🌟 ¡Descubre proyectos increíbles! Explora iniciativas que te ayudarán a aprender, crear y brillar como nunca antes
         </p>
 
         {#if canManage}
@@ -172,7 +166,7 @@
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-10 py-5 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold border-2 border-orange-400"
             >
               <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear Material de Apoyo
+              Crear Proyecto
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
@@ -186,7 +180,7 @@
         <span class="text-3xl">📈</span>
         ¡Estadísticas Increíbles!
       </h2>
-      <p class="text-gray-600 font-medium">Mira todo lo genial que puedes aprender con nuestro material de apoyo</p>
+      <p class="text-gray-600 font-medium">Mira todos los proyectos increíbles disponibles</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -197,9 +191,9 @@
           <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
             <span class="text-2xl">🎓</span>
           </div>
-          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">Total Material</p>
+          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">Total Proyectos</p>
           <p class="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">{materialApoyo.length}</p>
-          <p class="text-xs text-emerald-600 font-semibold">¡Material genial! 🚀</p>
+          <p class="text-xs text-emerald-600 font-semibold">¡Proyectos geniales! 🚀</p>
         </div>
       </div>
 
@@ -241,9 +235,9 @@
         <div class="text-center mb-8">
           <h2 class="text-2xl font-black text-gray-800 mb-2 flex items-center justify-center gap-3">
             <span class="text-2xl">🎯</span>
-            ¡Encuentra Tu Material Perfecto!
+            ¡Encuentra Tu Proyecto Perfecto!
           </h2>
-          <p class="text-gray-600 font-medium">Explora entre todo nuestro material de apoyo súper genial</p>
+          <p class="text-gray-600 font-medium">Explora todos nuestros proyectos súper geniales</p>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
@@ -252,7 +246,7 @@
             <div class="relative group">
               <input
                 type="text"
-                placeholder="🎓 Busca material increíble, educadores geniales..."
+                placeholder="🎓 Busca proyectos increíbles, encargados geniales..."
                 bind:value={searchTerm}
                 on:input={handleSearch}
                 class="w-full pl-16 pr-8 py-5 text-lg border-3 border-emerald-200 rounded-2xl focus:ring-6 focus:ring-emerald-300/30 focus:border-emerald-400 transition-all duration-300 bg-white/80 focus:bg-white shadow-lg font-medium placeholder:text-gray-400"
@@ -293,7 +287,7 @@
               <select bind:value={sortBy} class="appearance-none px-6 py-3 pr-10 border-2 border-emerald-200 rounded-2xl focus:ring-4 focus:ring-emerald-300/20 focus:border-emerald-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
                 <option value="createdAt">🆕 Más recientes</option>
                 <option value="title">🔤 Nombre A-Z</option>
-                <option value="educatorName">👨‍🏫 Por educador</option>
+                <option value="educatorName">👨‍🏫 Por encargado</option>
                 <option value="moduleCount">📊 Por módulos</option>
               </select>
               <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-400 pointer-events-none">
@@ -333,14 +327,14 @@
             {#if filteredMaterialApoyo.length === 0}
               <p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
                 <span class="text-2xl">😔</span>
-                No encontramos material de apoyo súper genial
+                No encontramos proyectos súper geniales
               </p>
             {:else}
               <div class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl px-6 py-3">
                 <span class="text-xl">🎯</span>
                 <p class="font-bold text-gray-700">
                   Mostrando <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMaterialApoyo.length)}</span>
-                  de <span class="text-teal-600 font-black">{filteredMaterialApoyo.length}</span> materiales increíbles
+                  de <span class="text-teal-600 font-black">{filteredMaterialApoyo.length}</span> proyectos increíbles
                   {#if searchTerm || showFeaturedOnly}
                     <span class="text-gray-500">(de {materialApoyo.length} totales)</span>
                   {/if}
@@ -383,12 +377,12 @@
           </div>
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">📚</span>
-            ¡Cargando Material Increíble!
+            ¡Cargando Proyectos Increíbles!
           </h3>
           <p class="text-lg text-gray-600 mb-4 font-medium">Preparando la mejor experiencia de aprendizaje para ti</p>
           <div class="flex items-center justify-center gap-2 text-emerald-600 font-bold">
             <span class="animate-pulse">✨</span>
-            <span>Buscando material súper genial</span>
+            <span>Buscando proyectos súper geniales</span>
             <span class="animate-pulse">✨</span>
           </div>
         </div>
@@ -422,19 +416,19 @@
 
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
             {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
-              🤷‍♂️ ¡Oops! No encontramos material de apoyo súper genial
+              🤷‍♂️ ¡Oops! No encontramos proyectos súper geniales
             {:else}
-              📖 Esperando material increíble
+              📖 Esperando proyectos increíbles
             {/if}
           </h3>
 
           <p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
             {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
-              🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar material súper genial.
+              🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar proyectos súper geniales.
             {:else if canManage}
-              🌟 ¡Sé el primero en crear conocimiento increíble! Agrega el primer material de apoyo y dale vida a esta plataforma.
+              🌟 ¡Sé el primero en crear un proyecto increíble! Agrega el primer proyecto y dale vida a esta plataforma.
             {:else}
-              ⏰ Pronto tendremos material de apoyo súper genial para que aprendas cosas increíbles y te conviertas en un experto.
+              ⏰ Pronto tendremos proyectos súper geniales para que aprendas cosas increíbles y te conviertas en un experto.
             {/if}
           </p>
 
@@ -453,7 +447,7 @@
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
             >
               <span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear el primer material de apoyo
+              Crear el primer proyecto
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           {/if}
@@ -465,7 +459,7 @@
         <div class="text-center mb-10">
           <h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">🎯</span>
-            ¡Material Increíble Esperándote!
+            ¡Proyectos Increíbles Esperándote!
           </h2>
           <p class="text-gray-600 font-medium">Elige tu próxima aventura de aprendizaje</p>
         </div>

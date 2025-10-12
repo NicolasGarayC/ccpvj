@@ -214,12 +214,10 @@ namespace CentroCultural.Application.Services
                     await DeletePhysicalFile(filePathToDelete);
                 }
 
-                Console.WriteLine($"Successfully deleted library item {id} with file: {filePathToDelete ?? "no file"}");
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error deleting library item {id}: {ex.Message}");
                 throw;
             }
         }
@@ -275,6 +273,14 @@ namespace CentroCultural.Application.Services
             var collection = await _context.LibraryCollections.FirstOrDefaultAsync(lc => lc.Id == id);
             if (collection == null) return false;
 
+            // 🧹 Track old cover image for cleanup if it's being replaced
+            string? oldCoverImageToDelete = null;
+            if (!string.IsNullOrEmpty(collection.CoverImage) &&
+                collection.CoverImage != updateCollectionDto.CoverImage)
+            {
+                oldCoverImageToDelete = collection.CoverImage;
+            }
+
             collection.Name = updateCollectionDto.Name;
             collection.Description = updateCollectionDto.Description;
             collection.CoverImage = updateCollectionDto.CoverImage;
@@ -285,6 +291,13 @@ namespace CentroCultural.Application.Services
             collection.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             await _context.SaveChangesAsync();
+
+            // 🧹 Delete old cover image file if it was replaced
+            if (!string.IsNullOrEmpty(oldCoverImageToDelete))
+            {
+                await DeletePhysicalFile(oldCoverImageToDelete);
+            }
+
             return true;
         }
 
@@ -665,23 +678,16 @@ namespace CentroCultural.Application.Services
             {
                 try
                 {
-                    Console.WriteLine($"🗑️ Attempting to delete library file: {relativePath}");
                     var fullPath = GetFullMediaPath(relativePath);
-                    Console.WriteLine($"🗑️ Full path resolved to: {fullPath}");
 
                     if (File.Exists(fullPath))
                     {
                         File.Delete(fullPath);
-                        Console.WriteLine($"✅ Successfully deleted physical file: {fullPath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ File not found for deletion: {fullPath}");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"⚠️ Warning: Could not delete file {relativePath}: {ex.Message}");
+                    // Continue execution even if file deletion fails
                 }
             });
         }
@@ -700,9 +706,6 @@ namespace CentroCultural.Application.Services
             // Construct full path to media directory
             var mediaDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Data", "media");
             var fullPath = Path.Combine(mediaDirectory, cleanPath);
-
-            Console.WriteLine($"🔧 DigitalLibraryService - Media directory: {mediaDirectory}");
-            Console.WriteLine($"🔧 DigitalLibraryService - Full resolved path: {fullPath}");
 
             return fullPath;
         }

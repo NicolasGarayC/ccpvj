@@ -4,9 +4,10 @@
 
 	export let event: EventDetail | null = null;
 	export let isEdit: boolean = false;
-	export let availableCourses: Array<{ id: string; title: string }> = [];
+	export let availableProjects: Array<{ id: string; title: string }> = [];
 	export let availableBlogPosts: Array<{ id: string; title: string; slug: string }> = [];
 	export let initialDate: Date | null = null;
+	export let saving: boolean = false;
 
 	const dispatch = createEventDispatcher<{
 		save: { eventData: CreateEventData };
@@ -23,17 +24,13 @@
 		location: '',
 		eventType: 'General',
 		isFeatured: false,
-		maxAttendees: undefined,
-		requiresRegistration: false,
-		registrationDeadline: undefined,
-		imagePath: '',
-		pdfPath: '',
 		isRecurring: false,
 		recurrencePattern: '',
 		recurrenceInterval: 1,
 		recurrenceEndDate: undefined,
 		recurrenceDaysOfWeek: '',
-		relatedCourseId: ''
+		relatedProjectId: undefined,
+		relatedBlogPostId: undefined
 	};
 
 	// Estado del formulario
@@ -51,22 +48,21 @@
 			title: event.title,
 			description: event.description || '',
 			startDateTime: new Date(event.startDateTime),
-			endDateTime: event.endDateTime ? new Date(event.endDateTime) : undefined,
+			// Si es recurrente, usar recurrenceEndDate como endDateTime
+			endDateTime: event.isRecurring
+				? (event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : undefined)
+				: (event.endDateTime ? new Date(event.endDateTime) : undefined),
 			isAllDay: event.isAllDay,
 			location: event.location || '',
 			eventType: event.eventType,
 			isFeatured: event.isFeatured,
-			maxAttendees: event.maxAttendees,
-			requiresRegistration: event.requiresRegistration,
-			registrationDeadline: event.registrationDeadline ? new Date(event.registrationDeadline) : undefined,
-			imagePath: event.imagePath || '',
-			pdfPath: event.pdfPath || '',
 			isRecurring: event.isRecurring,
 			recurrencePattern: event.recurrencePattern || '',
 			recurrenceInterval: event.recurrenceInterval || 1,
 			recurrenceEndDate: event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : undefined,
 			recurrenceDaysOfWeek: event.recurrenceDaysOfWeek || '',
-			relatedCourseId: event.relatedCourseId || ''
+			relatedProjectId: event.relatedProjectId || undefined,
+			relatedBlogPostId: event.relatedBlogPostId || undefined
 		};
 	}
 
@@ -76,7 +72,8 @@
 		{ value: 'Clase', label: 'Clase' },
 		{ value: 'Taller', label: 'Taller' },
 		{ value: 'Conferencia', label: 'Conferencia' },
-		{ value: 'Evento', label: 'Evento Cultural' }
+		{ value: 'Evento', label: 'Evento Cultural' },
+		{ value: 'Otro', label: 'Otro' }
 	];
 
 	const recurrencePatterns = [
@@ -109,20 +106,21 @@
 			errors.startDateTime = 'La fecha de inicio es obligatoria';
 		}
 
-		if (formData.endDateTime && formData.startDateTime && new Date(formData.endDateTime) <= new Date(formData.startDateTime)) {
-			errors.endDateTime = 'La fecha de fin debe ser posterior a la fecha de inicio';
-		}
-
-		if (formData.requiresRegistration && formData.registrationDeadline && new Date(formData.registrationDeadline) >= new Date(formData.startDateTime)) {
-			errors.registrationDeadline = 'La fecha límite de registro debe ser anterior al evento';
-		}
-
 		if (formData.isRecurring) {
+			// Para eventos recurrentes, endDateTime es obligatorio (representa hasta cuándo se repite)
+			if (!formData.endDateTime) {
+				errors.endDateTime = 'Para eventos recurrentes, debes especificar hasta cuándo se repite';
+			} else if (new Date(formData.endDateTime) <= new Date(formData.startDateTime)) {
+				errors.endDateTime = 'La fecha final debe ser posterior a la fecha de inicio';
+			}
+
 			if (!formData.recurrencePattern) {
 				errors.recurrencePattern = 'Debe seleccionar un patrón de recurrencia';
 			}
-			if (formData.recurrenceEndDate && new Date(formData.recurrenceEndDate) <= new Date(formData.startDateTime)) {
-				errors.recurrenceEndDate = 'La fecha de fin de recurrencia debe ser posterior al evento';
+		} else {
+			// Para eventos no recurrentes, endDateTime es opcional pero debe ser posterior
+			if (formData.endDateTime && formData.startDateTime && new Date(formData.endDateTime) <= new Date(formData.startDateTime)) {
+				errors.endDateTime = 'La fecha de fin debe ser posterior a la fecha de inicio';
 			}
 		}
 
@@ -166,7 +164,15 @@
 
 		isSubmitting = true;
 		try {
-			dispatch('save', { eventData: formData });
+			// Si es recurrente, copiar endDateTime a recurrenceEndDate
+			const dataToSend = { ...formData };
+			if (dataToSend.isRecurring && dataToSend.endDateTime) {
+				dataToSend.recurrenceEndDate = dataToSend.endDateTime;
+				// Para eventos recurrentes, no enviar endDateTime individual
+				dataToSend.endDateTime = undefined;
+			}
+
+			dispatch('save', { eventData: dataToSend });
 		} finally {
 			isSubmitting = false;
 		}
@@ -339,19 +345,23 @@
 
 				<div class="form-group">
 					<label for="endDateTime" class="label">
-						🏁 Fecha de Fin (opcional)
+						{#if formData.isRecurring}
+							📅 Repetir Hasta <span class="required">*</span>
+						{:else}
+							🏁 Fecha/Hora de Fin (opcional)
+						{/if}
 					</label>
 					<input
 						id="endDateTime"
-						type={formData.isAllDay ? 'date' : 'datetime-local'}
+						type={formData.isRecurring ? 'date' : (formData.isAllDay ? 'date' : 'datetime-local')}
 						value={formData.endDateTime ?
-							(formData.isAllDay ?
+							((formData.isRecurring || formData.isAllDay) ?
 								formData.endDateTime.toISOString().split('T')[0] :
 								formatDateTimeLocal(formData.endDateTime))
 							: ''}
 						on:input={(e) => {
 							if (e.currentTarget.value) {
-								if (formData.isAllDay) {
+								if (formData.isRecurring || formData.isAllDay) {
 									const date = new Date(e.currentTarget.value);
 									date.setHours(23, 59, 59, 999);
 									formData.endDateTime = date;
@@ -365,10 +375,18 @@
 						class="input"
 						class:error={errors.endDateTime}
 						disabled={isSubmitting}
+						required={formData.isRecurring}
 					/>
 					{#if errors.endDateTime}
 						<span class="error-message">{errors.endDateTime}</span>
 					{/if}
+					<p class="help-text">
+						{#if formData.isRecurring}
+							💡 Fecha límite hasta la cual se repetirá este evento
+						{:else}
+							💡 Cuándo termina este evento (ej: taller de 10am a 12pm)
+						{/if}
+					</p>
 				</div>
 			</div>
 		</div>
@@ -378,9 +396,8 @@
 			<h3 class="section-title">🔄 Recurrencia</h3>
 
 			<div class="form-group full-width">
-				<label for="isRecurring" class="checkbox-label">
+				<label class="checkbox-label">
 					<input
-						id="isRecurring"
 						type="checkbox"
 						bind:checked={formData.isRecurring}
 						class="checkbox"
@@ -455,85 +472,6 @@
 						<p class="help-text">💡 Selecciona los días en que se repetirá el evento</p>
 					</div>
 				{/if}
-
-				<div class="form-group full-width">
-					<label for="recurrenceEndDate" class="label">
-						🏁 Fin de la Recurrencia (opcional)
-					</label>
-					<input
-						id="recurrenceEndDate"
-						type="date"
-						value={formData.recurrenceEndDate ? formData.recurrenceEndDate.toISOString().split('T')[0] : ''}
-						on:input={(e) => {
-							formData.recurrenceEndDate = e.currentTarget.value ? new Date(e.currentTarget.value) : undefined;
-						}}
-						class="input"
-						class:error={errors.recurrenceEndDate}
-						disabled={isSubmitting}
-					/>
-					{#if errors.recurrenceEndDate}
-						<span class="error-message">{errors.recurrenceEndDate}</span>
-					{/if}
-					<p class="help-text">💡 Si no especificas una fecha, la recurrencia continuará indefinidamente</p>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Registro y capacidad -->
-		<div class="form-section">
-			<h3 class="section-title">👥 Registro y Capacidad</h3>
-
-			<div class="form-group full-width">
-				<label class="checkbox-label">
-					<input
-						type="checkbox"
-						bind:checked={formData.requiresRegistration}
-						class="checkbox"
-						disabled={isSubmitting}
-					/>
-					📋 Requiere registro previo
-				</label>
-				<p class="help-text">💡 Los participantes deberán registrarse antes del evento</p>
-			</div>
-
-			{#if formData.requiresRegistration}
-				<div class="form-row">
-					<div class="form-group">
-						<label for="maxAttendees" class="label">
-							👥 Capacidad Máxima
-						</label>
-						<input
-							id="maxAttendees"
-							type="number"
-							bind:value={formData.maxAttendees}
-							min="1"
-							placeholder="Sin límite"
-							class="input"
-							disabled={isSubmitting}
-						/>
-						<p class="help-text">💡 Deja vacío para capacidad ilimitada</p>
-					</div>
-
-					<div class="form-group">
-						<label for="registrationDeadline" class="label">
-							⏰ Fecha Límite de Registro
-						</label>
-						<input
-							id="registrationDeadline"
-							type="datetime-local"
-							value={formData.registrationDeadline ? formatDateTimeLocal(formData.registrationDeadline) : ''}
-							on:input={(e) => {
-								formData.registrationDeadline = e.currentTarget.value ? parseDateTimeLocal(e.currentTarget.value) : undefined;
-							}}
-							class="input"
-							class:error={errors.registrationDeadline}
-							disabled={isSubmitting}
-						/>
-						{#if errors.registrationDeadline}
-							<span class="error-message">{errors.registrationDeadline}</span>
-						{/if}
-					</div>
-				</div>
 			{/if}
 		</div>
 
@@ -542,65 +480,47 @@
 			<h3 class="section-title">🔗 Enlaces Relacionados</h3>
 
 			<div class="form-row">
-				<!-- Curso relacionado -->
-				{#if availableCourses.length > 0}
+				<!-- Proyecto relacionado -->
+				{#if availableProjects.length > 0}
 					<div class="form-group">
-						<label for="relatedCourseId" class="label">
-							📚 Curso Relacionado
+						<label for="relatedProjectId" class="label">
+							📚 Proyecto Relacionado
 						</label>
 						<select
-							id="relatedCourseId"
-							bind:value={formData.relatedCourseId}
+							id="relatedProjectId"
+							bind:value={formData.relatedProjectId}
 							class="input"
 							disabled={isSubmitting}
 						>
 							<option value="">Ninguno</option>
-							{#each availableCourses as course}
-								<option value={course.id}>{course.title}</option>
+							{#each availableProjects as project}
+								<option value={project.id}>{project.title}</option>
 							{/each}
 						</select>
-						<p class="help-text">💡 Vincula este evento con un curso específico</p>
+						<p class="help-text">💡 Vincula este evento con un proyecto específico</p>
 					</div>
 				{/if}
 
-				<!-- Nota: Las relaciones con posts de blog ahora se manejan desde el módulo de blog usando BlogEventRelation -->
-			</div>
-		</div>
-
-		<!-- Multimedia -->
-		<div class="form-section">
-			<h3 class="section-title">🎨 Multimedia</h3>
-
-			<div class="form-row">
-				<div class="form-group">
-					<label for="imagePath" class="label">
-						🖼️ Imagen del Evento
-					</label>
-					<input
-						id="imagePath"
-						type="url"
-						bind:value={formData.imagePath}
-						placeholder="https://ejemplo.com/imagen.jpg"
-						class="input"
-						disabled={isSubmitting}
-					/>
-					<p class="help-text">💡 URL de la imagen promocional del evento</p>
-				</div>
-
-				<div class="form-group">
-					<label for="pdfPath" class="label">
-						📄 Documento PDF
-					</label>
-					<input
-						id="pdfPath"
-						type="url"
-						bind:value={formData.pdfPath}
-						placeholder="https://ejemplo.com/documento.pdf"
-						class="input"
-						disabled={isSubmitting}
-					/>
-					<p class="help-text">💡 URL de documentos adicionales o programas</p>
-				</div>
+				<!-- Blog post relacionado -->
+				{#if availableBlogPosts.length > 0}
+					<div class="form-group">
+						<label for="relatedBlogPostId" class="label">
+							📝 Artículo de Blog Relacionado
+						</label>
+						<select
+							id="relatedBlogPostId"
+							bind:value={formData.relatedBlogPostId}
+							class="input"
+							disabled={isSubmitting}
+						>
+							<option value="">Ninguno</option>
+							{#each availableBlogPosts as blogPost}
+								<option value={blogPost.id}>{blogPost.title}</option>
+							{/each}
+						</select>
+						<p class="help-text">💡 Vincula este evento con un artículo de blog (anuncios, contexto, etc.)</p>
+					</div>
+				{/if}
 			</div>
 		</div>
 
@@ -651,121 +571,300 @@
 
 <style>
 	.event-form {
-		@apply bg-gradient-to-br from-white via-blue-50 to-purple-50 rounded-2xl shadow-xl overflow-hidden max-w-4xl mx-auto;
+		background: linear-gradient(to bottom right, white, #dbeafe, #f3e8ff);
+		border-radius: 1rem;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		overflow: hidden;
+		max-width: 56rem;
+		margin: 0 auto;
 		border: 2px solid rgba(59, 130, 246, 0.1);
 	}
 
 	.form-header {
-		@apply bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-6;
+		background: linear-gradient(to right, #2563eb, #9333ea);
+		color: white;
+		padding: 1.5rem 2rem;
 	}
 
 	.form-title {
-		@apply text-2xl font-bold mb-2;
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin-bottom: 0.5rem;
 	}
 
 	.form-subtitle {
-		@apply text-blue-100 font-medium;
+		color: #bfdbfe;
+		font-weight: 500;
 	}
 
 	.form-content {
-		@apply p-8 space-y-8;
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
 	}
 
 	.form-section {
-		@apply bg-white rounded-xl p-6 shadow-md border border-gray-100;
+		background: white;
+		border-radius: 0.75rem;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+		border: 1px solid #f3f4f6;
 	}
 
 	.section-title {
-		@apply text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1f2937;
+		margin-bottom: 1rem;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid #e5e7eb;
 	}
 
 	.form-row {
-		@apply grid grid-cols-1 md:grid-cols-2 gap-6;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	@media (min-width: 768px) {
+		.form-row {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
 	.form-group {
-		@apply space-y-2;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.form-group.full-width {
-		@apply col-span-full;
+		grid-column: 1 / -1;
 	}
 
 	.label {
-		@apply block text-sm font-semibold text-gray-700 mb-2;
+		display: block;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		margin-bottom: 0.5rem;
 	}
 
 	.input {
-		@apply w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm;
-		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
-		@apply placeholder-gray-400;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		color: #111827;
+		background-color: white;
+		border: 1px solid #d1d5db;
+		border-radius: 0.5rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		transition: all 0.2s;
+	}
+
+	.input::placeholder {
+		color: #9ca3af;
+	}
+
+	.input:focus {
+		outline: none;
+		ring: 2px;
+		ring-color: #3b82f6;
+		border-color: #3b82f6;
 	}
 
 	.input:disabled {
-		@apply bg-gray-100 text-gray-500 cursor-not-allowed;
+		background-color: #f3f4f6;
+		color: #6b7280;
+		cursor: not-allowed;
 	}
 
 	.input.error {
-		@apply border-red-400 ring-2 ring-red-200;
+		border-color: #f87171;
+		ring: 2px;
+		ring-color: #fecaca;
 	}
 
 	.textarea {
-		@apply w-full px-4 py-3 text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm resize-none;
-		@apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
-		@apply placeholder-gray-400;
+		width: 100%;
+		padding: 0.75rem 1rem;
+		color: #111827;
+		background-color: white;
+		border: 1px solid #d1d5db;
+		border-radius: 0.5rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		resize: none;
+		transition: all 0.2s;
+	}
+
+	.textarea::placeholder {
+		color: #9ca3af;
+	}
+
+	.textarea:focus {
+		outline: none;
+		ring: 2px;
+		ring-color: #3b82f6;
+		border-color: #3b82f6;
 	}
 
 	.textarea:disabled {
-		@apply bg-gray-100 text-gray-500 cursor-not-allowed;
+		background-color: #f3f4f6;
+		color: #6b7280;
+		cursor: not-allowed;
 	}
 
 	.checkbox {
-		@apply w-4 h-4 text-blue-600 bg-white border-2 border-gray-300 rounded;
-		@apply focus:ring-blue-500 focus:ring-2 transition-all duration-200;
+		width: 1rem;
+		height: 1rem;
+		color: #2563eb;
+		background-color: white;
+		border: 2px solid #d1d5db;
+		border-radius: 0.25rem;
+		transition: all 0.2s;
+		cursor: pointer;
+		flex-shrink: 0;
+		appearance: auto;
+	}
+
+	.checkbox:checked {
+		background-color: #2563eb;
+		border-color: #2563eb;
 	}
 
 	.checkbox-label {
-		@apply flex items-center space-x-3 text-sm font-medium text-gray-700 cursor-pointer;
-		@apply hover:text-blue-600 transition-colors duration-200;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #374151;
+		cursor: pointer;
+		transition: color 0.2s;
+	}
+
+	.checkbox-label:hover {
+		color: #2563eb;
 	}
 
 	.required {
-		@apply text-red-500 font-bold;
+		color: #ef4444;
+		font-weight: 700;
 	}
 
 	.error-message {
-		@apply text-red-600 text-sm font-medium;
+		color: #dc2626;
+		font-size: 0.875rem;
+		font-weight: 500;
 	}
 
 	.character-count {
-		@apply text-xs text-gray-500 text-right;
+		font-size: 0.75rem;
+		color: #6b7280;
+		text-align: right;
 	}
 
 	.help-text {
-		@apply text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200;
+		font-size: 0.875rem;
+		color: #4b5563;
+		background-color: #eff6ff;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		border: 1px solid #bfdbfe;
 	}
 
 	.form-actions {
-		@apply flex justify-end space-x-4 pt-8 border-t border-gray-200;
+		display: flex;
+		justify-content: flex-end;
+		gap: 1rem;
+		padding-top: 2rem;
+		border-top: 1px solid #e5e7eb;
 	}
 
 	.btn {
-		@apply px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2;
-		@apply focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.5rem;
+		font-weight: 600;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+	}
+
+	.btn:focus {
+		outline: none;
+		ring: 2px;
+		ring-offset: 2px;
+	}
+
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.btn-primary {
-		@apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700;
-		@apply text-white shadow-lg hover:shadow-xl focus:ring-blue-500;
-		@apply transform hover:scale-105 active:scale-95;
+		background: linear-gradient(to right, #2563eb, #9333ea);
+		color: white;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+		border: none;
+	}
+
+	.btn-primary:hover:not(:disabled) {
+		background: linear-gradient(to right, #1d4ed8, #7e22ce);
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		transform: scale(1.05);
+	}
+
+	.btn-primary:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.btn-primary:focus {
+		ring-color: #3b82f6;
 	}
 
 	.btn-secondary {
-		@apply bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50;
-		@apply hover:border-gray-400 focus:ring-gray-400 shadow-md;
+		background-color: white;
+		color: #374151;
+		border: 2px solid #d1d5db;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+
+	.btn-secondary:hover:not(:disabled) {
+		background-color: #f9fafb;
+		border-color: #9ca3af;
+	}
+
+	.btn-secondary:focus {
+		ring-color: #9ca3af;
 	}
 
 	.loading-spinner {
-		@apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
+		display: inline-block;
+		width: 1rem;
+		height: 1rem;
+		border: 2px solid white;
+		border-top-color: transparent;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.flex {
+		display: flex;
+	}
+
+	.flex-wrap {
+		flex-wrap: wrap;
+	}
+
+	.gap-3 {
+		gap: 0.75rem;
 	}
 </style>

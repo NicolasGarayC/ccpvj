@@ -155,7 +155,8 @@ namespace CentroCultural.Application.Services
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
-                IsActive = m.IsActive
+                IsActive = m.IsActive,
+                PostCount = _context.ModulePosts.Count(p => p.ModuleId == m.Id)
             }).ToList();
 
             return new MaterialApoyoDetailDto
@@ -222,6 +223,14 @@ namespace CentroCultural.Application.Services
                 if (materialApoyo == null)
                     return false;
 
+                // Track old image for cleanup if it's being replaced
+                string? oldImageToDelete = null;
+                if (!string.IsNullOrEmpty(materialApoyo.ImagePath) &&
+                    materialApoyo.ImagePath != updateMaterialApoyoDto.ImagePath)
+                {
+                    oldImageToDelete = materialApoyo.ImagePath;
+                }
+
                 // Update material apoyo properties
                 materialApoyo.Title = updateMaterialApoyoDto.Title;
                 materialApoyo.Description = updateMaterialApoyoDto.Description;
@@ -231,6 +240,13 @@ namespace CentroCultural.Application.Services
 
                 _context.MaterialApoyo.Update(materialApoyo);
                 await _context.SaveChangesAsync();
+
+                // Delete old image file if it was replaced
+                if (!string.IsNullOrEmpty(oldImageToDelete))
+                {
+                    _logger.LogInformation($"🧹 Cleaning up old material apoyo image: {oldImageToDelete}");
+                    DeleteMultiMediaFiles(new List<string> { oldImageToDelete });
+                }
 
                 return true;
             }
@@ -308,7 +324,7 @@ namespace CentroCultural.Application.Services
                     "DELETE FROM material_apoyo WHERE id = {0}", id);
 
                 // 8. Delete physical multimedia files in cascade order
-                await DeleteMultiMediaFiles(mediaFilesToDelete);
+                DeleteMultiMediaFiles(mediaFilesToDelete);
 
                 Console.WriteLine($"Successfully deleted material apoyo {id} with {modules.Count} modules and {mediaFilesToDelete.Count} media files");
                 return true;
@@ -321,7 +337,7 @@ namespace CentroCultural.Application.Services
             }
         }
 
-        private async Task DeleteMultiMediaFiles(List<string> filePaths)
+        private void DeleteMultiMediaFiles(List<string> filePaths)
         {
             foreach (var filePath in filePaths.Where(f => !string.IsNullOrEmpty(f)))
             {
@@ -390,7 +406,8 @@ namespace CentroCultural.Application.Services
                 Title = m.Title,
                 Description = m.Description,
                 OrderNumber = m.OrderNumber,
-                IsActive = m.IsActive
+                IsActive = m.IsActive,
+                PostCount = _context.ModulePosts.Count(p => p.ModuleId == m.Id)
             }).ToList();
         }
 
@@ -487,7 +504,7 @@ namespace CentroCultural.Application.Services
                 await _context.SaveChangesAsync();
 
                 // 8. Delete physical multimedia files
-                await DeleteMultiMediaFiles(mediaFilesToDelete);
+                DeleteMultiMediaFiles(mediaFilesToDelete);
 
                 Console.WriteLine($"Successfully deleted module {id} with {posts.Count} posts and {mediaFilesToDelete.Count} media files");
                 return true;
@@ -601,6 +618,24 @@ namespace CentroCultural.Application.Services
             var post = await _context.ModulePosts.FindAsync(id);
             if (post == null) return false;
 
+            // 🧹 Track old files for cleanup if they're being replaced
+            var oldFilesToDelete = new List<string>();
+
+            if (!string.IsNullOrEmpty(post.ImagePath) && post.ImagePath != dto.ImagePath)
+            {
+                oldFilesToDelete.Add(post.ImagePath);
+            }
+
+            if (!string.IsNullOrEmpty(post.VideoPath) && post.VideoPath != dto.VideoPath)
+            {
+                oldFilesToDelete.Add(post.VideoPath);
+            }
+
+            if (!string.IsNullOrEmpty(post.AudioPath) && post.AudioPath != dto.AudioPath)
+            {
+                oldFilesToDelete.Add(post.AudioPath);
+            }
+
             post.Title = dto.Title;
             post.Subtitle = dto.Subtitle;
             post.Content = dto.Content;
@@ -611,6 +646,14 @@ namespace CentroCultural.Application.Services
             post.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             await _context.SaveChangesAsync();
+
+            // 🧹 Delete old files after successful DB update
+            if (oldFilesToDelete.Any())
+            {
+                _logger.LogInformation($"🧹 Cleaning up {oldFilesToDelete.Count} old post file(s) for post {id}");
+                DeleteMultiMediaFiles(oldFilesToDelete);
+            }
+
             return true;
         }
 

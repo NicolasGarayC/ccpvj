@@ -26,7 +26,10 @@ namespace CentroCultural.API.Controllers
         {
             try
             {
+                _logger.LogInformation("Analytics summary requested");
                 var summary = await _analyticsService.GetSummaryAsync();
+                _logger.LogInformation("Analytics summary generated: Visitors={Visitors}, Downloads={Downloads}, Resources={Resources}",
+                    summary.TotalVisitors, summary.TotalDownloads, summary.TotalResources);
                 return Ok(summary);
             }
             catch (Exception ex)

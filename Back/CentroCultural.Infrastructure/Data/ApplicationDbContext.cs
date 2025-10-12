@@ -27,9 +27,6 @@ namespace CentroCultural.Infrastructure.Data
         public DbSet<Event> Event { get; set; }
         public DbSet<Event> Events { get; set; }
 
-        // Blog-Event relationship entities
-        public DbSet<BlogPostEvent> BlogPostEvents { get; set; }
-
         // Library system entities
         public DbSet<LibraryItem> LibraryItems { get; set; }
         public DbSet<LibraryCollection> LibraryCollections { get; set; }
@@ -164,13 +161,9 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.Property(e => e.IsFeatured).HasDefaultValue(false);
                 entity.Property(e => e.IsAllDay).HasDefaultValue(false);
-                entity.Property(e => e.RequiresRegistration).HasDefaultValue(false);
-                entity.Property(e => e.CurrentAttendees).HasDefaultValue(0);
                 entity.Property(e => e.IsRecurring).HasDefaultValue(false);
                 entity.Property(e => e.RecurrenceInterval).HasDefaultValue(1);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(e => e.ImagePath).HasMaxLength(500);
-                entity.Property(e => e.PdfPath).HasMaxLength(500);
                 entity.Property(e => e.Location).HasMaxLength(200);
                 entity.Property(e => e.RecurrencePattern).HasMaxLength(50);
                 entity.Property(e => e.RecurrenceDaysOfWeek).HasMaxLength(100);
@@ -255,8 +248,8 @@ namespace CentroCultural.Infrastructure.Data
             modelBuilder.Entity<BlogPostEvent>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.BlogPostId).IsRequired();
-                entity.Property(e => e.EventId).IsRequired();
+                entity.Property(e => e.BlogPostId).IsRequired().HasColumnName("blog_post_id");
+                entity.Property(e => e.EventId).IsRequired().HasColumnName("event_id");
                 entity.Property(e => e.RelationType).IsRequired().HasMaxLength(50).HasDefaultValue("Related");
                 entity.Property(e => e.RelationDescription).HasMaxLength(500);
                 entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
@@ -264,15 +257,17 @@ namespace CentroCultural.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
                 entity.Property(e => e.CreatedBy).IsRequired();
 
-                // Configurar relaciones FK
+                // Configurar relaciones FK - especificar explícitamente las propiedades FK
                 entity.HasOne(bpe => bpe.BlogPost)
                       .WithMany(bp => bp.EventRelations)
-                      .HasForeignKey(bpe => bpe.BlogPostId)
+                      .HasForeignKey("BlogPostId")
+                      .HasPrincipalKey(bp => bp.Id)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(bpe => bpe.Event)
                       .WithMany() // No navigation property on Event side
-                      .HasForeignKey(bpe => bpe.EventId)
+                      .HasForeignKey("EventId")
+                      .HasPrincipalKey(e => e.Id)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 // CreatedBy will be handled as a field, no navigation property configured

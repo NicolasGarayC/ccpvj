@@ -98,7 +98,7 @@
 
 <div class="module-list">
 	<div class="header">
-		<h3>Módulos del Curso</h3>
+		<h3>Módulos del Proyecto</h3>
 		{#if showActions}
 			<button
 				class="btn btn-primary"
@@ -131,7 +131,7 @@
 				</svg>
 			</div>
 			<h4>No hay módulos creados</h4>
-			<p>Este curso aún no tiene módulos. Los módulos te permiten organizar el contenido de manera estructurada.</p>
+			<p>Este proyecto aún no tiene módulos. Los módulos te permiten organizar el contenido de manera estructurada.</p>
 			{#if showActions}
 				<button
 					class="btn btn-primary"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { authModalStore } from '$lib/stores/authStore';
 	import { goto } from '$app/navigation';
+	import { t } from '$lib/i18n';
 
 	let show = false;
 	let message = '';
@@ -12,7 +13,7 @@
 
 	function handleClose() {
 		authModalStore.hide();
-		goto('/');
+		goto('/auth/login');
 	}
 </script>
 
@@ -21,16 +22,16 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<div class="icon-warning">⚠️</div>
-				<h2>Sesión Expirada</h2>
+				<h2>{t('modal.sessionExpired')}</h2>
 			</div>
 
 			<div class="modal-body">
-				<p>{message}</p>
+				<p>{message || t('modal.sessionExpiredMessage')}</p>
 			</div>
 
 			<div class="modal-footer">
 				<button class="btn-primary" on:click={handleClose}>
-					Volver al Inicio
+					{t('modal.backToHome')}
 				</button>
 			</div>
 		</div>

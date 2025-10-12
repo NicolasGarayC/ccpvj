@@ -43,27 +43,6 @@ namespace CentroCultural.Domain.Entities
         [Column("is_featured")]
         public bool IsFeatured { get; set; } = false;
 
-        [Column("max_attendees")]
-        public int? MaxAttendees { get; set; }
-
-        [Column("current_attendees")]
-        public int CurrentAttendees { get; set; } = 0;
-
-        [Column("requires_registration")]
-        public bool RequiresRegistration { get; set; } = false;
-
-        [Column("registration_deadline")]
-        public long? RegistrationDeadline { get; set; }
-
-        // Multimedia contextual
-        [MaxLength(500)]
-        [Column("image_path")]
-        public string? ImagePath { get; set; }
-
-        [MaxLength(500)]
-        [Column("pdf_path")]
-        public string? PdfPath { get; set; }
-
         // Eventos recurrentes
         [Column("is_recurring")]
         public bool IsRecurring { get; set; } = false;
@@ -83,8 +62,8 @@ namespace CentroCultural.Domain.Entities
         public string? RecurrenceDaysOfWeek { get; set; } // "1,3,5" para Lun, Mie, Vie
 
         // Referencias opcionales a contenido relacionado
-        [Column("related_course_id")]
-        public string? RelatedCourseId { get; set; }
+        [Column("related_project_id")]
+        public string? RelatedProjectId { get; set; }
 
         [Column("related_blog_post_id")]
         public string? RelatedBlogPostId { get; set; }
@@ -100,9 +79,5 @@ namespace CentroCultural.Domain.Entities
         [Required]
         [Column("organizer_id")]
         public string OrganizerId { get; set; } = string.Empty;
-
-        // Navigation properties
-        public virtual ICollection<BlogPostEvent> BlogPostRelations { get; set; } = new List<BlogPostEvent>();
-
     }
 }

@@ -5,10 +5,12 @@
 	import EventForm from '$lib/components/calendar/EventForm.svelte';
 	import { calendarService, type CreateEventData } from '$lib/services/calendar/calendarService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { blogService } from '$lib/services/blog/blogService';
+	import { materialApoyoService } from '$lib/services/materialApoyoService';
 
 	let loading = false;
 	let error = '';
-	let availableCourses: Array<{ id: string; title: string }> = [];
+	let availableProjects: Array<{ id: string; title: string }> = [];
 	let availableBlogPosts: Array<{ id: string; title: string; slug: string }> = [];
 	let initialDate: Date | null = null;
 
@@ -40,24 +42,28 @@
 			}
 		}
 
-		// Cargar cursos y posts de blog disponibles
+		// Cargar proyectos y posts de blog disponibles
 		await loadRelatedContent();
 	});
 
 	async function loadRelatedContent() {
 		try {
-			// Por ahora, datos de ejemplo. En un ambiente real, cargarías desde APIs
-			availableCourses = [
-				{ id: 'course-1', title: 'Preuniversitario' },
-				{ id: 'course-2', title: 'Matemáticas Básicas' },
-				{ id: 'course-3', title: 'Historia Colombiana' }
-			];
+			// Cargar proyectos (material de apoyo) disponibles
+			const projects = await materialApoyoService.getAllMaterialApoyo();
+			availableProjects = projects.map(project => ({
+				id: project.id,
+				title: project.title
+			}));
 
-			availableBlogPosts = [
-				{ id: 'post-1', title: 'Inauguración del Centro Cultural', slug: 'inauguracion-centro-cultural' },
-				{ id: 'post-2', title: 'Programación Cultural 2024', slug: 'programacion-cultural-2024' },
-				{ id: 'post-3', title: 'Talleres Comunitarios', slug: 'talleres-comunitarios' }
-			];
+			// Cargar blog posts publicados
+			const posts = await blogService.getAllPosts();
+			availableBlogPosts = posts
+				.filter(post => post.status === 'published')
+				.map(post => ({
+					id: post.id,
+					title: post.title,
+					slug: post.slug
+				}));
 		} catch (err) {
 			console.error('Error al cargar contenido relacionado:', err);
 		}
@@ -65,17 +71,27 @@
 
 	async function handleSave(event: CustomEvent<{ eventData: CreateEventData }>) {
 		const eventData = event.detail.eventData;
-		
+
 		try {
 			loading = true;
 			error = '';
-			
+
 			const newEvent = await calendarService.createEvent(eventData);
-			
+
 			// Redirigir al evento creado
 			goto(`/calendar/event/${newEvent.id}`);
 		} catch (err) {
 			console.error('Error al crear evento:', err);
+
+			// Detectar error 401 (sesión expirada)
+			if (err instanceof Error && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
+				// Limpiar token expirado
+				jwtService.clearToken();
+				// Redirigir al login con mensaje
+				goto('/auth/login?redirect=/calendar/create&message=session-expired');
+				return;
+			}
+
 			error = err instanceof Error ? err.message : 'Error al crear el evento';
 		} finally {
 			loading = false;
@@ -144,7 +160,7 @@
 			<EventForm
 				event={null}
 				isEdit={false}
-				{availableCourses}
+				{availableProjects}
 				{availableBlogPosts}
 				{initialDate}
 				on:save={handleSave}
@@ -166,7 +182,7 @@
 							<li>Incluye una descripción detallada del contenido y objetivos</li>
 							<li>Especifica claramente la ubicación y horarios</li>
 							<li>Si requiere registro, establece una fecha límite apropiada</li>
-							<li>Relaciona el evento con cursos o posts del blog cuando sea relevante</li>
+							<li>Relaciona el evento con proyectos o posts del blog cuando sea relevante</li>
 							<li>Considera marcar como destacado eventos especiales o importantes</li>
 							<li>Para eventos recurrentes, revisa bien el patrón de repetición</li>
 						</ul>

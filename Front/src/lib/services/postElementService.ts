@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { getModuloMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
 
 // Type definitions for PostElement
 export interface PostElement {
@@ -28,7 +29,7 @@ export interface InsertPostElement {
 	metadata?: string;
 }
 
-export type ElementType = 'title' | 'text' | 'image' | 'video' | 'audio';
+export type ElementType = 'title' | 'text' | 'image' | 'video' | 'audio' | 'document';
 
 export interface CreateElementDto {
 	postId: string;
@@ -77,6 +78,23 @@ class PostElementService {
 		if (relativePath.startsWith('/media/')) return relativePath;
 		// Convert relative path to frontend media URL
 		return `/media/${relativePath}`;
+	}
+
+	// Get media URL with optional download tracking for modulo content
+	getMediaUrl(relativePath: string, moduloId?: string, enableTracking: boolean = false): string {
+		if (!relativePath) return '';
+
+		// Clean the path
+		const cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+		const mediaPath = cleanPath.startsWith('media/') ? cleanPath.substring(6) : cleanPath;
+
+		// If tracking is enabled and we have a moduloId, use tracked URL
+		if (enableTracking && moduloId) {
+			return getModuloMediaUrl(moduloId, mediaPath);
+		}
+
+		// Otherwise use untracked URL
+		return getUntrackedMediaUrl(mediaPath);
 	}
 
 	async getElementsByPostId(postId: string): Promise<PostElement[]> {
@@ -257,7 +275,7 @@ class PostElementService {
 			const elementData = { ...elementWithFile.element };
 
 			// Validate that media elements have the required file information
-			if (['image', 'video', 'audio'].includes(elementData.elementType)) {
+			if (['image', 'video', 'audio', 'document'].includes(elementData.elementType)) {
 				if (!elementData.filePath) {
 					console.warn(`Media element ${elementData.elementType} missing filePath. Files should be uploaded via ContextualMediaUploader first.`);
 				}

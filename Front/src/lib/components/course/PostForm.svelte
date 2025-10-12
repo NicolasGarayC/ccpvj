@@ -374,7 +374,6 @@
 		if (!isLoading) {
 			// Cleanup orphan files if closing without saving
 			if (!postSaved && uploadedFiles.length > 0) {
-				console.log(`🧹 Modal closing without save - cleaning up ${uploadedFiles.length} orphan file(s)`);
 				await contextualUploadService.cleanupOrphanFiles(uploadedFiles);
 			}
 
@@ -412,7 +411,6 @@
 		if (elementToRemove.id && elementToRemove.id !== 'temp') {
 			try {
 				await postElementService.deleteElement(elementToRemove.id);
-				console.log(`✅ Element ${elementToRemove.id} deleted from database and filesystem`);
 			} catch (error) {
 				console.error('Error deleting element from database:', error);
 				// You might want to show an error message to the user here
@@ -455,8 +453,6 @@
 			elements[index].previewUrl = result.url;
 			elements[index].file = undefined; // Clear the file object since it's uploaded
 			elements = [...elements];
-
-			console.log(`✅ Media uploaded for element ${index}:`, result);
 		}
 
 		// Upload finished (success)

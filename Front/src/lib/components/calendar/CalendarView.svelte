@@ -243,13 +243,22 @@
 							role="button"
 							tabindex="0"
 							on:keydown={(e) => e.key === 'Enter' && handleEventClick(event)}
-							title="{event.title} - {event.isAllDay ? 'Todo el día' : formatTime(new Date(event.startDateTime))}"
+							title="{event.title} - {event.isAllDay ? 'Todo el día' : formatTime(new Date(event.startDateTime))}{event.isFeatured ? ' (Destacado)' : ''}{event.isRecurring ? ' 🔄 Evento recurrente' : ''}"
 						>
 							<!-- Icono del tipo de evento -->
 							<div class="absolute -top-1 -left-1 w-3 h-3 bg-white/30 rounded-full opacity-0 group-hover/event:opacity-100 transition-opacity duration-300"></div>
 
+							<!-- Indicador de evento recurrente -->
+							{#if event.isRecurring}
+								<div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center shadow-md" title="Evento recurrente">
+									<span class="text-[8px]">🔄</span>
+								</div>
+							{/if}
+
 							<div class="relative z-10">
-								<div class="truncate font-semibold mb-0.5">{event.title}</div>
+								<div class="truncate font-semibold mb-0.5 flex items-center gap-1">
+									{event.title}
+								</div>
 								{#if !event.isAllDay}
 									<div class="text-[10px] opacity-90 bg-black/20 rounded-full px-2 py-0.5 inline-block">
 										{formatTime(new Date(event.startDateTime))}
@@ -271,67 +280,6 @@
 				<div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-400/0 to-purple-400/0 group-hover:from-blue-400/5 group-hover:to-purple-400/5 transition-all duration-300 pointer-events-none"></div>
 			</div>
 		{/each}
-	</div>
-</div>
-
-<!-- Leyenda de tipos de eventos mejorada -->
-<div class="mt-8 p-6 bg-gradient-to-r from-slate-50 to-gray-50 rounded-3xl border-2 border-gray-200">
-	<div class="text-center mb-6">
-		<h3 class="text-lg font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
-			<span class="text-2xl">🎨</span>
-			Tipos de Eventos
-		</h3>
-		<p class="text-sm text-gray-600">Cada color representa un tipo diferente de actividad</p>
-	</div>
-
-	<div class="flex flex-wrap justify-center gap-4">
-		<div class="group flex items-center gap-3 bg-white px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 border border-blue-100">
-			<div class="relative">
-				<div class="w-5 h-5 bg-blue-500 rounded-full shadow-lg"></div>
-				<div class="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-30"></div>
-			</div>
-			<span class="font-semibold text-gray-700 group-hover:text-blue-600 transition-colors duration-300">📚 Clases</span>
-		</div>
-
-		<div class="group flex items-center gap-3 bg-white px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 border border-green-100">
-			<div class="relative">
-				<div class="w-5 h-5 bg-green-500 rounded-full shadow-lg"></div>
-				<div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-30"></div>
-			</div>
-			<span class="font-semibold text-gray-700 group-hover:text-green-600 transition-colors duration-300">🛠️ Talleres</span>
-		</div>
-
-		<div class="group flex items-center gap-3 bg-white px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 border border-purple-100">
-			<div class="relative">
-				<div class="w-5 h-5 bg-purple-500 rounded-full shadow-lg"></div>
-				<div class="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-30"></div>
-			</div>
-			<span class="font-semibold text-gray-700 group-hover:text-purple-600 transition-colors duration-300">🎤 Conferencias</span>
-		</div>
-
-		<div class="group flex items-center gap-3 bg-white px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 border border-yellow-100">
-			<div class="relative">
-				<div class="w-5 h-5 bg-yellow-500 rounded-full shadow-lg"></div>
-				<div class="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-30"></div>
-			</div>
-			<span class="font-semibold text-gray-700 group-hover:text-yellow-600 transition-colors duration-300">🎪 Eventos</span>
-		</div>
-
-		<div class="group flex items-center gap-3 bg-white px-4 py-3 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 border border-gray-100">
-			<div class="relative">
-				<div class="w-5 h-5 bg-gray-500 rounded-full shadow-lg"></div>
-				<div class="absolute inset-0 bg-gray-400 rounded-full animate-ping opacity-30"></div>
-			</div>
-			<span class="font-semibold text-gray-700 group-hover:text-gray-600 transition-colors duration-300">⭐ General</span>
-		</div>
-	</div>
-
-	<!-- Tips adicionales -->
-	<div class="mt-6 text-center">
-		<div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
-			<span class="text-lg">💡</span>
-			Haz clic en cualquier día para crear un nuevo evento
-		</div>
 	</div>
 </div>
 

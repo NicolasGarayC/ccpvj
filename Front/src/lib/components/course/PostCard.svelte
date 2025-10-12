@@ -38,8 +38,6 @@
 	}
 
 	function handleDelete() {
-		console.log('PostCard handleDelete called for post:', post.id);
-		console.log('Dispatching delete event directly to parent');
 		dispatch('delete', post.id);
 	}
 

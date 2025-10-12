@@ -26,26 +26,31 @@ namespace CentroCultural.Application.Services
 
                 var summary = new AnalyticsSummaryDto();
 
-                // Get unique visitors count
+                // Get total unique visitors count (distinct IPs from visitor_tracking)
                 using var visitorsCmd = new SqliteCommand("SELECT COUNT(DISTINCT ip_address) FROM visitor_tracking", connection);
                 var visitorsResult = await visitorsCmd.ExecuteScalarAsync();
                 summary.TotalVisitors = Convert.ToInt32(visitorsResult ?? 0);
+                _logger.LogInformation("Visitors counted: {Count}", summary.TotalVisitors);
 
-                // Get total downloads count
+                // Get total downloads count from download_tracking
                 using var downloadsCmd = new SqliteCommand("SELECT COUNT(*) FROM download_tracking", connection);
                 var downloadsResult = await downloadsCmd.ExecuteScalarAsync();
                 summary.TotalDownloads = Convert.ToInt32(downloadsResult ?? 0);
+                _logger.LogInformation("Downloads counted: {Count}", summary.TotalDownloads);
 
-                // Get total resources count (library items + blog media + course media)
+                // Get total active resources count (eventos + proyectos + módulos + items biblioteca)
                 using var resourcesCmd = new SqliteCommand(@"
                     SELECT
-                        (SELECT COUNT(*) FROM library_item WHERE is_active = 1) +
-                        (SELECT COUNT(*) FROM blog_post_element WHERE file_path IS NOT NULL AND is_active = 1) +
-                        (SELECT COUNT(*) FROM post_element WHERE file_path IS NOT NULL AND is_active = 1)
+                        (SELECT COUNT(*) FROM event WHERE is_active = 1) +
+                        (SELECT COUNT(*) FROM material_apoyo WHERE is_active = 1) +
+                        (SELECT COUNT(*) FROM modulo WHERE is_active = 1) +
+                        (SELECT COUNT(*) FROM library_item WHERE is_active = 1)
                 ", connection);
                 var resourcesResult = await resourcesCmd.ExecuteScalarAsync();
                 summary.TotalResources = Convert.ToInt32(resourcesResult ?? 0);
+                _logger.LogInformation("Resources counted: {Count}", summary.TotalResources);
 
+                _logger.LogInformation("Summary DTO created: {@Summary}", summary);
                 return summary;
             }
             catch (Exception ex)

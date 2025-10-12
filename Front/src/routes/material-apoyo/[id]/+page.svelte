@@ -251,7 +251,7 @@
 </script>
 
 <svelte:head>
-	<title>{course?.title || 'Curso'} - Centro Cultural Víctor Jara</title>
+	<title>{course?.title || 'Proyecto'} - Centro Cultural Víctor Jara</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -267,8 +267,8 @@
 							<span class="text-2xl animate-pulse">📚</span>
 						</div>
 					</div>
-					<h3 class="text-2xl font-bold text-gray-800 mb-4">Cargando curso...</h3>
-					<p class="text-gray-600">Obteniendo todos los detalles del curso</p>
+					<h3 class="text-2xl font-bold text-gray-800 mb-4">Cargando proyecto...</h3>
+					<p class="text-gray-600">Obteniendo todos los detalles del proyecto</p>
 				</div>
 			</div>
 		</div>
@@ -285,7 +285,7 @@
 							<line x1="9" y1="9" x2="15" y2="15"></line>
 						</svg>
 					</div>
-					<h3 class="text-2xl font-bold text-red-800 mb-6">😔 No pudimos cargar el curso</h3>
+					<h3 class="text-2xl font-bold text-red-800 mb-6">😔 No pudimos cargar el proyecto</h3>
 					<p class="text-red-600 mb-8 text-lg">{error}</p>
 					<div class="flex gap-4 justify-center flex-wrap">
 						<button
@@ -298,7 +298,7 @@
 							class="px-8 py-4 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1"
 							on:click={handleBackToCourses}
 						>
-							← Volver a cursos
+							← Volver a proyectos
 						</button>
 					</div>
 				</div>
@@ -316,7 +316,7 @@
 						on:click={handleBackToCourses}
 						class="text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
 					>
-						🏠 Cursos
+						🏠 Proyectos
 					</button>
 					<span class="text-gray-400">/</span>
 					<span class="text-gray-600 font-medium break-words overflow-wrap-anywhere hyphens-auto max-w-full">{course.title}</span>
@@ -329,7 +329,7 @@
 					{#if course.imagePath}
 						<div class="h-80 overflow-hidden">
 							<img
-								src={course.imagePath.startsWith('http') || course.imagePath.startsWith('/media/') ? course.imagePath : `/media/${course.imagePath}`}
+								src={course.imagePath.startsWith('http') ? course.imagePath : `/media/${course.imagePath.startsWith('/media/') ? course.imagePath.substring(7) : course.imagePath}`}
 								alt={course.title}
 								class="w-full h-full object-cover"
 							/>
@@ -383,7 +383,7 @@
 										bind:value={editForm.title}
 										class="text-4xl md:text-5xl font-black leading-tight bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-2xl p-4 w-full text-white placeholder-white/70 focus:outline-none focus:border-white/60"
 										class:border-red-300={formErrors.title}
-										placeholder="Título del curso"
+										placeholder="Título del proyecto"
 										maxlength="200"
 										disabled={saving}
 									/>
@@ -398,7 +398,7 @@
 							{/if}
 							<div class="flex flex-wrap gap-3 mb-4">
 								<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
-									👨‍🏫 {course.educatorName || 'Instructor'}
+									👨‍🏫 {course.educatorName || 'Encargado'}
 								</span>
 								<span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-2xl text-sm font-bold border border-white/30">
 									📅 {formatDate(course.createdAt)}
@@ -419,7 +419,7 @@
 					<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-8">
 						<h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
 							<span class="text-3xl">📝</span>
-							Descripción del Curso
+							Descripción del Proyecto
 							{#if editMode}
 								<span class="text-sm font-normal text-blue-600 ml-auto">✏️ Editando</span>
 							{/if}
@@ -431,7 +431,7 @@
 										bind:value={editForm.description}
 										class="w-full p-4 border-2 border-emerald-200 rounded-2xl text-gray-700 leading-relaxed text-lg resize-vertical min-h-32 focus:outline-none focus:border-emerald-500"
 										class:border-red-300={formErrors.description}
-										placeholder="Descripción del curso"
+										placeholder="Descripción del proyecto"
 										maxlength="1000"
 										disabled={saving}
 										rows="6"
@@ -456,7 +456,7 @@
 						<div class="p-8 pb-0">
 							<h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
 								<span class="text-3xl">📚</span>
-								Contenido del Curso
+								Contenido del Proyecto
 							</h2>
 						</div>
 
@@ -481,7 +481,7 @@
 						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
 							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
 								<span class="text-2xl">🖼️</span>
-								Imagen del Curso
+								Imagen del Proyecto
 							</h3>
 							<MediaUploader
 								contentType="course"
@@ -509,10 +509,10 @@
 									class="w-5 h-5 text-emerald-600 border-2 border-emerald-300 rounded focus:ring-emerald-500"
 									disabled={saving}
 								/>
-								<span class="text-gray-700 font-medium">Marcar como curso destacado</span>
+								<span class="text-gray-700 font-medium">Marcar como proyecto destacado</span>
 							</label>
 							<p class="text-gray-500 text-sm mt-2">
-								Los cursos destacados aparecen en la sección principal.
+								Los proyectos destacados aparecen en la sección principal.
 							</p>
 						</div>
 					{/if}
@@ -522,7 +522,7 @@
 						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
 							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
 								<span class="text-2xl">⚙️</span>
-								Gestión del Curso
+								Gestión del Proyecto
 							</h3>
 							<div class="space-y-3">
 								{#if !editMode}
@@ -531,7 +531,7 @@
 										class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
 									>
 										<span class="text-xl">✏️</span>
-										Editar Curso
+										Editar Proyecto
 									</button>
 								{:else}
 									<button
@@ -572,7 +572,7 @@
 					<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
 						<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
 							<span class="text-2xl">ℹ️</span>
-							Información del Curso
+							Información del Proyecto
 						</h3>
 						<div class="space-y-4">
 							<div class="flex justify-between items-center py-3 border-b border-gray-100">
@@ -584,7 +584,7 @@
 
 
 							<div class="flex justify-between items-center py-3 border-b border-gray-100">
-								<span class="text-gray-600 font-medium">Educador:</span>
+								<span class="text-gray-600 font-medium">Encargado:</span>
 								<span class="font-bold text-purple-600">{course.educatorName || 'No asignado'}</span>
 							</div>
 
@@ -626,7 +626,7 @@
 								class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-2xl transition-all duration-300 font-medium hover:shadow-lg hover:-translate-y-1 flex items-center gap-2"
 							>
 								<span>←</span>
-								Volver a Cursos
+								Volver a Proyectos
 							</button>
 
 							<button
