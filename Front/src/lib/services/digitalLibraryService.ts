@@ -19,7 +19,7 @@ export interface LibraryItemDto {
     fileName: string;
     fileSize: number;
     mimeType?: string;
-    tags: string[];
+    tags: string[] | string | null;
     language?: string;
     year?: number;
     category?: string;

@@ -104,11 +104,11 @@
 
 <!-- Confirmation Modal for Delete -->
 <ConfirmationModal
-	visible={showDeleteModal}
+	bind:isOpen={showDeleteModal}
 	title="Eliminar Módulo"
 	message={`¿Estás seguro de que deseas eliminar el módulo "${module.title}"? Esta acción no se puede deshacer y se eliminarán todos los contenidos asociados.`}
 	confirmText="Eliminar"
-	confirmButtonClass="btn-danger"
+	type="danger"
 	on:confirm={confirmDelete}
 	on:cancel={cancelDelete}
 />

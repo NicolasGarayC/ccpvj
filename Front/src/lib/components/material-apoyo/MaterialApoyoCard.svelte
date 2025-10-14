@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { MaterialApoyoDto } from '$lib/types/api/materialApoyo.types';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import { createEventDispatcher } from 'svelte';
-	import ConfirmationModal from '../common/ConfirmationModal.svelte';
+import type { MaterialApoyoDto, MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
+import { materialApoyoService } from '$lib/services/materialApoyoService';
+import { createEventDispatcher } from 'svelte';
+import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
-	export let materialApoyo: MaterialApoyoDto;
-	export let showActions = false;
+export let materialApoyo: MaterialApoyoDto | MaterialApoyoSummaryDto;
+export let showActions = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -48,13 +48,14 @@
 		deleteError = '';
 	}
 
-	function formatDate(dateString: string): string {
-		return new Date(dateString).toLocaleDateString('es-ES', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		});
-	}
+function formatDate(value: string | number): string {
+	const timestamp = typeof value === 'number' ? value * 1000 : value;
+	return new Date(timestamp).toLocaleDateString('es-ES', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
+}
 
 	// Build proper image URL
 	function getImageUrl(imagePath: string | undefined): string {
@@ -64,6 +65,8 @@
 		}
 		return `/media/${imagePath}`;
 	}
+
+	const postCount = 'postCount' in materialApoyo ? materialApoyo.postCount ?? 0 : undefined;
 </script>
 
 <div class="course-card">
@@ -115,13 +118,15 @@
 					</svg>
 					{materialApoyo.moduleCount} módulos
 				</span>
-				<span class="stat">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-						<polyline points="14,2 14,8 20,8"></polyline>
-					</svg>
-					{materialApoyo.postCount} contenidos
-				</span>
+				{#if postCount !== undefined}
+					<span class="stat">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+							<polyline points="14,2 14,8 20,8"></polyline>
+						</svg>
+						{postCount} contenidos
+					</span>
+				{/if}
 			</div>
 		</div>
 

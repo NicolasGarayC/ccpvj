@@ -67,15 +67,11 @@ cd /home/user/ccpvj/Front/
 # Set DATABASE_URL environment variable  
 export DATABASE_URL="file:/home/user/ccpvj/Data/ccpvj.db"
 
-# Push contextual schema (if using Drizzle directly)
-npm run db:push
+# Quick inspection of current tables
+sqlite3 $DATABASE_URL ".tables"
 
-# Seed test users
-npm run db:seed
-
-# Optional: Open database studio for inspection
-npm run db:studio &
-# This opens Drizzle Studio at http://localhost:4983
+# Optional: import seed data with sqlite3 if needed
+# sqlite3 $DATABASE_URL < ./path/to/seed.sql
 ```
 
 **Database Structure Created:**

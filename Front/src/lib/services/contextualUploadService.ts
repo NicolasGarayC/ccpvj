@@ -255,7 +255,16 @@ class ContextualUploadService {
     /**
      * Extract context information from file path
      */
-    parseContextFromPath(relativePath: string): { contentType?: string; courseId?: string; moduleId?: string; postId?: string; mediaType?: string } {
+    parseContextFromPath(relativePath: string): {
+        contentType?: string;
+        courseId?: string;
+        moduleId?: string;
+        postId?: string;
+        mediaType?: string;
+        resourceId?: string;
+        eventId?: string;
+        userId?: string;
+    } {
         // Expected format: content/{contentType}/{contentId}/...
         // Examples:
         // - content/material-apoyo/{materialApoyoId}/banner.ext
@@ -266,7 +275,15 @@ class ContextualUploadService {
 
         if (parts[0] === 'content' && parts.length >= 3) {
             const contentType = parts[1];
-            const result: any = { contentType };
+            const result: {
+                contentType: string;
+                courseId?: string;
+                moduleId?: string;
+                postId?: string;
+                mediaType?: string;
+                resourceId?: string;
+                eventId?: string;
+            } = { contentType };
 
             if (contentType === 'material-apoyo' || contentType === 'courses') {
                 result.courseId = parts[2];

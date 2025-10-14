@@ -2,7 +2,7 @@
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import type { LibrarySearchDto } from '$lib/services/digitalLibraryService';
-	import { t } from '$lib/i18n';
+import { t, translate } from '$lib/i18n';
 
 	const dispatch = createEventDispatcher<{
 		filtersChange: LibrarySearchDto;
@@ -99,28 +99,28 @@
 
 	// Helper function to get file type label
 	function getFileTypeLabel(value: string): string {
-		const labelMap: Record<string, string> = {
-			'image': t('filters.fileType.image'),
-			'video': t('filters.fileType.video'),
-			'audio': t('filters.fileType.audio'),
-			'document': t('filters.fileType.document')
-		};
+	const labelMap: Record<string, string> = {
+		'image': translate('filters.fileType.image'),
+		'video': translate('filters.fileType.video'),
+		'audio': translate('filters.fileType.audio'),
+		'document': translate('filters.fileType.document')
+	};
 		return labelMap[value] || value;
 	}
 
 	// Helper function to get category label
 	function getCategoryLabel(value: string): string {
-		const labelMap: Record<string, string> = {
-			'victor-jara': t('filters.category.victorJara'),
-			'nueva-cancion': t('filters.category.nuevaCancion'),
-			'educacion-popular': t('filters.category.educacionPopular'),
-			'memoria-historica': t('filters.category.memoriaHistorica'),
-			'talleres-eventos': t('filters.category.talleresEventos'),
-			'archivo-prensa': t('filters.category.archivoPrensa'),
-			'audiovisual': t('filters.category.audiovisual'),
-			'literatura': t('filters.category.literatura'),
-			'general': t('filters.category.general')
-		};
+	const labelMap: Record<string, string> = {
+		'victor-jara': translate('filters.category.victorJara'),
+		'nueva-cancion': translate('filters.category.nuevaCancion'),
+		'educacion-popular': translate('filters.category.educacionPopular'),
+		'memoria-historica': translate('filters.category.memoriaHistorica'),
+		'talleres-eventos': translate('filters.category.talleresEventos'),
+		'archivo-prensa': translate('filters.category.archivoPrensa'),
+		'audiovisual': translate('filters.category.audiovisual'),
+		'literatura': translate('filters.category.literatura'),
+		'general': translate('filters.category.general')
+	};
 		return labelMap[value] || value;
 	}
 </script>

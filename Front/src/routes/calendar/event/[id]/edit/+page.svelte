@@ -9,7 +9,8 @@
 	import EventForm from '$lib/components/calendar/EventForm.svelte';
 
 	// Props desde la URL
-	$: eventId = $page.params.id;
+	let eventId: string = '';
+	$: eventId = ($page.params.id ?? '') as string;
 
 	// Estado de la página
 	let loading = true;
@@ -47,7 +48,11 @@
 			loading = true;
 			error = '';
 
-			event = await calendarService.getEvent(eventId);
+	if (!eventId) {
+		throw new Error('ID de evento inválido');
+	}
+
+	event = await calendarService.getEvent(eventId);
 
 			if (!event) {
 				error = 'Evento no encontrado';
@@ -86,7 +91,7 @@
 			availableBlogPosts = blogPosts
 				.filter(post => post.status === 'published')
 				.map(post => ({
-					id: post.id,
+					id: String(post.id),
 					title: post.title,
 					slug: post.slug
 				}));
@@ -96,7 +101,7 @@
 	}
 
 	async function handleUpdate(updatedData: any) {
-		if (!event || saving) return;
+		if (!event || saving || !eventId) return;
 
 		try {
 			saving = true;
@@ -130,7 +135,7 @@
 
 			// Detectar error 401 (sesión expirada)
 			if (err instanceof Error && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
-				jwtService.clearToken();
+				jwtService.removeToken();
 				goto(`/auth/login?redirect=/calendar/event/${eventId}/edit&message=session-expired`);
 				return;
 			}
@@ -141,7 +146,7 @@
 	}
 
 	async function handleDelete() {
-		if (!event || deleting) return;
+		if (!event || deleting || !eventId) return;
 
 		let confirmMessage = `¿Estás seguro de que deseas eliminar el evento "${event.title}"?`;
 

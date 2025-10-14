@@ -27,11 +27,11 @@ Crear una plataforma educativa y cultural para el Centro Cultural Víctor Jara e
 - **SvelteKit 5** - Framework web moderno
 - **TypeScript** - Tipado estático
 - **Tailwind CSS** - Estilos
-- **Drizzle ORM** - Manejo de base de datos
+- **APIs internas y servicios** - Acceso a datos mediante endpoints locales
 
 ### Base de Datos
 - **SQLite** - Base de datos local (`D:/ccpvj/Data/ccpvj.db` - 278KB)
-- **ORM Dual**: Drizzle (frontend) + Entity Framework (.NET backend)
+- **Capa de acceso**: Entity Framework (.NET backend) + scripts utilitarios
 - **✅ Resuelto**: Esquemas unificados entre ORMs
 - **Estado**: Estructuras consistentes, sistema operativo
 
@@ -85,7 +85,7 @@ session                 -- Sesiones activas
 
 #### **📚 Sistema Educativo**
 ```sql
-course                  -- Cursos (Drizzle schema)
+course                  -- Cursos (tabla principal)
 ├── id (TEXT PK)
 ├── title, description, subject
 ├── educator_id (TEXT FK) -- → user.id
@@ -98,7 +98,7 @@ Module                  -- Módulos (.NET schema) ⚠️ Mayúscula
 ├── CourseId (TEXT FK)   -- Sin conexión con course
 └── OrderNumber
 
-work_item               -- Elementos de trabajo (Drizzle)
+work_item               -- Elementos de trabajo (tabla principal)
 ├── id (TEXT PK)
 ├── title, description, long_text
 ├── module_id (TEXT FK) -- → module.id (NO EXISTE)
@@ -226,7 +226,7 @@ dotnet run  # Ejecuta en http://localhost:5251
 - Optimización de rendimiento
 
 ## ✅ Correcciones Implementadas
-1. ✅ **Esquemas Duplicados**: Unificado entre Drizzle y .NET
+1. ✅ **Esquemas Duplicados**: Unificado entre frontend y .NET
 2. ✅ **Roles Inconsistentes**: Roles unificados y funcionales
 3. ✅ **APIs funcionando**: Endpoints operativos con esquema correcto
 4. ✅ **Autenticación**: Sistema cookie-based completamente funcional

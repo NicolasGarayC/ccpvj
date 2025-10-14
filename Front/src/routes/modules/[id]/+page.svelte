@@ -2,8 +2,8 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import type { ModuleDetailDto } from '$lib/types/api/course.types';
+import { materialApoyoService } from '$lib/services/materialApoyoService';
+import type { ModuleDto } from '$lib/types/api/materialApoyo.types';
 	import { modulePostService, type PostDetail } from '$lib/services/modulePostService';
 	import PostList from '$lib/components/course/PostList.svelte';
 	import PostViewer from '$lib/components/course/PostViewer.svelte';
@@ -12,12 +12,12 @@
 	import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
 	import SuccessToast from '$lib/components/common/SuccessToast.svelte';
 
-	const moduleId = $page.params.id;
+const moduleId = $page.params.id as string;
 
 	// Authentication state
 	let canManagePosts = false;
 
-	let module: ModuleDetailDto | null = null;
+let module: ModuleDto | null = null;
 	let isLoading = false;
 	let error: string | null = null;
 	let postCount = 0;

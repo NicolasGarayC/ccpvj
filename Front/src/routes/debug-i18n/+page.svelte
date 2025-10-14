@@ -14,7 +14,8 @@
         debugInfo += '\nEN Module: ' + JSON.stringify(mod, null, 2);
       });
     } catch (error) {
-      debugInfo = 'Error: ' + error.message;
+      const message = error instanceof Error ? error.message : String(error);
+      debugInfo = 'Error: ' + message;
     }
   }
 

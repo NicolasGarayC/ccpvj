@@ -84,14 +84,19 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	} catch (error) {
 		console.error('[DEBUG] Login endpoint error:', error);
+
+		const err = error instanceof Error ? error : new Error(String(error));
+		const errorCode = (error as { code?: string | number })?.code;
+		const errorMessage = err.message || '';
+
 		console.error('[DEBUG] Error details:', {
-			name: error.name,
-			message: error.message,
-			stack: error.stack
+			name: err.name,
+			message: errorMessage,
+			stack: err.stack
 		});
 
 		// Check if it's a network error
-		if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+		if (errorCode === 'ECONNREFUSED' || errorMessage.includes('fetch')) {
 			console.log('[DEBUG] Network error - backend might be down');
 			return json(
 				{ success: false, message: 'Cannot connect to authentication server', errorType: 'NETWORK_ERROR' },
@@ -100,7 +105,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		return json(
-			{ success: false, message: 'Error interno del servidor', errorDetails: error.message },
+			{ success: false, message: 'Error interno del servidor', errorDetails: errorMessage },
 			{ status: 500 }
 		);
 	}

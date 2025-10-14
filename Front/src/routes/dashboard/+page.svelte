@@ -1,10 +1,10 @@
 ﻿<script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
+  import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
   import { t } from '$lib/i18n';
 
-  let user = null;
+  let user: JwtUser | null = null;
   let loading = false;
 
   async function handleLogout() {

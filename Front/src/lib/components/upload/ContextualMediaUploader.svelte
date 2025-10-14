@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-	import { contextualUploadService } from '$lib/services/contextualUploadService';
-	import type { UploadResult } from '$lib/services/contextualUploadService';
+import { createEventDispatcher } from 'svelte';
+import { contextualUploadService } from '$lib/services/contextualUploadService';
+import type { UploadResult } from '$lib/services/contextualUploadService';
 
-	export let context: 'course' | 'material-apoyo' | 'post' | 'blog';
-	export let mediaType: 'image' | 'video' | 'audio' | 'document' = 'image';
+type UploadContext = 'course' | 'material-apoyo' | 'post' | 'blog';
+type MediaType = 'image' | 'video' | 'audio' | 'document';
+
+export let context: UploadContext;
+export let mediaType: MediaType = 'image';
 	export let courseId: string = ''; // deprecated, use contentId
 	export let materialApoyoId: string = ''; // deprecated, use contentId
 	export let contentId: string = ''; // Generic content ID
@@ -37,27 +40,27 @@
 	$: hasCurrentMedia = !!currentMedia;
 	$: mediaUrl = currentMedia ? contextualUploadService.getMediaUrl(currentMedia) : '';
 
-	function getDefaultLabel(ctx: string, type: string): string {
-		if (ctx === 'course' || ctx === 'material-apoyo') {
-			return type === 'image' ? 'Imagen del Material de Apoyo' : 'Archivo del Material de Apoyo';
-		} else if (ctx === 'blog') {
-			const typeMap = {
-				image: 'Imagen del artículo',
-				video: 'Video del artículo',
-				audio: 'Audio del artículo',
-				document: 'Documento del artículo'
-			};
-			return typeMap[type] || 'Archivo multimedia';
-		} else {
-			const typeMap = {
-				image: 'Imagen',
-				video: 'Video',
-				audio: 'Audio',
-				document: 'Documento'
-			};
-			return typeMap[type] || 'Archivo multimedia';
-		}
+function getDefaultLabel(ctx: UploadContext, type: MediaType): string {
+	if (ctx === 'course' || ctx === 'material-apoyo') {
+		return type === 'image' ? 'Imagen del Material de Apoyo' : 'Archivo del Material de Apoyo';
+	} else if (ctx === 'blog') {
+		const typeMap: Record<MediaType, string> = {
+			image: 'Imagen del artículo',
+			video: 'Video del artículo',
+			audio: 'Audio del artículo',
+			document: 'Documento del artículo'
+		};
+		return typeMap[type] ?? 'Archivo multimedia';
+	} else {
+		const typeMap: Record<MediaType, string> = {
+			image: 'Imagen',
+			video: 'Video',
+			audio: 'Audio',
+			document: 'Documento'
+		};
+		return typeMap[type] ?? 'Archivo multimedia';
 	}
+}
 
 	function validateContext(): boolean {
 		if ((context === 'course' || context === 'material-apoyo') && !actualContentId) {
@@ -220,14 +223,15 @@
 		return '📁';
 	}
 
-	function getMaxSizeInfo(type: string): string {
-		const sizes: Record<string, string> = {
-			image: '20MB',
-			video: '20GB',
-			audio: '100MB'
-		};
-		return sizes[type] || '20MB';
-	}
+function getMaxSizeInfo(type: MediaType): string {
+	const sizes: Record<MediaType, string> = {
+		image: '20MB',
+		video: '20GB',
+		audio: '100MB',
+		document: '1GB'
+	};
+	return sizes[type] ?? '20MB';
+}
 </script>
 
 <div class="contextual-uploader">
@@ -254,7 +258,9 @@
 						{#if mediaType === 'image'}
 							<img src={previewUrl} alt="Preview" class="preview-image" />
 						{:else if mediaType === 'video'}
-							<video src={previewUrl} controls class="preview-video"></video>
+						<video src={previewUrl} controls class="preview-video">
+							<track kind="captions" srclang="es" label="Subtítulos" />
+						</video>
 						{/if}
 
 						<!-- Upload overlay -->
@@ -294,7 +300,9 @@
 				{#if mediaType === 'image'}
 					<img src={previewUrl || mediaUrl} alt="Preview" class="preview-image" />
 				{:else if mediaType === 'video'}
-					<video src={previewUrl || mediaUrl} controls class="preview-video"></video>
+					<video src={previewUrl || mediaUrl} controls class="preview-video">
+						<track kind="captions" srclang="es" label="Subtítulos" />
+					</video>
 				{:else if mediaType === 'audio'}
 					<audio src={previewUrl || mediaUrl} controls class="preview-audio"></audio>
 				{/if}

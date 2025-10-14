@@ -3,16 +3,16 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import type { MaterialApoyoDto } from '$lib/types/api/materialApoyo.types';
+import type { MaterialApoyoDetailDto } from '$lib/types/api/materialApoyo.types';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import MaterialApoyoForm from '$lib/components/course/MaterialApoyoForm.svelte';
 
-	let course: Course | null = null;
+let course: MaterialApoyoDetailDto | null = null;
 	let loading = true;
 	let error = '';
 	let canEdit = false;
 
-	const courseId = $page.params.id;
+const courseId = $page.params.id as string;
 
 	onMount(async () => {
 		// Check permissions

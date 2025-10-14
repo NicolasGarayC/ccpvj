@@ -9,8 +9,27 @@ import type {
 	UpdateBlogCategoryDto,
 	BlogPost,
 	BlogTag,
-	BlogSearchParams
+	BlogSearchParams,
+	BlogPostElementDto
 } from '$lib/types/api';
+
+type BlogPostCreateInput = {
+	title: string;
+	excerpt?: string;
+	content?: string;
+	slug?: string;
+	status?: 'draft' | 'published';
+	categoryId?: string | null;
+	featuredMedia?: string | null | undefined;
+	tags?: string[];
+	authorId?: number;
+	authorName?: string;
+	publishDate?: string;
+};
+
+type BlogPostUpdateInput = BlogPostCreateInput & {
+	elements?: any[];
+};
 
 class BlogHttpService extends BaseHttpService {
 	// Blog methods (updated to use /blog endpoints)
@@ -113,7 +132,7 @@ class BlogHttpService extends BaseHttpService {
 	// Frontend adapter methods for new blog structure with elements
 	adaptBlogPostToBlogPost(blogPost: any): BlogPost {
 		return {
-			id: blogPost.id,
+			id: blogPost.id?.toString?.() ?? blogPost.id,
 			title: blogPost.title,
 			slug: blogPost.slug,
 			excerpt: blogPost.subtitle || '',
@@ -122,46 +141,61 @@ class BlogHttpService extends BaseHttpService {
 			videoPoster: undefined,
 			tags: Array.isArray(blogPost.tags) ? blogPost.tags : (blogPost.tags ? blogPost.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0) : []),
 			status: blogPost.isPublished ? 'published' : 'draft',
-			publishDate: blogPost.publishedAt || blogPost.createdAt,
+			publishDate: blogPost.publishedAt
+				? new Date(blogPost.publishedAt * 1000).toISOString()
+				: blogPost.createdAt
+					? new Date(blogPost.createdAt * 1000).toISOString()
+					: new Date().toISOString(),
 			authorId: blogPost.authorId,
 			authorName: blogPost.authorName || 'Author',
-			categoryId: blogPost.categoryId,
+			categoryId: blogPost.categoryId != null ? String(blogPost.categoryId) : undefined,
 			categoryName: blogPost.categoryName,
-			createdAt: blogPost.createdAt,
-			updatedAt: blogPost.updatedAt,
+			createdAt: blogPost.createdAt
+				? new Date(blogPost.createdAt * 1000).toISOString()
+				: new Date().toISOString(),
+			updatedAt: blogPost.updatedAt
+				? new Date(blogPost.updatedAt * 1000).toISOString()
+				: undefined,
 			viewCount: blogPost.views || 0
 		};
 	}
 
-	adaptBlogPostToCreateBlog(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): any {
+	adaptBlogPostToCreateBlog(post: BlogPostCreateInput): CreateArticleDto {
+		const elements = this.createElementsFromContent(post.content ?? '', post.featuredMedia ?? undefined) as BlogPostElementDto[];
 		return {
 			title: post.title,
-			subtitle: post.excerpt,
-			slug: post.slug || this.generateSlugFromTitle(post.title),
+			subtitle: post.excerpt ?? '',
+			slug: post.slug && post.slug.length > 0 ? post.slug : this.generateSlugFromTitle(post.title),
 			isPublished: post.status === 'published',
 			isFeatured: false,
 			orderNumber: 0,
 			isActive: true,
+			categoryId: post.categoryId ?? undefined,
 			tags: Array.isArray(post.tags) ? post.tags : [],
-			elements: this.createElementsFromContent(post.content || '', post.featuredMedia),
-			categoryId: post.categoryId
+			featuredImagePath: post.featuredMedia ?? undefined,
+			elements
 		};
 	}
 
-	adaptBlogPostToUpdateBlog(post: Partial<BlogPost>): any {
-		const elements = this.createElementsFromContent(post.content || '', post.featuredMedia);
-		return {
-			title: post.title || '',
-			subtitle: post.excerpt || '',
-			slug: post.slug || '',
+	adaptBlogPostToUpdateBlog(post: BlogPostUpdateInput, includeElements: boolean): UpdateArticleDto {
+		const updatePayload: UpdateArticleDto = {
+			title: post.title ?? '',
+			subtitle: post.excerpt ?? '',
+			slug: post.slug ?? '',
 			isPublished: post.status === 'published',
 			isFeatured: false,
 			orderNumber: 0,
 			isActive: true,
+			categoryId: post.categoryId ?? null,
 			tags: Array.isArray(post.tags) ? post.tags : [],
-			elements: elements,
-			categoryId: post.categoryId
+			featuredImagePath: post.featuredMedia ?? undefined
 		};
+
+		if (includeElements) {
+			updatePayload.elements = post.elements ?? (this.createElementsFromContent(post.content ?? '', post.featuredMedia ?? undefined) as BlogPostElementDto[]);
+		}
+
+		return updatePayload;
 	}
 
 	// Helper methods for element handling
@@ -230,14 +264,42 @@ class BlogHttpService extends BaseHttpService {
 		return article ? this.adaptBlogPostToBlogPost(article) : null;
 	}
 
-	async createPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost> {
+	async createPost(post: BlogPostCreateInput): Promise<BlogPost> {
 		const blogData = this.adaptBlogPostToCreateBlog(post);
 		const createdBlog = await this.createArticle(blogData);
 		return this.adaptBlogPostToBlogPost(createdBlog);
 	}
 
-	async updatePost(id: string, post: Partial<BlogPost>): Promise<BlogPost> {
-		const updateData = this.adaptBlogPostToUpdateBlog(post);
+	async updatePost(id: string, post: BlogPostUpdateInput): Promise<BlogPost> {
+		const needsExistingData =
+			post.title === undefined ||
+			post.excerpt === undefined ||
+			post.slug === undefined ||
+			post.status === undefined ||
+			post.categoryId === undefined ||
+			post.tags === undefined ||
+			post.content === undefined ||
+			post.featuredMedia === undefined;
+
+		let mergedPost: BlogPostUpdateInput = { ...post };
+
+		if (needsExistingData) {
+			const existingArticle = await this.getArticleById(id);
+			if (existingArticle) {
+				const existing = this.adaptBlogPostToBlogPost(existingArticle);
+				if (mergedPost.title === undefined) mergedPost.title = existing.title;
+				if (mergedPost.excerpt === undefined) mergedPost.excerpt = existing.excerpt;
+				if (mergedPost.slug === undefined) mergedPost.slug = existing.slug;
+				if (mergedPost.status === undefined) mergedPost.status = existing.status;
+				if (mergedPost.categoryId === undefined) mergedPost.categoryId = existing.categoryId ?? null;
+				if (mergedPost.tags === undefined) mergedPost.tags = existing.tags;
+				if (mergedPost.content === undefined) mergedPost.content = existing.content;
+				if (mergedPost.featuredMedia === undefined) mergedPost.featuredMedia = existing.featuredMedia ?? undefined;
+			}
+		}
+
+		const includeElements = post.elements !== undefined || mergedPost.elements !== undefined;
+		const updateData = this.adaptBlogPostToUpdateBlog(mergedPost, includeElements);
 		const updatedBlog = await this.updateArticle(id, updateData);
 		return this.adaptBlogPostToBlogPost(updatedBlog);
 	}

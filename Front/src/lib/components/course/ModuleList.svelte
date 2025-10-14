@@ -76,8 +76,8 @@
 
 		event.preventDefault();
 
-		try {
-			await courseService.reorderModule(draggedModule.id, targetModule.orderNumber);
+	try {
+		await materialApoyoService.reorderModule(draggedModule.id, targetModule.orderNumber);
 			await loadModules(); // Reload to get updated order
 			dispatch('moduleReordered', {
 				moduleId: draggedModule.id,

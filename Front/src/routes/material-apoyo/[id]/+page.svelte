@@ -2,8 +2,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
+import { materialApoyoService } from '$lib/services/materialApoyoService';
+import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import ModuleList from '$lib/components/course/ModuleList.svelte';
 	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
@@ -36,8 +36,8 @@
 	let editingModule: ModuleSummaryDto | null = null;
 	let moduleFormLoading = false;
 
-	const materialApoyoId = $page.params.id;
-	let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo para operaciones
+const materialApoyoId = $page.params.id as string;
+let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo para operaciones
 
 	// Function to update authentication state (same as layout)
 	async function updateAuthState() {
@@ -158,7 +158,7 @@
 		error = '';
 
 		try {
-			const updateData: UpdateCourseDto = {
+			const updateData: UpdateMaterialApoyoDto = {
 				title: editForm.title.trim(),
 				description: editForm.description.trim(),
 				isFeatured: editForm.isFeatured,
@@ -180,13 +180,13 @@
 		}
 	}
 
-	function handleImageUpload(event: CustomEvent<string>) {
-		editForm.imagePath = event.detail;
-	}
+function handleImageUpload(mediaUrl: string) {
+	editForm.imagePath = mediaUrl;
+}
 
-	function handleImageRemove() {
-		editForm.imagePath = '';
-	}
+function handleImageRemove() {
+	editForm.imagePath = '';
+}
 
 	// Module management functions
 	function handleCreateModule() {
@@ -487,9 +487,9 @@
 								contentType="course"
 								contentId={course.id}
 								mediaType="image"
-								currentPath={editForm.imagePath}
-								on:upload={handleImageUpload}
-								on:remove={handleImageRemove}
+								currentMedia={editForm.imagePath}
+								onUploadComplete={handleImageUpload}
+								onRemoveComplete={handleImageRemove}
 								disabled={saving}
 							/>
 						</div>

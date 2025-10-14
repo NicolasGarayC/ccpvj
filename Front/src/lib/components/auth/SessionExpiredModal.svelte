@@ -1,24 +1,37 @@
 <script lang="ts">
 	import { authModalStore } from '$lib/stores/authStore';
 	import { goto } from '$app/navigation';
-	import { t } from '$lib/i18n';
+import { t } from '$lib/i18n';
 
-	let show = false;
-	let message = '';
+let show = false;
+let message = '';
 
-	authModalStore.subscribe(state => {
-		show = state.show;
-		message = state.message;
-	});
+authModalStore.subscribe(state => {
+	show = state.show;
+	message = state.message;
+});
 
-	function handleClose() {
-		authModalStore.hide();
-		goto('/auth/login');
+function handleClose() {
+	authModalStore.hide();
+	goto('/auth/login');
+}
+
+function handleOverlayKeydown(event: KeyboardEvent) {
+	if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+		event.preventDefault();
+		handleClose();
 	}
+}
 </script>
 
 {#if show}
-	<div class="modal-overlay" on:click|self={handleClose}>
+	<div
+		class="modal-overlay"
+		role="button"
+		tabindex="0"
+		on:click|self={handleClose}
+		on:keydown|self={handleOverlayKeydown}
+	>
 		<div class="modal-content">
 			<div class="modal-header">
 				<div class="icon-warning">⚠️</div>

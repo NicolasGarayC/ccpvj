@@ -3,12 +3,6 @@
  * Central import point for all HTTP service types
  */
 
-// Auth types
-export * from './auth.types';
-
-// Course types (legacy)
-export * from './course.types';
-
 // Material Apoyo types
 export * from './materialApoyo.types';
 

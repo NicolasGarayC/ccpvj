@@ -76,22 +76,22 @@
 		submitting = true;
 
 		try {
-			if (isEditing && module) {
-				const updateData: UpdateModuleDto = {
-					title: formData.title.trim(),
-					description: formData.description.trim() || undefined,
-					orderNumber: formData.orderNumber
-				};
+		if (isEditing && module) {
+			const updateData: UpdateModuleDto = {
+				title: formData.title.trim(),
+				description: formData.description.trim(),
+				orderNumber: formData.orderNumber
+			};
 
 				await materialApoyoService.updateModule(module.id, updateData);
 				dispatch('success', { type: 'update', id: module.id, data: updateData });
-			} else {
-				const createData: CreateModuleDto = {
-					title: formData.title.trim(),
-					description: formData.description.trim() || undefined,
-					orderNumber: formData.orderNumber,
-					materialApoyoId: materialApoyoId
-				};
+		} else {
+			const createData: CreateModuleDto = {
+				title: formData.title.trim(),
+				description: formData.description.trim(),
+				orderNumber: formData.orderNumber,
+				materialApoyoId: materialApoyoId
+			};
 
 				const newModule = await materialApoyoService.createModule(createData);
 				dispatch('success', { type: 'create', module: newModule });

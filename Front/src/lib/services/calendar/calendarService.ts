@@ -47,6 +47,14 @@ export interface EventSummary {
   location?: string;
   eventType: string;
   isFeatured: boolean;
+  imagePath?: string;
+  isRecurring?: boolean;
+  organizerName?: string;
+  relatedProjectId?: string;
+  relatedCourseTitle?: string;
+  relatedBlogPostId?: string;
+  relatedBlogPostTitle?: string;
+  relatedBlogPostSlug?: string;
 }
 
 export interface EventDetail extends EventSummary {
@@ -141,19 +149,27 @@ class CalendarService {
     };
   }
 
-  private adaptBackendToFrontend(backendEvent: any): EventSummary {
-    return {
-      id: backendEvent.id,
-      title: backendEvent.title,
-      description: backendEvent.description,
-      startDateTime: new Date(backendEvent.startDateTime),
-      endDateTime: backendEvent.endDateTime ? new Date(backendEvent.endDateTime) : undefined,
-      isAllDay: backendEvent.isAllDay,
-      location: backendEvent.location,
-      eventType: backendEvent.eventType,
-      isFeatured: backendEvent.isFeatured
-    };
-  }
+	private adaptBackendToFrontend(backendEvent: any): EventSummary {
+		return {
+			id: backendEvent.id?.toString?.() ?? backendEvent.id,
+			title: backendEvent.title,
+			description: backendEvent.description,
+			startDateTime: new Date(backendEvent.startDateTime),
+			endDateTime: backendEvent.endDateTime ? new Date(backendEvent.endDateTime) : undefined,
+			isAllDay: backendEvent.isAllDay,
+			location: backendEvent.location,
+			eventType: backendEvent.eventType,
+			isFeatured: backendEvent.isFeatured,
+			imagePath: backendEvent.imagePath ?? undefined,
+			isRecurring: backendEvent.isRecurring,
+			organizerName: backendEvent.organizerName,
+			relatedProjectId: backendEvent.relatedProjectId ? backendEvent.relatedProjectId.toString() : undefined,
+			relatedCourseTitle: backendEvent.relatedProjectTitle,
+			relatedBlogPostId: backendEvent.relatedBlogPostId ? backendEvent.relatedBlogPostId.toString() : undefined,
+			relatedBlogPostTitle: backendEvent.relatedBlogPostTitle,
+			relatedBlogPostSlug: backendEvent.relatedBlogPostSlug
+		};
+	}
 
   async getUpcomingEvents(limit: number = 10): Promise<EventSummary[]> {
     try {
@@ -192,22 +208,22 @@ class CalendarService {
   async getEventById(id: string): Promise<EventDetail | null> {
     try {
       const response = await fetch(`${this.baseURL}/calendar/${id}`, await this.getRequestOptions());
-      if (response.ok) {
-        const backendEvent = await response.json();
-        return {
-          ...this.adaptBackendToFrontend(backendEvent),
-          isRecurring: backendEvent.isRecurring,
-          recurrencePattern: backendEvent.recurrencePattern,
-          recurrenceInterval: backendEvent.recurrenceInterval,
-          recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
-          recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
-          relatedProjectId: backendEvent.relatedProjectId,
-          relatedBlogPostId: backendEvent.relatedBlogPostId,
-          relatedProjectTitle: backendEvent.relatedProjectTitle,
-          relatedBlogPostTitle: backendEvent.relatedBlogPostTitle,
-          relatedBlogPostSlug: backendEvent.relatedBlogPostSlug,
-          organizerName: backendEvent.organizerName,
-          createdAt: new Date(backendEvent.createdAt),
+		if (response.ok) {
+			const backendEvent = await response.json();
+			return {
+				...this.adaptBackendToFrontend(backendEvent),
+				isRecurring: backendEvent.isRecurring,
+				recurrencePattern: backendEvent.recurrencePattern,
+				recurrenceInterval: backendEvent.recurrenceInterval,
+				recurrenceEndDate: backendEvent.recurrenceEndDate ? new Date(backendEvent.recurrenceEndDate) : undefined,
+				recurrenceDaysOfWeek: backendEvent.recurrenceDaysOfWeek,
+				relatedProjectId: backendEvent.relatedProjectId ? backendEvent.relatedProjectId.toString() : undefined,
+				relatedBlogPostId: backendEvent.relatedBlogPostId ? backendEvent.relatedBlogPostId.toString() : undefined,
+				relatedProjectTitle: backendEvent.relatedProjectTitle,
+				relatedBlogPostTitle: backendEvent.relatedBlogPostTitle,
+				relatedBlogPostSlug: backendEvent.relatedBlogPostSlug,
+				organizerName: backendEvent.organizerName,
+				createdAt: new Date(backendEvent.createdAt),
           updatedAt: backendEvent.updatedAt ? new Date(backendEvent.updatedAt) : undefined,
           organizerId: backendEvent.organizerId
         };

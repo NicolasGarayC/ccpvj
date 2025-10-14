@@ -3,7 +3,7 @@
   import BlogPostList from '$lib/components/blog/BlogPostList.svelte';
   import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
   import SuccessToast from '$lib/components/common/SuccessToast.svelte';
-  import type { BlogPost } from '$lib/data/models/interfaces';
+  import type { BlogPost } from '$lib/types/api';
   import { jwtService } from '$lib/services/auth/jwtService.js';
   import { blogHttpService } from '$lib/services/blog/blogHttpService';
   import { t } from '$lib/i18n';
@@ -41,8 +41,8 @@
   async function confirmDeletePost() {
     if (!deletingPost) return;
 
-    try {
-      await blogHttpService.deletePost(deletingPost.id);
+	try {
+		await blogHttpService.deletePost(String(deletingPost.id));
 
       showDeleteModal = false;
 

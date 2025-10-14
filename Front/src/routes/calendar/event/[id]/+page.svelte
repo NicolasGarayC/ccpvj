@@ -6,7 +6,8 @@
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	// Props desde la URL
-	$: eventId = $page.params.id;
+	let eventId: string = '';
+	$: eventId = ($page.params.id ?? '') as string;
 
 	// Estado de la página
 	let loading = true;
@@ -40,6 +41,10 @@
 			loading = true;
 			error = '';
 			
+			if (!eventId) {
+				throw new Error('ID de evento inválido');
+			}
+
 			event = await calendarService.getEvent(eventId);
 			
 			if (!event) {

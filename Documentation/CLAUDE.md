@@ -11,7 +11,7 @@ This file provides technical context to Claude Code when working with this repos
 
 ## Technology Stack
 
-- **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS + Drizzle ORM
+ - **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS (APIs internas)
 - **Database**: SQLite (`D:/ccpvj/Data/ccpvj.db`)
 - **Backend**: Optional .NET 8 (mostly unused)
 - **Authentication**: Cookie-based sessions (SvelteKit primary)
@@ -24,14 +24,14 @@ cd Front/
 npm run dev              # Start development server (http://localhost:5173)
 npm run build            # Production build
 npm run check            # TypeScript checks
-npm run db:studio        # Drizzle Studio database GUI
-npm run db:push          # Update database schema
+npm run format           # Prettier formatting
+npm run test             # Run unit + e2e tests
 ```
 
 ### Database
 ```bash
-# SQLite database located at: D:/ccpvj/Data/ccpvj.db
-# Environment: DATABASE_URL="file:D:/ccpvj/Data/ccpvj.db"
+# SQLite database located at: Data/ccpvj.db
+# Environment: DATABASE_URL="file:Data/ccpvj.db"
 ```
 
 ## Project Structure
@@ -45,7 +45,7 @@ Front/src/
 ├── lib/
 │   ├── components/           # Svelte components (visual only)
 │   ├── services/             # ⚠️ API services (connection errors)
-│   └── server/               # Database + auth logic
+│   └── server/               # Utilidades server (media cleanup, paths)
 │
 Data/
 ├── ccpvj.db                  # SQLite database (connection issues)
@@ -345,10 +345,10 @@ import { deleteMediaFile, deleteMediaFiles, replaceMediaFile } from '$lib/server
 
 ## Testing & Debugging Notes
 
-- **Database**: Use `npm run db:studio` to inspect SQLite data
+- **Database**: Inspecciona con `sqlite3 Data/ccpvj.db` o tu herramienta favorita
 - **Dev Server**: `npm run dev` starts at http://localhost:5173
 - **Logs**: Check browser console + terminal for errors
-- **Database File**: Located at `D:/ccpvj/Data/ccpvj.db` (278KB)
+- **Database File**: Located at `Data/ccpvj.db` (278KB)
 
 ## Important Context for Development
 
@@ -369,9 +369,9 @@ import { deleteMediaFile, deleteMediaFiles, replaceMediaFile } from '$lib/server
 4. **Evaluate existing tables**: Can an existing table serve the purpose?
 
 ### **Known Coexisting Tables (DO NOT DUPLICATE)**
-- `course` (Drizzle) & `Course` (legacy) - USE `course`
-- `module` (Drizzle) & `Module` (.NET) - USE `module`
-- `work_item` (Drizzle) & `WorkItem` (.NET) - USE `work_item`
+- `course` (snake_case) & `Course` (.NET legacy) - USE `course`
+- `module` (snake_case) & `Module` (.NET) - USE `module`
+- `work_item` (snake_case) & `WorkItem` (.NET) - USE `work_item`
 - `MediaFile` & `MediaEntity` - USE `MediaFile`
 
 ### **Role Validation Rules**
@@ -380,8 +380,8 @@ import { deleteMediaFile, deleteMediaFiles, replaceMediaFile } from '$lib/server
 - **User role field**: Always use `user.role` not `user.nombreRol`
 
 ### **Schema Priority**
-- **Primary**: Drizzle schema (lowercase, snake_case)
-- **Secondary**: .NET schema (PascalCase) - legacy compatibility only
+- **Primary**: Esquema snake_case compartido (frontend + backend)
+- **Secondary**: Esquema .NET (PascalCase) - solo para compatibilidad legacy
 
 **✅ Current Status**: All modules corrected and functional.
 
@@ -414,9 +414,9 @@ Course (1) ─── has many ──→ Module (n) ─── has many ──→ 
 - **DELETE Post**: Must delete ALL its multimedia files
 
 ### **Database Tables Used**
-- **Primary**: `course` (Drizzle schema - snake_case)
-- **Secondary**: `module` (Drizzle schema - snake_case)
-- **Posts**: `ModulePosts` (Entity Framework mapping to work_item table)
-- **Legacy**: `Course`, `Module`, `WorkItem` (.NET schema - PascalCase) - available but not primary
+- **Primary**: `course` (snake_case - principal)
+- **Secondary**: `module` (snake_case - principal)
+- **Posts**: `ModulePosts` (Entity Framework mapping hacia `work_item`)
+- **Legacy**: `Course`, `Module`, `WorkItem` (.NET schema - PascalCase) - disponibles pero no principales
 
 ---

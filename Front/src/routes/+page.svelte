@@ -8,7 +8,8 @@
 	import { materialApoyoService } from '$lib/services/materialApoyoService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import { analyticsService } from '$lib/services/analytics/analyticsService';
-	import type { BlogPost, Course } from '$lib/data/models/interfaces';
+import type { BlogPost } from '$lib/types/api';
+import type { MaterialApoyoDetailDto, MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
 
 	import { t } from '$lib/i18n';
 
@@ -24,8 +25,8 @@
 	$: isEducator = isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
 
 	let latestBlogPosts: BlogPost[] = [];
-	let featuredCourses: Course[] = [];
-	let allCourses: Course[] = [];
+let featuredCourses: MaterialApoyoDetailDto[] = [];
+let allCourses: MaterialApoyoSummaryDto[] = [];
 	let totalModulesCount = 0;
 	let totalVisitors = 0;
 

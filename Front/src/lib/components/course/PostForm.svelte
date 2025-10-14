@@ -727,11 +727,11 @@
 														mediaType={element.elementType}
 														materialApoyoId={materialApoyoId}
 														moduleId={moduleId}
-														postId={post?.id || 'temp'}
+														postId={post ? String(post.id) : 'temp'}
 														currentMedia={element.filePath || ''}
 														disabled={isLoading}
 														label=""
-t																on:uploadStart={handleMediaUploadStart}
+																on:uploadStart={handleMediaUploadStart}
 														on:uploadSuccess={(e) => handleMediaUpload(index, e)}
 														on:uploadError={(e) => handleMediaUploadError(index, e)}
 														on:mediaRemoved={() => handleRemoveMedia(index)}

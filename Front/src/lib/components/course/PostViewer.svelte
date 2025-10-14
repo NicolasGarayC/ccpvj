@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import type { PostDetail } from '$lib/services/modulePostService';
-	import { postElementService } from '$lib/services/postElementService';
-	import type { PostElement } from '$lib/services/postElementService';
+import type { PostDetail } from '$lib/services/modulePostService';
+import { postElementService } from '$lib/services/postElementService';
+import type { PostElement } from '$lib/services/postElementService';
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
 
 	export let visible = false;
@@ -11,10 +11,17 @@
 
 	const dispatch = createEventDispatcher();
 
-	let elements: PostElement[] = [];
-	let isLoadingElements = false;
-	let error: string | null = null;
-	let modalElement: HTMLElement;
+let elements: PostElement[] = [];
+let isLoadingElements = false;
+let error: string | null = null;
+let modalElement: HTMLElement;
+
+type RenderedElement =
+	| { kind: 'title'; text: string }
+	| { kind: 'text'; text: string }
+	| { kind: 'image'; src: string; alt: string }
+	| { kind: 'video'; src: string }
+	| { kind: 'audio'; src: string };
 
 	$: if (visible && post) {
 		loadElements();
@@ -58,17 +65,19 @@
 		}
 	}
 
-	function formatDate(timestamp: number | string | null): string {
-		if (!timestamp) return 'Sin fecha';
+function formatDate(timestamp: number | string | Date | null): string {
+	if (!timestamp) return 'Sin fecha';
 
-		let date: Date;
-		if (typeof timestamp === 'number') {
-			date = new Date(timestamp);
-		} else if (typeof timestamp === 'string') {
-			date = new Date(timestamp);
-		} else {
-			return 'Sin fecha';
-		}
+	let date: Date;
+	if (typeof timestamp === 'number') {
+		date = new Date(timestamp);
+	} else if (typeof timestamp === 'string') {
+		date = new Date(timestamp);
+	} else if (timestamp instanceof Date) {
+		date = timestamp;
+	} else {
+		return 'Sin fecha';
+	}
 
 		if (isNaN(date.getTime())) return 'Sin fecha';
 
@@ -82,25 +91,38 @@
 		});
 	}
 
-	function renderElement(element: PostElement) {
-		switch (element.elementType) {
-			case 'title':
-				return element.content || 'Sin título';
-			case 'text':
-				return element.content || 'Sin contenido';
-			case 'image':
-				// Images don't need tracking (displayed inline)
-				return element.filePath ? { type: 'image', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, false), alt: element.fileName || 'Imagen' } : null;
-			case 'video':
-				// Videos should be tracked
-				return element.filePath ? { type: 'video', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true) } : null;
-			case 'audio':
-				// Audio should be tracked
-				return element.filePath ? { type: 'audio', src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true) } : null;
-			default:
-				return null;
-		}
+function renderElement(element: PostElement): RenderedElement | null {
+	switch (element.elementType) {
+		case 'title':
+			return { kind: 'title', text: element.content || 'Sin título' };
+		case 'text':
+			return { kind: 'text', text: element.content || 'Sin contenido' };
+		case 'image':
+			return element.filePath
+				? {
+					kind: 'image',
+					src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, false),
+					alt: element.fileName || 'Imagen'
+				}
+				: null;
+		case 'video':
+			return element.filePath
+				? {
+					kind: 'video',
+					src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true)
+				}
+				: null;
+		case 'audio':
+			return element.filePath
+				? {
+					kind: 'audio',
+					src: postElementService.getMediaUrl(element.filePath, moduleId || undefined, true)
+				}
+				: null;
+		default:
+			return null;
 	}
+}
 </script>
 
 {#if visible}
@@ -127,7 +149,7 @@
 						<span class="separator">•</span>
 						<span class="author">Por {post?.authorName || 'Autor desconocido'}</span>
 						<span class="separator">•</span>
-						<span class="date">{formatDate(post?.createdAt)}</span>
+						<span class="date">{formatDate(post?.createdAt ?? null)}</span>
 						{#if post && !post.isActive}
 							<span class="separator">•</span>
 							<span class="status-badge inactive">Inactivo</span>
@@ -225,17 +247,34 @@
 									</div>
 
 									<div class="element-content">
-										{#if element.elementType === 'title'}
-											<h3 class="element-title">{renderedElement}</h3>
-										{:else if element.elementType === 'text'}
-											<div class="element-text">{@html renderedElement.replace(/\n/g, '<br>')}</div>
-										{:else if renderedElement.type === 'image'}
-											<div class="element-image">
-												<img
-													src={renderedElement.src}
-													alt={renderedElement.alt}
-													loading="lazy"
-												/>
+						{#if renderedElement.kind === 'title'}
+							<h3 class="element-title">{renderedElement.text}</h3>
+						{:else if renderedElement.kind === 'text'}
+							<div class="element-text">{@html renderedElement.text.replace(/\n/g, '<br>')}</div>
+						{:else if renderedElement.kind === 'image'}
+							<div class="element-image">
+								<img
+									src={renderedElement.src}
+									alt={renderedElement.alt}
+									loading="lazy"
+								/>
+								{#if element.fileName}
+													<div class="media-caption">
+														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+															<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+															<polyline points="14,2 14,8 20,8"/>
+														</svg>
+														{element.fileName}
+													</div>
+												{/if}
+											</div>
+						{:else if renderedElement.kind === 'video'}
+							<div class="element-video">
+								<video controls preload="metadata">
+									<source src={renderedElement.src} type={element.mimeType || 'video/mp4'} />
+									<track kind="captions" />
+									Tu navegador no soporta la reproducción de video.
+								</video>
 												{#if element.fileName}
 													<div class="media-caption">
 														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -246,29 +285,12 @@
 													</div>
 												{/if}
 											</div>
-										{:else if renderedElement.type === 'video'}
-											<div class="element-video">
-												<video controls preload="metadata">
-													<source src={renderedElement.src} type={element.mimeType || 'video/mp4'} />
-													<track kind="captions" />
-													Tu navegador no soporta la reproducción de video.
-												</video>
-												{#if element.fileName}
-													<div class="media-caption">
-														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-															<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-															<polyline points="14,2 14,8 20,8"/>
-														</svg>
-														{element.fileName}
-													</div>
-												{/if}
-											</div>
-										{:else if renderedElement.type === 'audio'}
-											<div class="element-audio">
-												<audio controls preload="metadata">
-													<source src={renderedElement.src} type={element.mimeType || 'audio/mpeg'} />
-													Tu navegador no soporta la reproducción de audio.
-												</audio>
+						{:else if renderedElement.kind === 'audio'}
+							<div class="element-audio">
+								<audio controls preload="metadata">
+									<source src={renderedElement.src} type={element.mimeType || 'audio/mpeg'} />
+									Tu navegador no soporta la reproducción de audio.
+								</audio>
 												{#if element.fileName}
 													<div class="media-caption">
 														<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

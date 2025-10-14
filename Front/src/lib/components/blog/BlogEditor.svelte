@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { t } from '$lib/i18n';
+  import { t, translate } from '$lib/i18n';
   import { canCreateContent, canEditContent, requiresAuthentication, type UserRole } from '$lib/utils/roleUtils';
   import { jwtService } from '$lib/services/auth/jwtService.js';
   import { blogHttpService } from '$lib/services/blog/blogHttpService';
@@ -38,9 +38,9 @@
   // Check permissions on component load
   $: {
     if (!canUserEdit) {
-      error = isEditing ? t('auth.no_permissions_edit') : t('auth.no_permissions_create');
+      error = isEditing ? translate('auth.no_permissions_edit') : translate('auth.no_permissions_create');
     } else if (needsAuth && !currentUser?.id) {
-      error = t('auth.login_required');
+      error = translate('auth.login_required');
     //} else if (isEditing && post && currentUser?.role !== 'Administrador' && post.authorId !== currentUser?.id) {
     //  error = t('auth.own_posts_only');
     } else {
@@ -93,22 +93,29 @@
     error = null;
 
     try {
-      const postData: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt' | 'publishDate' | 'authorId' | 'authorName' | 'categoryName' | 'viewCount'> = {
+      const basePost = {
         title: title.trim(),
         excerpt: excerpt.trim(),
         content: content.trim(),
         slug: slug.trim(),
         status,
-        categoryId,
-        featuredMedia,
+        categoryId: categoryId ?? null,
+        featuredMedia: featuredMedia ?? undefined,
         tags
       };
 
       let result: BlogPost;
       if (post) {
-        result = await blogHttpService.updatePost(post.id, postData);
+        result = await blogHttpService.updatePost(String(post.id), basePost);
       } else {
-        result = await blogHttpService.createPost(postData);
+        const createPayload = {
+          ...basePost,
+          publishDate: new Date().toISOString(),
+          authorId: Number(currentUser?.id ?? 0),
+          authorName: currentUser?.role ?? 'Autor'
+        };
+
+        result = await blogHttpService.createPost(createPayload);
       }
 
       success = true;
@@ -296,14 +303,14 @@
     <div class="form-section">
       <h3 class="section-title">🎨 Imagen Destacada</h3>
 
-      <div class="form-group">
-        <label class="label">
-          🖼️ Imagen Destacada
-        </label>
+	<div class="form-group">
+		<p class="label">
+			🖼️ Imagen Destacada
+		</p>
         {#if post?.id}
           <MediaUploader
             contentType="blog"
-            contentId={post.id}
+            contentId={String(post.id)}
             mediaType="image"
             onUploadComplete={handleImageUploaded}
             disabled={isLoading}
@@ -506,36 +513,6 @@
     background-color: #f3f4f6;
     color: #6b7280;
     cursor: not-allowed;
-  }
-
-  .checkbox {
-    width: 1rem;
-    height: 1rem;
-    color: #2563eb;
-    background-color: white;
-    border: 2px solid #d1d5db;
-    border-radius: 0.25rem;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .checkbox:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
-  }
-
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    cursor: pointer;
-    transition: color 0.2s ease-in-out;
-  }
-
-  .checkbox-label:hover {
-    color: #2563eb;
   }
 
   .required {

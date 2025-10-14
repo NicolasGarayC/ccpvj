@@ -2,22 +2,34 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
-	import type { LibraryItemDto, CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
+import { digitalLibraryService } from '$lib/services/digitalLibraryService';
+import type { LibraryItemDto } from '$lib/services/digitalLibraryService';
 
-	let resourceId = $page.params.id;
-	let resource: LibraryItemDto | null = null;
-	let formData: CreateLibraryItemDto = {
-		title: '',
-		description: '',
-		author: '',
-		category: '',
-		subcategory: '',
-		fileType: 'document',
-		language: 'es',
-		tags: '',
-		year: undefined
-	};
+interface LibraryItemForm {
+	title: string;
+	description: string;
+	author: string;
+	category: string;
+	subcategory: string;
+	fileType: string;
+	language: string;
+	tags: string;
+	year?: number;
+}
+
+let resourceId = $page.params.id as string;
+let resource: LibraryItemDto | null = null;
+let formData: LibraryItemForm = {
+	title: '',
+	description: '',
+	author: '',
+	category: '',
+	subcategory: '',
+	fileType: 'document',
+	language: 'es',
+	tags: '',
+	year: undefined
+};
 
 	let selectedFile: File | null = null;
 	let authorInput = '';
@@ -71,17 +83,17 @@
 			formData = {
 				title: resource.title,
 				description: resource.description || '',
-				author: resource.author,
+				author: resource.author || '',
 				year: resource.year,
-				category: resource.category,
+				category: resource.category || '',
 				subcategory: resource.subcategory || '',
 				fileType: resource.fileType,
-				tags: resource.tags || '',
-				language: resource.language
+				tags: Array.isArray(resource.tags) ? resource.tags.join(', ') : '',
+				language: resource.language || 'es'
 			};
 
-			authorInput = resource.author;
-			tagsInput = resource.tags || '';
+			authorInput = resource.author || '';
+			tagsInput = Array.isArray(resource.tags) ? resource.tags.join(', ') : '';
 		} catch (error) {
 			console.error('Error loading resource:', error);
 			goto('/library');
@@ -117,9 +129,9 @@
 		formData.author = authorInput.trim();
 	}
 
-	function updateTags() {
-		formData.tags = tagsInput.trim();
-	}
+function updateTags() {
+	formData.tags = tagsInput.trim();
+}
 
 	function validateField(field: string) {
 		delete errors[field];
@@ -238,14 +250,14 @@
 						<input
 							id="resource-name"
 							type="text"
-							bind:value={formData.name}
-							on:blur={() => validateField('name')}
+							bind:value={formData.title}
+							on:blur={() => validateField('title')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							class:border-red-300={errors.name}
+							class:border-red-300={errors.title}
 							placeholder="Ingresa el nombre del recurso"
 						>
-						{#if errors.name}
-							<p class="mt-1 text-sm text-red-600">{errors.name}</p>
+						{#if errors.title}
+							<p class="mt-1 text-sm text-red-600">{errors.title}</p>
 						{/if}
 					</div>
 
@@ -263,31 +275,27 @@
 						></textarea>
 					</div>
 
-					<!-- Autores -->
+					<!-- Autor -->
 					<div>
 						<label for="resource-authors" class="block text-sm font-medium text-gray-700 mb-2">
-							Autores *
+							Autor *
 						</label>
 						<input
 							id="resource-authors"
 							type="text"
 							bind:value={authorInput}
-							on:input={updateAuthors}
-							on:blur={() => validateField('authors')}
+							on:input={updateAuthor}
+							on:blur={() => validateField('author')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							class:border-red-300={errors.authors}
-							placeholder="Ingresa los autores separados por comas"
+							class:border-red-300={errors.author}
+							placeholder="Ingresa el autor principal"
 						>
-						{#if errors.authors}
-							<p class="mt-1 text-sm text-red-600">{errors.authors}</p>
+						{#if errors.author}
+							<p class="mt-1 text-sm text-red-600">{errors.author}</p>
 						{/if}
-						{#if formData.authors.length > 0}
-							<div class="mt-2 flex flex-wrap gap-2">
-								{#each formData.authors as author}
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-										{author}
-									</span>
-								{/each}
+						{#if formData.author}
+							<div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+								{formData.author}
 							</div>
 						{/if}
 					</div>

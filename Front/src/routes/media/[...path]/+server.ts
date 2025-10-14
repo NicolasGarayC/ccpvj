@@ -145,7 +145,7 @@ export const GET: RequestHandler = async ({ params, url, request, getClientAddre
             headers['Accept-Ranges'] = 'bytes';
         }
 
-        return new Response(fileBuffer, {
+        return new Response(new Uint8Array(fileBuffer), {
             headers
         });
 

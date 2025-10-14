@@ -21,38 +21,56 @@ export interface ArticleDto {
 	viewCount: number;
 }
 
+export interface BlogPostElementDto {
+	id?: string;
+	blogPostId?: string;
+	elementType: string;
+	content?: string;
+	filePath?: string;
+	fileName?: string;
+	fileSize?: number;
+	mimeType?: string;
+	orderNumber: number;
+	metadata?: string;
+	isActive?: boolean;
+}
+
 export interface CreateArticleDto {
 	title: string;
-	summary: string;
-	content: string;
-	tags: string;
+	subtitle?: string;
+	slug: string;
 	isPublished: boolean;
 	isFeatured: boolean;
+	orderNumber?: number;
+	isActive?: boolean;
+	categoryId?: string | null;
+	tags?: string[];
 	featuredImagePath?: string;
-	media?: Array<{
-		mediaId: number;
-		orderIndex: number;
-		caption: string;
-		altText: string;
-	}>;
+	elements?: BlogPostElementDto[];
 }
 
 export interface UpdateArticleDto {
 	title: string;
-	summary: string;
-	content: string;
-	tags: string;
+	subtitle?: string;
+	slug: string;
 	isPublished: boolean;
 	isFeatured: boolean;
+	orderNumber?: number;
+	isActive?: boolean;
+	categoryId?: string | null;
+	tags?: string[];
 	featuredImagePath?: string;
+	elements?: BlogPostElementDto[];
 }
 
 export interface ArticleSearchDto {
 	isPublished?: boolean;
 	authorId?: number;
+	categoryId?: string;
 	searchTerm?: string;
 	tags?: string;
 	page?: number;
+	pageSize?: number;
 	take?: number;
 	skip?: number;
 	sortBy?: string;
@@ -61,7 +79,7 @@ export interface ArticleSearchDto {
 
 // Frontend-specific interfaces for blog
 export interface BlogPost {
-	id: number;
+	id: number | string;
 	title: string;
 	slug: string;
 	excerpt: string;
@@ -73,6 +91,8 @@ export interface BlogPost {
 	publishDate: string;
 	authorId: number;
 	authorName: string;
+	categoryId?: string;
+	categoryName?: string;
 	createdAt: string;
 	updatedAt?: string;
 	viewCount?: number;
@@ -81,6 +101,27 @@ export interface BlogPost {
 export interface BlogTag {
 	name: string;
 	count: number;
+}
+
+export interface BlogCategoryDto {
+	id: string;
+	name: string;
+	description?: string;
+	color: string;
+	createdAt: string;
+	postCount: number;
+}
+
+export interface CreateBlogCategoryDto {
+	name: string;
+	description?: string;
+	color?: string;
+}
+
+export interface UpdateBlogCategoryDto {
+	name: string;
+	description?: string;
+	color?: string;
 }
 
 export interface BlogSearchParams {

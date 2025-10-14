@@ -8,6 +8,8 @@ export interface JwtUser {
     role: string;
     nombre?: string;
     apellido?: string;
+    telefono?: string;
+    email?: string;
 }
 
 export interface LoginResponse {
@@ -155,9 +157,10 @@ class JwtService {
             return data;
         } catch (error) {
             console.error('Login error:', error);
+            const message = error instanceof Error ? error.message : 'desconocido';
             return {
                 success: false,
-                message: 'Error de conexión: ' + error.message
+                message: 'Error de conexión: ' + message
             };
         }
     }

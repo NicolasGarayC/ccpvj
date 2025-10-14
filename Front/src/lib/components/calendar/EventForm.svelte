@@ -185,7 +185,7 @@
 
 	// Manejar selección de días de la semana
 	function handleDaySelection(day: string, checked: boolean) {
-		const selectedDays = formData.recurrenceDaysOfWeek.split(',').filter(d => d);
+	const selectedDays = (formData.recurrenceDaysOfWeek ?? '').split(',').filter(d => d);
 		if (checked) {
 			if (!selectedDays.includes(day)) {
 				selectedDays.push(day);
@@ -200,7 +200,7 @@
 	}
 
 	function isDaySelected(day: string): boolean {
-		return formData.recurrenceDaysOfWeek.includes(day);
+	return (formData.recurrenceDaysOfWeek ?? '').includes(day);
 	}
 </script>
 
@@ -291,7 +291,7 @@
 					disabled={isSubmitting}
 				></textarea>
 				<div class="character-count">
-					{formData.description.length}/1000 caracteres
+					{formData.description?.length ?? 0}/1000 caracteres
 				</div>
 			</div>
 		</div>

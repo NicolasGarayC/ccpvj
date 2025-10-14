@@ -128,13 +128,18 @@ export class BaseHttpService {
 	protected async downloadBlob(endpoint: string): Promise<Blob> {
 		const url = `${this.baseURL}${endpoint}`;
 
-		const response = await fetch(url, {
+		const requestOptions: RequestInit = {
+			method: 'GET',
 			credentials: 'include',
-			method: 'GET'
-		});
+			headers: {
+				...jwtService.getAuthHeader()
+			}
+		};
+
+		const response = await fetch(url, requestOptions);
 
 		if (!response.ok) {
-			await this.handleError(response, { ...defaultOptions, ...options }, cookieHeader);
+			await this.handleError(response, requestOptions);
 		}
 
 		return response.blob();

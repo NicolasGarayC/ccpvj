@@ -4,7 +4,7 @@
 	import BlogPostCard from './BlogPostCard.svelte';
 	import BlogPostModal from './BlogPostModal.svelte';
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
-	import type { BlogPost } from '$lib/data/models/interfaces';
+import type { BlogPost } from '$lib/types/api';
 	import { t, translate } from '$lib/i18n';
 
 	export let showActions = false;

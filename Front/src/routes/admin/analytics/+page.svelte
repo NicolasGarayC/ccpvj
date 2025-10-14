@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { analyticsService } from '$lib/services/analytics/analyticsService.js';
+import { analyticsService } from '$lib/services/analytics/analyticsService.js';
+import type { TopResource } from '$lib/services/analytics/analyticsService.js';
   import { browser } from '$app/environment';
 
   let loading = true;
@@ -12,8 +13,10 @@
     totalResources: 0
   };
 
-  let visitorsChart = [];
-  let topResources = [];
+type VisitorPoint = { date: string; visitors: number };
+
+let visitorsChart: VisitorPoint[] = [];
+let topResources: TopResource[] = [];
 
   onMount(async () => {
     if (!browser) return;
@@ -48,13 +51,14 @@
       visitorsChart = visitorsData.data;
       topResources = topDownloadsData.resources;
 
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        status: error?.status,
-        stack: error?.stack
-      });
+	} catch (error) {
+		console.error('Error loading analytics:', error);
+		const err = error as { message?: string; status?: number | string; stack?: string } | undefined;
+		console.error('Error details:', {
+			message: err?.message,
+			status: err?.status,
+			stack: err?.stack
+		});
 
       // Fallback to simulated data if API fails
       stats = {
@@ -63,13 +67,15 @@
         totalResources: 8
       };
 
-      visitorsChart = Array.from({ length: 30 }, (_, i) => ({
-        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES', {
-          month: 'short',
-          day: 'numeric'
-        }),
-        visitors: Math.floor(Math.random() * 50) + 20
-      }));
+		visitorsChart = Array.from({ length: 30 }, (_, i) => ({
+			date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('es-ES', {
+				month: 'short',
+				day: 'numeric'
+			}),
+			visitors: Math.floor(Math.random() * 50) + 20
+		}));
+
+		topResources = [];
 
     } finally {
       loading = false;

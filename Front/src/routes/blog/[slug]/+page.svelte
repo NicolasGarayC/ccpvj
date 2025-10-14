@@ -5,7 +5,7 @@
   import { blogService } from '$lib/services/blog/blogService';
   import { blogPostElementService } from '$lib/services/blog/blogPostElementService';
   import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
-  import type { BlogPost } from '$lib/data/models/interfaces';
+  import type { BlogPost } from '$lib/types/api';
   import type { BlogPostElement } from '$lib/services/blog/blogPostElementService';
   import { getBlogMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
 
@@ -27,13 +27,13 @@
         if (!post) {
           error = 'Noticia no encontrada';
         } else {
-          // Load blog post elements
-          elements = await blogPostElementService.getElementsByBlogPostId(post.id);
+			// Load blog post elements
+			elements = await blogPostElementService.getElementsByBlogPostId(String(post.id));
           elements = elements.sort((a, b) => a.orderNumber - b.orderNumber);
 
           // Load related events
           try {
-            relatedEvents = await calendarService.getEventsByBlogPost(post.id);
+				relatedEvents = await calendarService.getEventsByBlogPost(String(post.id));
           } catch (e) {
             console.error('Error al cargar eventos relacionados:', e);
             relatedEvents = [];
@@ -53,8 +53,8 @@
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
     // For downloadable media (audio, video, documents), use tracking
-    if (enableTracking && post) {
-      return getBlogMediaUrl(post.id, cleanPath);
+	if (enableTracking && post) {
+		return getBlogMediaUrl(String(post.id), cleanPath);
     }
 
     // For inline images (thumbnails, etc), use untracked URL
@@ -93,7 +93,7 @@
         <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
       </div>
       <h1 class="text-2xl font-bold text-gray-900 mb-4">
-        {error || (t('articleNotFound') || 'Artículo no encontrado')}
+		{error || ($t('articleNotFound') || 'Artículo no encontrado')}
       </h1>
       <a
         href="/blog"

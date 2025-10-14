@@ -1,4 +1,4 @@
-import type { BlogPost } from '$lib/data/models/interfaces';
+import type { BlogPost } from '$lib/types/api';
 import { jwtService } from '$lib/services/auth/jwtService.js';
 
 interface CreateArticleData {
@@ -51,27 +51,35 @@ class BlogService {
     return imageElement?.filePath;
   }
 
-  private adaptBackendToFrontend(backendArticle: any): BlogPost {
-    return {
-      id: backendArticle.id,
-      title: backendArticle.title,
-      slug: backendArticle.slug,
-      excerpt: backendArticle.subtitle || '',
-      content: this.extractContentFromElements(backendArticle.elements || []),
-      featuredMedia: this.extractFeaturedMediaFromElements(backendArticle.elements || []),
-      videoPoster: undefined,
-      tags: Array.isArray(backendArticle.tags) ? backendArticle.tags : (backendArticle.tags ? backendArticle.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0) : []),
-      status: backendArticle.isPublished ? 'published' : 'draft',
-      publishDate: backendArticle.publishedAt || backendArticle.createdAt,
-      authorId: backendArticle.authorId,
-      authorName: backendArticle.authorName || 'Autor',
-      categoryId: backendArticle.categoryId,
-      categoryName: backendArticle.categoryName,
-      createdAt: backendArticle.createdAt,
-      updatedAt: backendArticle.updatedAt,
-      viewCount: backendArticle.views || 0
-    };
-  }
+	private adaptBackendToFrontend(backendArticle: any): BlogPost {
+		return {
+			id: backendArticle.id?.toString?.() ?? backendArticle.id,
+			title: backendArticle.title,
+			slug: backendArticle.slug,
+			excerpt: backendArticle.subtitle || '',
+			content: this.extractContentFromElements(backendArticle.elements || []),
+			featuredMedia: this.extractFeaturedMediaFromElements(backendArticle.elements || []),
+			videoPoster: undefined,
+			tags: Array.isArray(backendArticle.tags) ? backendArticle.tags : (backendArticle.tags ? backendArticle.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0) : []),
+			status: backendArticle.isPublished ? 'published' : 'draft',
+			publishDate: backendArticle.publishedAt
+				? new Date(backendArticle.publishedAt * 1000).toISOString()
+				: backendArticle.createdAt
+					? new Date(backendArticle.createdAt * 1000).toISOString()
+					: new Date().toISOString(),
+			authorId: backendArticle.authorId,
+			authorName: backendArticle.authorName || 'Autor',
+			categoryId: backendArticle.categoryId != null ? String(backendArticle.categoryId) : undefined,
+			categoryName: backendArticle.categoryName,
+			createdAt: backendArticle.createdAt
+				? new Date(backendArticle.createdAt * 1000).toISOString()
+				: new Date().toISOString(),
+			updatedAt: backendArticle.updatedAt
+				? new Date(backendArticle.updatedAt * 1000).toISOString()
+				: undefined,
+			viewCount: backendArticle.views || 0
+		};
+	}
 
   async getLatestPosts(): Promise<BlogPost[]> {
     try {

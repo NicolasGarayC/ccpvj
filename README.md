@@ -108,9 +108,10 @@ Rol: administrador
 ```bash
 # Frontend
 cd Front/
-npm run db:studio          # GUI base de datos
+npm run dev               # Servidor de desarrollo
 npm run build             # Build producción
 npm run check             # Verificar TypeScript
+npm run test              # Ejecutar pruebas frontend
 
 # Backend
 cd Back/

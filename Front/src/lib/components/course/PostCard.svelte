@@ -42,7 +42,7 @@
 	}
 
 
-	function formatDate(timestamp: number | string | null): string {
+	function formatDate(timestamp: number | string | Date | null): string {
 		if (!timestamp) return 'Sin fecha';
 
 		let date: Date;
@@ -50,6 +50,8 @@
 			date = new Date(timestamp);
 		} else if (typeof timestamp === 'string') {
 			date = new Date(timestamp);
+		} else if (timestamp instanceof Date) {
+			date = timestamp;
 		} else {
 			return 'Sin fecha';
 		}

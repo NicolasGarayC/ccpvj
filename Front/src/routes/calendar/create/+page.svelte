@@ -60,7 +60,7 @@
 			availableBlogPosts = posts
 				.filter(post => post.status === 'published')
 				.map(post => ({
-					id: post.id,
+					id: String(post.id),
 					title: post.title,
 					slug: post.slug
 				}));
@@ -86,7 +86,7 @@
 			// Detectar error 401 (sesión expirada)
 			if (err instanceof Error && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
 				// Limpiar token expirado
-				jwtService.clearToken();
+				jwtService.removeToken();
 				// Redirigir al login con mensaje
 				goto('/auth/login?redirect=/calendar/create&message=session-expired');
 				return;

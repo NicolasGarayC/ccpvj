@@ -57,14 +57,17 @@
 	// Track when we need to load post data
 	let loadedPostId: string | null = null;
 
-	// Load post data when post prop changes and it's different from what we've loaded
-	$: if (post && post.id !== loadedPostId && visible) {
+// Load post data when post prop changes and it's different from what we've loaded
+$: if (post && visible) {
+	const currentId = String(post.id);
+	if (currentId !== loadedPostId) {
 		loadPostData(post);
-		loadedPostId = post.id;
-	} else if (!post && loadedPostId) {
-		resetForm();
-		loadedPostId = null;
+		loadedPostId = currentId;
 	}
+} else if (!post && loadedPostId) {
+	resetForm();
+	loadedPostId = null;
+}
 
 	async function loadPostData(postData: BlogPost) {
 		formData = {
@@ -74,7 +77,7 @@
 
 		// Load existing elements for editing
 		try {
-			const postElements = await blogPostElementService.getElementsByBlogPostId(postData.id);
+		const postElements = await blogPostElementService.getElementsByBlogPostId(String(postData.id));
 			elements = postElements.map(elem => {
 				const elementBlock: ElementBlock = {
 					id: elem.id,
@@ -94,28 +97,28 @@
 			console.error('Error loading blog post elements:', error);
 			elements = [];
 		}
+
+		loadedPostId = String(postData.id);
 	}
 
-	onMount(async () => {
-		// Initial load is now handled by reactive statement
+onMount(() => {
+    // Initial load is now handled by reactive statement
 
-		// Listener para cerrar el modal cuando la sesión expire
-		const handleSessionExpired = () => {
-			console.log('🔒 Sesión expirada - cerrando modal de blog');
-			// Forzar cierre sin limpiar archivos (la sesión ya expiró)
-			postSaved = false;
-			uploadedFiles = [];
-			resetForm();
-			dispatch('close');
-		};
+    const handleSessionExpired = () => {
+        console.log('🔒 Sesión expirada - cerrando modal de blog');
+        // Forzar cierre sin limpiar archivos (la sesión ya expiró)
+        postSaved = false;
+        uploadedFiles = [];
+        resetForm();
+        dispatch('close');
+    };
 
-		window.addEventListener('session-expired', handleSessionExpired);
+    window.addEventListener('session-expired', handleSessionExpired);
 
-		// Cleanup del listener cuando el componente se destruye
-		return () => {
-			window.removeEventListener('session-expired', handleSessionExpired);
-		};
-	});
+    return () => {
+        window.removeEventListener('session-expired', handleSessionExpired);
+    };
+});
 
 	function resetForm() {
 		formData = {
@@ -233,164 +236,113 @@
 		isLoading = true;
 		errors = {};
 
-		try {
-			if (isEdit && post) {
-				// Update basic post info using blog service
-				const updateData = {
-					title: formData.title.trim(),
-					excerpt: post.excerpt,
-					slug: post.slug,
-					status: post.status,
-					tags: post.tags,
-					categoryId: post.categoryId
+	try {
+		const combinedContent = elements
+			.filter(elem => elem.elementType === 'text')
+			.map(elem => elem.content?.trim() ?? '')
+			.filter(Boolean)
+			.join('\n\n');
+
+		if (isEdit && post) {
+			// Prepare element payload to send to backend (prevents media cleanup removing files)
+			const elementsPayload = elements.map((elem, index) => {
+				const payload: Record<string, unknown> = {
+					blogPostId: String(post.id),
+					elementType: elem.elementType,
+					orderNumber: elem.orderNumber ?? index + 1,
+					isActive: true
 				};
 
-				await blogHttpService.updatePost(post.id, updateData);
-
-				// Handle element updates efficiently without deleting all
-				const existingElements = await blogPostElementService.getElementsByBlogPostId(post.id);
-				const updatedElements: any[] = [];
-
-				// Track which existing elements are still being used
-				const usedElementIds = new Set();
-
-				for (const elem of elements) {
-					// Check if this is a media element with a newly uploaded file
-					const hasNewUpload = elem.filePath && elem.filePath.trim() !== '' &&
-					                     elem.id && existingElements.some(e => e.id === elem.id && !e.filePath);
-
-					if (hasNewUpload) {
-						// Media element with NEW upload on existing element with empty file_path
-						// DELETE old element and CREATE new one with the media
-						const existingElem = existingElements.find(e => e.id === elem.id);
-						if (existingElem) {
-							await blogPostElementService.deleteElement(existingElem.id);
-							console.log(`🗑️ Deleted old empty media element ${existingElem.id}`);
-						}
-
-						// Create new element with uploaded media
-						const newElementData: ElementWithFile = {
-							element: {
-								blogPostId: post.id,
-								elementType: elem.elementType,
-								content: elem.content,
-								orderNumber: elem.orderNumber,
-								filePath: elem.filePath,
-								fileName: elem.fileName
-							},
-							file: undefined
-						};
-						const createdElements = await blogPostElementService.createElementsInBatch(post.id, [newElementData]);
-						updatedElements.push(...createdElements);
-						console.log(`✅ Created new media element with uploaded file`);
-					} else if (elem.file) {
-						// New file uploaded - create new element with file
-						const newElementData: ElementWithFile = {
-							element: {
-								blogPostId: post.id,
-								elementType: elem.elementType,
-								content: elem.content,
-								orderNumber: elem.orderNumber
-							},
-							file: elem.file
-						};
-						const createdElements = await blogPostElementService.createElementsInBatch(post.id, [newElementData]);
-						updatedElements.push(...createdElements);
-					} else if (elem.id && existingElements.some(existing => existing.id === elem.id)) {
-						// Existing element - update only content/order if needed
-						const updateData: any = {
-							id: elem.id,
-							elementType: elem.elementType,
-							content: elem.content,
-							orderNumber: elem.orderNumber
-						};
-
-						// IMPORTANT: Only include file fields if they have non-empty values
-						// This prevents overwriting existing files with empty strings
-						// The backend will preserve existing values if fields are not sent
-						if (elem.filePath && elem.filePath.trim() !== '') {
-							updateData.filePath = elem.filePath;
-							updateData.fileName = elem.fileName;
-						}
-						// If elem.filePath is empty/undefined, we DON'T send it to backend
-						// Backend will preserve the existing file information
-
-						const updatedElement = await blogPostElementService.updateElement(updateData);
-						updatedElements.push(updatedElement);
-						usedElementIds.add(elem.id);
-					} else {
-						// New element without file (title, text) or element with temporary ID
-						const newElementData: ElementWithFile = {
-							element: {
-								blogPostId: post.id,
-								elementType: elem.elementType,
-								content: elem.content,
-								orderNumber: elem.orderNumber
-							},
-							file: undefined
-						};
-						const createdElements = await blogPostElementService.createElementsInBatch(post.id, [newElementData]);
-						updatedElements.push(...createdElements);
+					if (elem.content && elem.content.trim() !== '') {
+						payload.content = elem.content.trim();
 					}
-				}
 
-				// Delete elements that are no longer used
-				for (const existingElem of existingElements) {
-					if (!usedElementIds.has(existingElem.id)) {
-						await blogPostElementService.deleteElement(existingElem.id);
+					if (elem.filePath && elem.filePath.trim() !== '') {
+						payload.filePath = elem.filePath;
+						if (elem.fileName) {
+							payload.fileName = elem.fileName;
+						}
 					}
-				}
 
-				// Get updated post information
-				const updatedPost = await blogHttpService.getArticleById(post.id);
+					// Metadata is not currently supported on the form, but preserve structure for backend expectations
+					payload.metadata = null;
 
-				// Update event relations if any were selected
-				await updateEventRelations(post.id);
-
-				// Dispatch success with message
-				dispatch('updated', {
-					postId: post.id,
-					message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
-					post: updatedPost
+					return payload;
 				});
-			} else {
-				// Create new blog post
-				const createData = {
-					title: formData.title.trim(),
-					excerpt: '',
-					slug: '',
-					status: 'draft' as const,
-					tags: [],
-					categoryId: null
-				};
 
-				const newPost = await blogHttpService.createPost(createData);
+			const rawTags = (post as any)?.tags;
+			const resolvedTags = Array.isArray(rawTags)
+				? rawTags
+				: typeof rawTags === 'string'
+					? rawTags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+					: [];
 
-				// Create elements
-				const elementsWithFiles: ElementWithFile[] = elements.map(elem => ({
-					element: {
-						blogPostId: newPost.id,
-						elementType: elem.elementType,
-						content: elem.content,
-						orderNumber: elem.orderNumber,
-						filePath: elem.filePath,
-						fileName: elem.fileName
-					},
-					file: elem.file
-				}));
+			const resolvedCategoryId = post?.categoryId != null ? String(post.categoryId) : null;
+			const updateData = {
+				title: formData.title.trim(),
+				excerpt: post?.excerpt ?? '',
+				slug: post?.slug ?? '',
+				status: post?.status ?? 'draft',
+				categoryId: resolvedCategoryId,
+				featuredMedia: post?.featuredMedia ?? undefined,
+				tags: resolvedTags,
+				content: combinedContent,
+				elements: elementsPayload
+			};
 
-				await blogPostElementService.createElementsInBatch(newPost.id, elementsWithFiles);
+			await blogHttpService.updatePost(String(post.id), updateData);
 
-				// Update event relations if any were selected
-				await updateEventRelations(newPost.id);
+			// Get updated post information
+			const updatedPost = await blogHttpService.getArticleById(String(post.id));
 
-				// Dispatch success with message
-				dispatch('created', {
-					...newPost,
-					message: `✅ Artículo "${formData.title}" creado exitosamente`,
-					post: newPost
-				});
-			}
+			// Update event relations if any were selected
+			await updateEventRelations(String(post.id));
+
+			// Dispatch success with message
+			dispatch('updated', {
+				postId: String(post.id),
+				message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
+				post: updatedPost
+			});
+		} else {
+			// Create new blog post
+			const createData = {
+				title: formData.title.trim(),
+				excerpt: '',
+				content: combinedContent,
+				slug: '',
+				status: 'draft' as const,
+				categoryId: null as string | null,
+				tags: [] as string[]
+			};
+
+			const newPost = await blogHttpService.createPost(createData);
+
+			// Create elements
+			const elementsWithFiles: ElementWithFile[] = elements.map(elem => ({
+				element: {
+					blogPostId: String(newPost.id),
+					elementType: elem.elementType,
+					content: elem.content,
+					orderNumber: elem.orderNumber,
+					filePath: elem.filePath,
+					fileName: elem.fileName
+				},
+				file: elem.file
+			}));
+
+			await blogPostElementService.createElementsInBatch(String(newPost.id), elementsWithFiles);
+
+			// Update event relations if any were selected
+			await updateEventRelations(String(newPost.id));
+
+			// Dispatch success with message
+			dispatch('created', {
+				...newPost,
+				message: `✅ Artículo "${formData.title}" creado exitosamente`,
+				post: newPost
+			});
+		}
 
 			// Mark as saved successfully
 			postSaved = true;
@@ -847,10 +799,10 @@
 												{/if}
 											{:else if ['image', 'video', 'audio', 'document'].includes(element.elementType)}
 												<div class="media-uploader-container">
-													<ContextualMediaUploader
-														context="blog"
-														mediaType={element.elementType}
-														blogPostId={post?.id || 'temp'}
+								<ContextualMediaUploader
+									context="blog"
+									mediaType={element.elementType}
+									blogPostId={post ? String(post.id) : 'temp'}
 														currentMedia={element.filePath || ''}
 														disabled={isLoading}
 														label=""
@@ -880,7 +832,7 @@
 							Relaciona este artículo con eventos del calendario para que los visitantes puedan ver el contenido vinculado.
 						</p>
 						<BlogEventRelation
-							blogPostId={post?.id}
+							blogPostId={post ? String(post.id) : undefined}
 							onChange={handleEventChange}
 							compact={false}
 						/>

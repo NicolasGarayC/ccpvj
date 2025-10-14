@@ -1,6 +1,6 @@
 ﻿<script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import type { BlogPost } from '$lib/data/models/interfaces';
+  import type { BlogPost } from '$lib/types/api';
   import { t } from '$lib/i18n';
   import { blogPostElementService } from '$lib/services/blog/blogPostElementService';
   import { getBlogMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
@@ -13,12 +13,13 @@
   const dispatch = createEventDispatcher();
 
   let firstImagePath: string | null = null;
+  let publishedAt: Date | null = null;
 
   onMount(async () => {
     // If there's no featured media, try to load the first image from elements
     if (!post.featuredMedia) {
       try {
-        const elements = await blogPostElementService.getElementsByBlogPostId(post.id);
+        const elements = await blogPostElementService.getElementsByBlogPostId(String(post.id));
         const firstImage = elements.find(el => el.elementType === 'image' && el.filePath);
         if (firstImage?.filePath) {
           firstImagePath = firstImage.filePath;
@@ -28,6 +29,8 @@
       }
     }
   });
+
+  $: publishedAt = post?.publishDate ? new Date(post.publishDate) : null;
 
   // Función para obtener la URL completa del recurso
   // Para visualización inline (como en el card), no necesitamos tracking
@@ -56,11 +59,11 @@
   }
 
   function handleEdit() {
-    dispatch('edit', post.id);
+    dispatch('edit', String(post.id));
   }
 
   function handleDelete() {
-    dispatch('delete', post.id);
+    dispatch('delete', String(post.id));
   }
 
   function handleView() {
@@ -87,6 +90,7 @@
             poster={post.videoPoster ? getMediaUrl(post.videoPoster) : ''}
           >
             <source src={getMediaUrl(post.featuredMedia)} type="video/mp4">
+            <track kind="captions" srclang="es" label="Subtítulos" />
             <p class="absolute inset-0 flex items-center justify-center text-gray-600 bg-gray-100">
               {$t('videoNotSupported') || 'Tu navegador no soporta video.'}
             </p>
@@ -144,11 +148,9 @@
         <div class="flex items-center text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
           <i class="fas fa-calendar-alt mr-1.5 text-xs"></i>
           <time datetime={post.publishDate} class="font-medium">
-            {new Date(post.publishDate * 1000).toLocaleDateString('es-ES', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric'
-            })}
+            {publishedAt
+              ? publishedAt.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+              : ''}
           </time>
         </div>
         {#if post.authorName}
@@ -191,6 +193,7 @@
                 on:click={handleEdit}
                 class="p-2 text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 hover:text-blue-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                 title="Editar post"
+                aria-label="Editar post"
               >
                 <i class="fas fa-edit text-sm"></i>
               </button>
@@ -201,6 +204,7 @@
                 on:click={handleDelete}
                 class="p-2 text-red-600 bg-red-50 rounded-full hover:bg-red-100 hover:text-red-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                 title="Eliminar post"
+                aria-label="Eliminar post"
               >
                 <i class="fas fa-trash text-sm"></i>
               </button>

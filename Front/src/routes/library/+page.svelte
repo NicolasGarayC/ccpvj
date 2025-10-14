@@ -331,7 +331,7 @@
 				<!-- Resultados info juvenil -->
 				<div class="mt-8 pt-6 border-t-2 border-indigo-100">
 					<div class="text-center">
-						{#if pagedResult && pagedResult.totalCount === 0}
+						{#if (pagedResult?.totalCount ?? 0) === 0}
 							<p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
 								<span class="text-2xl">😔</span>
 								{$t('library.nothingFound')}
@@ -340,8 +340,8 @@
 							<div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl px-6 py-3">
 								<span class="text-xl">🎯</span>
 								<p class="font-bold text-gray-700">
-									{$t('library.showing')} <span class="text-indigo-600 font-black">{((pagedResult.page - 1) * pagedResult.pageSize) + 1} - {Math.min(pagedResult.page * pagedResult.pageSize, pagedResult.totalCount)}</span>
-									{$t('library.of')} <span class="text-purple-600 font-black">{pagedResult.totalCount}</span> {$t('library.resources')}
+									{$t('library.showing')} <span class="text-indigo-600 font-black">{(((pagedResult?.page ?? 1) - 1) * (pagedResult?.pageSize ?? itemsPerPage)) + 1} - {Math.min((pagedResult?.page ?? 1) * (pagedResult?.pageSize ?? itemsPerPage), pagedResult?.totalCount ?? 0)}</span>
+									{$t('library.of')} <span class="text-purple-600 font-black">{pagedResult?.totalCount ?? 0}</span> {$t('library.resources')}
 								</p>
 							</div>
 						{/if}
@@ -398,7 +398,7 @@
 					</div>
 				</div>
 			</div>
-		{:else if pagedResult && pagedResult.items.length === 0}
+	{:else if (pagedResult?.items?.length ?? 0) === 0}
 			<!-- Estado vacío súper juvenil -->
 			<div class="relative bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl shadow-2xl border-2 border-gray-200 p-16 overflow-hidden">
 				<!-- Elementos decorativos -->
@@ -411,7 +411,7 @@
 						<div class="relative inline-block">
 							<div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto shadow-lg mb-4">
 								<span class="text-6xl">
-									{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
+							{#if (pagedResult?.totalCount ?? 0) === 0 && stats && stats.totalItems > 0}
 										😅
 									{:else}
 										📚
@@ -426,7 +426,7 @@
 					</div>
 
 					<h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
-						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
+					{#if (pagedResult?.totalCount ?? 0) === 0 && stats && stats.totalItems > 0}
 							{$t('library.noResults')}
 						{:else}
 							{$t('library.waitingForContent')}
@@ -434,7 +434,7 @@
 					</h3>
 
 					<p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
-						{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
+						{#if (pagedResult?.totalCount ?? 0) === 0 && stats && stats.totalItems > 0}
 							{$t('library.tryOtherTerms')}
 						{:else if canManage}
 							{$t('library.beFirst')}
@@ -443,7 +443,7 @@
 						{/if}
 					</p>
 
-					{#if pagedResult.totalCount === 0 && stats && stats.totalItems > 0}
+					{#if (pagedResult?.totalCount ?? 0) === 0 && stats && stats.totalItems > 0}
 						<button
 							on:click={() => { currentFilters = {}; searchTerm = ''; loadLibraryData(); }}
 							class="group inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-8 py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
@@ -468,7 +468,7 @@
 			<!-- Lista/Grid de recursos mejorada -->
 			<div class="mb-8">
 				<div class="{viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8' : 'space-y-6'}">
-					{#each pagedResult.items as item (item.id)}
+					{#each (pagedResult?.items ?? []) as item (item.id)}
 						<DigitalLibraryCard
 							{item}
 							{viewMode}
@@ -483,11 +483,11 @@
 			</div>
 
 			<!-- Paginación mejorada -->
-			{#if pagedResult.totalPages > 1}
+			{#if (pagedResult?.totalPages ?? 0) > 1}
 				<div class="flex items-center justify-center space-x-3 mt-12">
 					<button
 						on:click={() => handlePageChange(1)}
-						disabled={pagedResult.page === 1}
+						disabled={(pagedResult?.page ?? 1) === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="{$t('common.goToFirstPage')}"
 					>
@@ -495,23 +495,23 @@
 					</button>
 
 					<button
-						on:click={() => handlePageChange(Math.max(1, pagedResult.page - 1))}
-						disabled={pagedResult.page === 1}
+						on:click={() => handlePageChange(Math.max(1, (pagedResult?.page ?? 1) - 1))}
+						disabled={(pagedResult?.page ?? 1) === 1}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="{$t('common.previousPage')}"
 					>
 						<i class="fas fa-angle-left text-lg group-hover:text-indigo-600 transition-colors"></i>
 					</button>
 
-					{#each Array.from({length: Math.min(5, pagedResult.totalPages)}, (_, i) => {
-						const start = Math.max(1, pagedResult.page - 2);
-						const end = Math.min(pagedResult.totalPages, start + 4);
+					{#each Array.from({ length: Math.min(5, pagedResult?.totalPages ?? 0) }, (_, i) => {
+						const start = Math.max(1, (pagedResult?.page ?? 1) - 2);
+						const end = Math.min(pagedResult?.totalPages ?? 0, start + 4);
 						return start + i;
-					}).filter(page => page <= pagedResult.totalPages) as page}
+					}).filter(page => page <= (pagedResult?.totalPages ?? 0)) as page}
 						<button
 							on:click={() => handlePageChange(page)}
 							class="px-4 py-3 border-2 rounded-xl transition-all duration-300 font-semibold text-lg min-w-[3rem] {
-								pagedResult.page === page
+								(pagedResult?.page ?? 1) === page
 									? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-lg'
 									: 'bg-white border-gray-200 hover:bg-gray-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-600'
 							}"
@@ -521,8 +521,8 @@
 					{/each}
 
 					<button
-						on:click={() => handlePageChange(Math.min(pagedResult.totalPages, pagedResult.page + 1))}
-						disabled={pagedResult.page === pagedResult.totalPages}
+						on:click={() => handlePageChange(Math.min(pagedResult?.totalPages ?? 1, (pagedResult?.page ?? 1) + 1))}
+						disabled={(pagedResult?.page ?? 1) === (pagedResult?.totalPages ?? 1)}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="{$t('common.nextPage')}"
 					>
@@ -530,8 +530,8 @@
 					</button>
 
 					<button
-						on:click={() => handlePageChange(pagedResult.totalPages)}
-						disabled={pagedResult.page === pagedResult.totalPages}
+						on:click={() => handlePageChange(pagedResult?.totalPages ?? 1)}
+						disabled={(pagedResult?.page ?? 1) === (pagedResult?.totalPages ?? 1)}
 						class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-indigo-300 transition-all duration-300 group"
 						aria-label="{$t('common.goToLastPage')}"
 					>

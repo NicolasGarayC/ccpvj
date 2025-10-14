@@ -269,6 +269,7 @@
       {:else if isVideo(previewUrl)}
         <video class="w-full max-w-md mx-auto rounded" controls>
           <source src={previewUrl} type="video/mp4">
+          <track kind="captions" srclang="es" label="Subtítulos" />
           Video no soportado
         </video>
       {:else if isAudio(previewUrl)}

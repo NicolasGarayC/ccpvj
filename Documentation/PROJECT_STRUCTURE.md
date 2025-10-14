@@ -68,8 +68,10 @@ Front/
 │   │   └── api/               # API endpoints del frontend
 │   └── lib/
 │       ├── components/        # Componentes reutilizables
-│       ├── server/db/         # Configuración de base de datos
-│       └── services/          # Servicios del cliente
+│       ├── services/          # Servicios HTTP del cliente
+│       ├── server/            # Utilidades server-side (media cleanup, paths)
+│       ├── data/              # Tipos y modelos
+│       └── stores/            # Estado global y utilidades
 ├── static/                    # Archivos estáticos
 ├── project.inlang/           # Configuración de internacionalización
 └── package.json              # Dependencias y scripts
@@ -77,7 +79,7 @@ Front/
 
 **Características:**
 - SvelteKit 5 con TypeScript
-- Drizzle ORM para base de datos
+- Persistencia vía APIs internas que interactúan con SQLite
 - Componentes contextuales para multimedia
 - Sistema de autenticación por sesiones
 
