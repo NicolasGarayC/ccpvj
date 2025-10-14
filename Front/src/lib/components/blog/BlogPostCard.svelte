@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import type { BlogPost } from '$lib/data/models/interfaces';
   import { t } from '$lib/i18n';
@@ -88,7 +88,7 @@
           >
             <source src={getMediaUrl(post.featuredMedia)} type="video/mp4">
             <p class="absolute inset-0 flex items-center justify-center text-gray-600 bg-gray-100">
-              {t('videoNotSupported') || 'Tu navegador no soporta video.'}
+              {$t('videoNotSupported') || 'Tu navegador no soporta video.'}
             </p>
           </video>
           <!-- Play icon overlay -->
@@ -131,7 +131,7 @@
         <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-3 mx-auto">
           <i class="fas fa-newspaper text-gray-400 text-2xl"></i>
         </div>
-        <p class="text-gray-600 text-sm font-medium">{t('newsPost') || 'Artículo'}</p>
+        <p class="text-gray-600 text-sm font-medium">{$t('newsPost') || 'Artículo'}</p>
       </div>
     </div>
   {/if}
@@ -144,7 +144,7 @@
         <div class="flex items-center text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
           <i class="fas fa-calendar-alt mr-1.5 text-xs"></i>
           <time datetime={post.publishDate} class="font-medium">
-            {new Date(post.publishDate).toLocaleDateString('es-ES', {
+            {new Date(post.publishDate * 1000).toLocaleDateString('es-ES', {
               day: 'numeric',
               month: 'short',
               year: 'numeric'
@@ -179,7 +179,7 @@
           class="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold px-4 py-2 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg hover:scale-105 group"
         >
           <span class="mr-2">📖</span>
-          {t('readMore') || 'Leer más'}
+          {$t('readMore') || 'Leer más'}
           <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform text-sm"></i>
         </button>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
 	import type { EventSummary } from '$lib/services/calendar/calendarService';
+	import { t, locale } from '$lib/i18n';
 
 	export let events: EventSummary[] = [];
 	export let currentDate: Date = new Date();
@@ -13,11 +14,23 @@
 	}>();
 
 	let calendarDays: Array<{ date: Date; isCurrentMonth: boolean; events: EventSummary[] }> = [];
-	let monthNames = [
-		'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-		'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+
+	// Month and day names using i18n
+	$: monthNames = [
+		$t('calendar.months.0' as any), $t('calendar.months.1' as any), $t('calendar.months.2' as any),
+		$t('calendar.months.3' as any), $t('calendar.months.4' as any), $t('calendar.months.5' as any),
+		$t('calendar.months.6' as any), $t('calendar.months.7' as any), $t('calendar.months.8' as any),
+		$t('calendar.months.9' as any), $t('calendar.months.10' as any), $t('calendar.months.11' as any)
 	];
-	let dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+
+	$: dayNames = [
+		$t('calendar.days.0' as any), $t('calendar.days.1' as any), $t('calendar.days.2' as any),
+		$t('calendar.days.3' as any), $t('calendar.days.4' as any), $t('calendar.days.5' as any),
+		$t('calendar.days.6' as any)
+	];
+
+	// Get current locale for date formatting
+	$: currentLocale = $locale === 'es' ? 'es-ES' : 'en-US';
 
 	$: if (currentDate || events) {
 		generateCalendarDays();
@@ -85,10 +98,10 @@
 	}
 
 	function formatTime(date: Date): string {
-		return date.toLocaleTimeString('es-ES', { 
-			hour: '2-digit', 
+		return date.toLocaleTimeString(currentLocale, {
+			hour: '2-digit',
 			minute: '2-digit',
-			hour12: false 
+			hour12: false
 		});
 	}
 
@@ -151,7 +164,7 @@
 			>
 				<span class="relative z-10 flex items-center gap-2">
 					<span class="text-lg group-hover:scale-125 transition-transform duration-300">🌟</span>
-					Hoy
+					{$t('today')}
 				</span>
 			</button>
 		</div>

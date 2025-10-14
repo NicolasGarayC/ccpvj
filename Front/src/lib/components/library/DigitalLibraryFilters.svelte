@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import type { LibrarySearchDto } from '$lib/services/digitalLibraryService';
@@ -136,11 +136,11 @@
 			<div class="flex items-center gap-3">
 				<h3 class="text-xl md:text-2xl font-black text-gray-800 flex items-center gap-3">
 					<span class="text-2xl">🎯</span>
-					Filtros Súper Geniales
+					{$t('filters.title')}
 				</h3>
 				{#if activeFiltersCount > 0}
 					<div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-200 rounded-xl px-3 py-1">
-						<span class="text-sm font-bold text-indigo-700">{activeFiltersCount} activos</span>
+						<span class="text-sm font-bold text-indigo-700">{activeFiltersCount} {$t('filters.active')}</span>
 						<span class="text-sm">🔥</span>
 					</div>
 				{/if}
@@ -153,7 +153,7 @@
 						class="group inline-flex items-center gap-2 bg-gradient-to-r from-red-400 to-red-500 text-white px-4 py-2 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold"
 					>
 						<span class="text-sm group-hover:rotate-90 transition-transform duration-300">🗑️</span>
-						Limpiar Todo
+						{$t('filters.clearAll')}
 					</button>
 				{/if}
 
@@ -162,7 +162,7 @@
 					class="group inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold"
 				>
 					<span class="text-sm group-hover:scale-110 transition-transform duration-300">⚙️</span>
-					{isFiltersOpen ? 'Ocultar' : 'Mostrar'} Filtros
+					{isFiltersOpen ? $t('filters.hide') : $t('filters.show')} {$t('filters.title')}
 					<span class="text-sm transform transition-transform duration-300 {isFiltersOpen ? 'rotate-180' : ''}">⬇️</span>
 				</button>
 			</div>
@@ -173,13 +173,13 @@
 			<div class="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-100 rounded-2xl">
 				<h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
 					<span>🏷️</span>
-					Filtros Activos
+					{$t('filters.activeFilters')}
 				</h4>
 				<div class="flex flex-wrap gap-2">
 					{#if localFilters.fileType}
 						<div class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-blue-200 border border-blue-300 rounded-lg px-3 py-1 text-sm">
 							<span>📁</span>
-							<span class="font-semibold">Tipo: {fileTypeOptions.find(t => t.value === localFilters.fileType)?.label || localFilters.fileType}</span>
+							<span class="font-semibold">{$t('filters.fileType')}: {getFileTypeLabel(localFilters.fileType)}</span>
 							<button on:click={() => removeFilter('fileType')} class="text-red-500 hover:text-red-700 ml-1">✕</button>
 						</div>
 					{/if}
@@ -187,7 +187,7 @@
 					{#if localFilters.category}
 						<div class="inline-flex items-center gap-2 bg-gradient-to-r from-green-100 to-green-200 border border-green-300 rounded-lg px-3 py-1 text-sm">
 							<span>📂</span>
-							<span class="font-semibold">Categoría: {categoryOptions.find(c => c.value === localFilters.category)?.label || localFilters.category}</span>
+							<span class="font-semibold">{$t('filters.category')}: {getCategoryLabel(localFilters.category)}</span>
 							<button on:click={() => removeFilter('category')} class="text-red-500 hover:text-red-700 ml-1">✕</button>
 						</div>
 					{/if}
@@ -195,7 +195,7 @@
 					{#if localFilters.author}
 						<div class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-purple-200 border border-purple-300 rounded-lg px-3 py-1 text-sm">
 							<span>👤</span>
-							<span class="font-semibold">Autor: {localFilters.author}</span>
+							<span class="font-semibold">{$t('filters.author')}: {localFilters.author}</span>
 							<button on:click={() => removeFilter('author')} class="text-red-500 hover:text-red-700 ml-1">✕</button>
 						</div>
 					{/if}
@@ -203,7 +203,7 @@
 					{#if localFilters.language}
 						<div class="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-100 to-yellow-200 border border-yellow-300 rounded-lg px-3 py-1 text-sm">
 							<span>🌐</span>
-							<span class="font-semibold">Idioma: {localFilters.language}</span>
+							<span class="font-semibold">{$t('filters.language')}: {localFilters.language}</span>
 							<button on:click={() => removeFilter('language')} class="text-red-500 hover:text-red-700 ml-1">✕</button>
 						</div>
 					{/if}
@@ -211,7 +211,7 @@
 					{#if localFilters.publishYear}
 						<div class="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-orange-200 border border-orange-300 rounded-lg px-3 py-1 text-sm">
 							<span>📅</span>
-							<span class="font-semibold">Año: {localFilters.publishYear}</span>
+							<span class="font-semibold">{$t('filters.year')}: {localFilters.publishYear}</span>
 							<button on:click={() => removeFilter('publishYear')} class="text-red-500 hover:text-red-700 ml-1">✕</button>
 						</div>
 					{/if}
@@ -236,7 +236,7 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>📁</span>
-						Tipo de Archivo
+						{$t('filters.fileType')}
 					</h4>
 					<div class="space-y-2">
 						{#each fileTypeOptions as option}
@@ -249,8 +249,8 @@
 									class="sr-only"
 								>
 								<div class="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-xl hover:border-indigo-300 transition-all duration-300 group-hover:shadow-lg {localFilters.fileType === option.value ? `bg-gradient-to-r ${option.color} text-white border-transparent shadow-lg` : 'bg-white hover:bg-gray-50'}">
-									<span class="text-lg">{option.label.split(' ')[0]}</span>
-									<span class="font-semibold {localFilters.fileType === option.value ? 'text-white' : 'text-gray-700'}">{option.label.split(' ').slice(1).join(' ')}</span>
+									<span class="text-lg">{getFileTypeLabel(option.value).split(' ')[0]}</span>
+									<span class="font-semibold {localFilters.fileType === option.value ? 'text-white' : 'text-gray-700'}">{getFileTypeLabel(option.value).split(' ').slice(1).join(' ')}</span>
 								</div>
 							</label>
 						{/each}
@@ -261,7 +261,7 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>📂</span>
-						Categoría
+						{$t('filters.category')}
 					</h4>
 					<div class="max-h-48 overflow-y-auto space-y-2 pr-2">
 						{#each categoryOptions as option}
@@ -274,8 +274,8 @@
 									class="sr-only"
 								>
 								<div class="flex items-center gap-3 p-2 border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition-all duration-300 group-hover:shadow-md {localFilters.category === option.value ? `bg-gradient-to-r ${option.color} text-white border-transparent shadow-md` : 'bg-white hover:bg-gray-50'}">
-									<span class="text-sm">{option.label.split(' ')[0]}</span>
-									<span class="text-sm font-semibold {localFilters.category === option.value ? 'text-white' : 'text-gray-700'}">{option.label.split(' ').slice(1).join(' ')}</span>
+									<span class="text-sm">{getCategoryLabel(option.value).split(' ')[0]}</span>
+									<span class="text-sm font-semibold {localFilters.category === option.value ? 'text-white' : 'text-gray-700'}">{getCategoryLabel(option.value).split(' ').slice(1).join(' ')}</span>
 								</div>
 							</label>
 						{/each}
@@ -286,14 +286,14 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>👤</span>
-						Autor
+						{$t('filters.author')}
 					</h4>
 					<select
 						bind:value={localFilters.author}
 						on:change={applyFilters}
 						class="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-semibold text-gray-700"
 					>
-						<option value="">Todos los autores</option>
+						<option value="">{$t('filters.allAuthors')}</option>
 						{#each availableAuthors as author}
 							<option value={author}>{author}</option>
 						{/each}
@@ -304,14 +304,14 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>🌐</span>
-						Idioma
+						{$t('filters.language')}
 					</h4>
 					<select
 						bind:value={localFilters.language}
 						on:change={applyFilters}
 						class="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-semibold text-gray-700"
 					>
-						<option value="">Todos los idiomas</option>
+						<option value="">{$t('filters.allLanguages')}</option>
 						{#each availableLanguages as language}
 							<option value={language}>{language}</option>
 						{/each}
@@ -322,14 +322,14 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>📅</span>
-						Año de Publicación
+						{$t('filters.year')}
 					</h4>
 					<select
 						bind:value={localFilters.publishYear}
 						on:change={applyFilters}
 						class="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-300/20 focus:border-indigo-400 transition-all duration-300 bg-white font-semibold text-gray-700"
 					>
-						<option value="">Todos los años</option>
+						<option value="">{$t('filters.allYears')}</option>
 						{#each availableYears.sort((a, b) => b - a) as year}
 							<option value={year}>{year}</option>
 						{/each}
@@ -340,7 +340,7 @@
 				<div class="space-y-3">
 					<h4 class="text-lg font-bold text-gray-800 flex items-center gap-2">
 						<span>🏷️</span>
-						Etiquetas
+						{$t('filters.tags')}
 					</h4>
 					<div class="max-h-48 overflow-y-auto space-y-2 pr-2">
 						{#if availableTags.length > 0}
@@ -359,7 +359,7 @@
 								</label>
 							{/each}
 						{:else}
-							<p class="text-gray-500 text-sm italic">No hay etiquetas disponibles</p>
+							<p class="text-gray-500 text-sm italic">{$t('filters.noTags')}</p>
 						{/if}
 					</div>
 				</div>

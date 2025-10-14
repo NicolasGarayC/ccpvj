@@ -5,6 +5,7 @@
   import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
   import type { MaterialApoyoSearchParams } from '$lib/services/materialApoyoService';
   import MaterialApoyoCard from '$lib/components/material-apoyo/MaterialApoyoCard.svelte';
+  import { t } from '$lib/i18n';
 
   // Estado de la aplicación
   let materialApoyo: MaterialApoyoSummaryDto[] = [];
@@ -55,7 +56,7 @@
       error = null;
       materialApoyo = await materialApoyoService.getAllMaterialApoyo();
     } catch (e: unknown) {
-      error = 'Error al cargar el material de apoyo';
+      error = $t('material.errorLoading');
       console.error(error, e);
     } finally {
       isLoading = false;
@@ -135,7 +136,7 @@
 </script>
 
 <svelte:head>
-  <title>Proyectos - Centro Cultural Víctor Jara</title>
+  <title>{$t('material.pageTitle')} - {$t('centroTitle')}</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
@@ -152,11 +153,11 @@
         <h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
           <span class="text-4xl mr-3">🚀</span>
           <span class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 bg-clip-text text-transparent">
-            Proyectos
+            {$t('material.pageTitle')}
           </span>
         </h1>
         <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-medium mb-8">
-          🌟 ¡Descubre proyectos increíbles! Explora iniciativas que te ayudarán a aprender, crear y brillar como nunca antes
+          🌟 {$t('material.pageDescription')}
         </p>
 
         {#if canManage}
@@ -166,7 +167,7 @@
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-10 py-5 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold border-2 border-orange-400"
             >
               <span class="text-2xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear Proyecto
+              {$t('material.createProject')}
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
@@ -178,9 +179,9 @@
     <div class="text-center mb-8">
       <h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
         <span class="text-3xl">📈</span>
-        ¡Estadísticas Increíbles!
+        {$t('material.statisticsTitle')}
       </h2>
-      <p class="text-gray-600 font-medium">Mira todos los proyectos increíbles disponibles</p>
+      <p class="text-gray-600 font-medium">{$t('material.statisticsSubtitle')}</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -191,9 +192,9 @@
           <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
             <span class="text-2xl">🎓</span>
           </div>
-          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">Total Proyectos</p>
+          <p class="text-sm font-bold text-emerald-700 mb-2 uppercase tracking-wide">{$t('material.totalProjects')}</p>
           <p class="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">{materialApoyo.length}</p>
-          <p class="text-xs text-emerald-600 font-semibold">¡Proyectos geniales! 🚀</p>
+          <p class="text-xs text-emerald-600 font-semibold">{$t('material.awesomeProjects')} 🚀</p>
         </div>
       </div>
 
@@ -204,9 +205,9 @@
           <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
             <span class="text-2xl">⭐</span>
           </div>
-          <p class="text-sm font-bold text-orange-700 mb-2 uppercase tracking-wide">Destacados</p>
+          <p class="text-sm font-bold text-orange-700 mb-2 uppercase tracking-wide">{$t('material.featured')}</p>
           <p class="text-4xl font-black bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">{materialApoyo.filter(c => c.isFeatured).length}</p>
-          <p class="text-xs text-orange-600 font-semibold">¡Súper populares! 🏆</p>
+          <p class="text-xs text-orange-600 font-semibold">{$t('material.superPopular')} 🏆</p>
         </div>
       </div>
 
@@ -217,9 +218,9 @@
           <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl shadow-xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
             <span class="text-2xl">📚</span>
           </div>
-          <p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">Módulos</p>
+          <p class="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wide">{$t('material.modules')}</p>
           <p class="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">{materialApoyo.reduce((acc, item) => acc + (item.moduleCount || 0), 0)}</p>
-          <p class="text-xs text-blue-600 font-semibold">¡Módulos increíbles! 🌈</p>
+          <p class="text-xs text-blue-600 font-semibold">{$t('material.amazingModules')} 🌈</p>
         </div>
       </div>
     </div>
@@ -235,9 +236,9 @@
         <div class="text-center mb-8">
           <h2 class="text-2xl font-black text-gray-800 mb-2 flex items-center justify-center gap-3">
             <span class="text-2xl">🎯</span>
-            ¡Encuentra Tu Proyecto Perfecto!
+            {$t('material.findPerfect')}
           </h2>
-          <p class="text-gray-600 font-medium">Explora todos nuestros proyectos súper geniales</p>
+          <p class="text-gray-600 font-medium">{$t('material.exploreAll')}</p>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
@@ -246,7 +247,7 @@
             <div class="relative group">
               <input
                 type="text"
-                placeholder="🎓 Busca proyectos increíbles, encargados geniales..."
+                placeholder={$t('material.searchPlaceholder')}
                 bind:value={searchTerm}
                 on:input={handleSearch}
                 class="w-full pl-16 pr-8 py-5 text-lg border-3 border-emerald-200 rounded-2xl focus:ring-6 focus:ring-emerald-300/30 focus:border-emerald-400 transition-all duration-300 bg-white/80 focus:bg-white shadow-lg font-medium placeholder:text-gray-400"
@@ -258,7 +259,7 @@
                 <button
                   on:click={() => { searchTerm = ''; handleSearch(); }}
                   class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
-                  aria-label="Limpiar búsqueda"
+                  aria-label={$t('material.clearSearch')}
                 >
                   <i class="fas fa-times text-lg"></i>
                 </button>
@@ -278,17 +279,17 @@
               >
               <span class="text-sm font-bold text-yellow-700 flex items-center gap-2">
                 <span class="text-lg group-hover:scale-125 transition-transform duration-300">⭐</span>
-                Solo destacados
+                {$t('material.onlyFeatured')}
               </span>
             </label>
 
             <!-- Ordenamiento mejorado -->
             <div class="relative">
               <select bind:value={sortBy} class="appearance-none px-6 py-3 pr-10 border-2 border-emerald-200 rounded-2xl focus:ring-4 focus:ring-emerald-300/20 focus:border-emerald-400 transition-all duration-300 bg-white/80 font-bold text-gray-700 shadow-lg">
-                <option value="createdAt">🆕 Más recientes</option>
-                <option value="title">🔤 Nombre A-Z</option>
-                <option value="educatorName">👨‍🏫 Por encargado</option>
-                <option value="moduleCount">📊 Por módulos</option>
+                <option value="createdAt">{$t('material.sortMostRecent')}</option>
+                <option value="title">{$t('material.sortNameAZ')}</option>
+                <option value="educatorName">{$t('material.sortByEducator')}</option>
+                <option value="moduleCount">{$t('material.sortByModules')}</option>
               </select>
               <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-emerald-400 pointer-events-none">
                 <i class="fas fa-chevron-down"></i>
@@ -298,7 +299,7 @@
             <button
               on:click={() => sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'}
               class="group p-3 border-2 border-emerald-200 bg-white/80 rounded-2xl hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-              title={sortOrder === 'asc' ? '⬆️ Orden ascendente' : '⬇️ Orden descendente'}
+              title={sortOrder === 'asc' ? $t('material.orderAsc') : $t('material.orderDesc')}
             >
               <span class="text-xl group-hover:rotate-180 transition-transform duration-500">
                 {sortOrder === 'asc' ? '⬆️' : '⬇️'}
@@ -310,11 +311,11 @@
               <button
                 on:click={clearFilters}
                 class="group px-4 py-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-2xl hover:from-red-100 hover:to-pink-100 hover:border-red-300 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-                title="🧹 Limpiar filtros"
+                title={$t('material.clearFiltersButton')}
               >
                 <span class="flex items-center gap-2 font-bold">
                   <span class="text-lg group-hover:rotate-180 transition-transform duration-500">🧹</span>
-                  <span class="hidden sm:inline">Limpiar</span>
+                  <span class="hidden sm:inline">{$t('material.clearFilters')}</span>
                 </span>
               </button>
             {/if}
@@ -327,16 +328,16 @@
             {#if filteredMaterialApoyo.length === 0}
               <p class="text-lg font-bold text-gray-600 flex items-center justify-center gap-2">
                 <span class="text-2xl">😔</span>
-                No encontramos proyectos súper geniales
+                {$t('material.noProjectsFound')}
               </p>
             {:else}
               <div class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl px-6 py-3">
                 <span class="text-xl">🎯</span>
                 <p class="font-bold text-gray-700">
-                  Mostrando <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMaterialApoyo.length)}</span>
-                  de <span class="text-teal-600 font-black">{filteredMaterialApoyo.length}</span> proyectos increíbles
+                  {$t('material.showing')} <span class="text-emerald-600 font-black">{((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredMaterialApoyo.length)}</span>
+                  {$t('material.of')} <span class="text-teal-600 font-black">{filteredMaterialApoyo.length}</span> {$t('material.projectsIncredible')}
                   {#if searchTerm || showFeaturedOnly}
-                    <span class="text-gray-500">(de {materialApoyo.length} totales)</span>
+                    <span class="text-gray-500">({$t('material.of')} {materialApoyo.length} {$t('material.totals')})</span>
                   {/if}
                 </p>
               </div>
@@ -377,12 +378,12 @@
           </div>
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">📚</span>
-            ¡Cargando Proyectos Increíbles!
+            {$t('material.loadingTitle')}
           </h3>
-          <p class="text-lg text-gray-600 mb-4 font-medium">Preparando la mejor experiencia de aprendizaje para ti</p>
+          <p class="text-lg text-gray-600 mb-4 font-medium">{$t('material.loadingSubtitle')}</p>
           <div class="flex items-center justify-center gap-2 text-emerald-600 font-bold">
             <span class="animate-pulse">✨</span>
-            <span>Buscando proyectos súper geniales</span>
+            <span>{$t('material.searchingProjects')}</span>
             <span class="animate-pulse">✨</span>
           </div>
         </div>
@@ -416,19 +417,19 @@
 
           <h3 class="text-2xl md:text-3xl font-black text-gray-800 mb-6">
             {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
-              🤷‍♂️ ¡Oops! No encontramos proyectos súper geniales
+              🤷‍♂️ {$t('material.emptyNoMatch')}
             {:else}
-              📖 Esperando proyectos increíbles
+              📖 {$t('material.emptyWaitingTitle')}
             {/if}
           </h3>
 
           <p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed font-medium">
             {#if filteredMaterialApoyo.length === 0 && materialApoyo.length > 0}
-              🔍 Intenta con otros términos de búsqueda o ajusta los filtros para encontrar proyectos súper geniales.
+              🔍 {$t('material.emptyTryAgain')}
             {:else if canManage}
-              🌟 ¡Sé el primero en crear un proyecto increíble! Agrega el primer proyecto y dale vida a esta plataforma.
+              🌟 {$t('material.emptyBeFirst')}
             {:else}
-              ⏰ Pronto tendremos proyectos súper geniales para que aprendas cosas increíbles y te conviertas en un experto.
+              ⏰ {$t('material.emptySoon')}
             {/if}
           </p>
 
@@ -438,7 +439,7 @@
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
             >
               <span class="text-xl group-hover:rotate-180 transition-transform duration-500">🔄</span>
-              Limpiar filtros y empezar de nuevo
+              {$t('material.clearFiltersButton')}
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </button>
           {:else if canManage}
@@ -447,7 +448,7 @@
               class="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 text-lg font-bold"
             >
               <span class="text-xl group-hover:rotate-90 transition-transform duration-500">✨</span>
-              Crear el primer proyecto
+              {$t('material.createFirstProject')}
               <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           {/if}
@@ -459,9 +460,9 @@
         <div class="text-center mb-10">
           <h2 class="text-2xl md:text-3xl font-black text-gray-800 mb-4 flex items-center justify-center gap-3">
             <span class="text-3xl">🎯</span>
-            ¡Proyectos Increíbles Esperándote!
+            {$t('material.projectsWaiting')}
           </h2>
-          <p class="text-gray-600 font-medium">Elige tu próxima aventura de aprendizaje</p>
+          <p class="text-gray-600 font-medium">{$t('material.chooseAdventure')}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -484,7 +485,7 @@
             on:click={() => currentPage = 1}
             disabled={currentPage === 1}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
-            aria-label="Ir a la primera página"
+            aria-label={$t('material.goToFirstPage')}
           >
             <i class="fas fa-angle-double-left text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
@@ -493,7 +494,7 @@
             on:click={() => currentPage = Math.max(1, currentPage - 1)}
             disabled={currentPage === 1}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
-            aria-label="Página anterior"
+            aria-label={$t('material.previousPage')}
           >
             <i class="fas fa-angle-left text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
@@ -519,7 +520,7 @@
             on:click={() => currentPage = Math.min(totalPages, currentPage + 1)}
             disabled={currentPage === totalPages}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
-            aria-label="Página siguiente"
+            aria-label={$t('material.nextPage')}
           >
             <i class="fas fa-angle-right text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>
@@ -528,7 +529,7 @@
             on:click={() => currentPage = totalPages}
             disabled={currentPage === totalPages}
             class="px-4 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 hover:border-emerald-300 transition-all duration-300 group"
-            aria-label="Ir a la última página"
+            aria-label={$t('material.goToLastPage')}
           >
             <i class="fas fa-angle-double-right text-lg group-hover:text-emerald-600 transition-colors"></i>
           </button>

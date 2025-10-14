@@ -1,11 +1,11 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
 	import { browser } from '$app/environment';
-	import { t } from '$lib/i18n';
+	import { t, getLocale, setLocale, locale } from '$lib/i18n'; // Sistema i18n único
 	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
 	import { analyticsService } from '$lib/services/analytics/analyticsService.js';
 
@@ -25,9 +25,6 @@
 	// Calcular si puede gestionar usuarios (solo administradores)
 	$: canManageUsers =
 		isLoggedIn && user?.role === 'administrador';
-
-	// Variable reactiva simple para el idioma actual
-	let currentLocale = 'es';
 
 	// Función para actualizar el estado de autenticación
 	async function updateAuthState() {
@@ -76,10 +73,6 @@
 
 		// Solo ejecutar en el navegador
 		if (browser) {
-			// Configuración simple de idioma
-			const browserLang = navigator.language?.split('-')[0] || 'es';
-			currentLocale = ['es', 'en'].includes(browserLang) ? browserLang : 'es';
-
 			// Rastrear visita inicial de la página
 			trackPageVisit($page.url.pathname);
 		}
@@ -108,9 +101,15 @@
 		}
 	}
 
+	// Variable reactiva para el idioma actual
+	let currentLocale: string;
+	$: currentLocale = $locale;
+
 	function switchLocale() {
 		// Cambia entre los idiomas disponibles
-		currentLocale = currentLocale === 'es' ? 'en' : 'es';
+		const current = getLocale();
+		const newLocale = current === 'es' ? 'en' : 'es';
+		setLocale(newLocale);
 	}
 </script>
 
@@ -147,11 +146,11 @@
 						<a
 							href="/"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('home') || 'Inicio'}"
+							title="{$t('home')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-home text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline">{t('home') || 'Inicio'}</span>
+								<span class="hidden lg:inline">{$t('home')}</span>
 							</span>
 						</a>
 
@@ -159,11 +158,11 @@
 						<a
 							href="/blog"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('blog') || 'Blog'}"
+							title="{$t('blog')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-blog text-lg group-hover:wiggle"></i>
-								<span class="hidden lg:inline">{t('blog') || 'Blog'}</span>
+								<span class="hidden lg:inline">{$t('blog')}</span>
 							</span>
 						</a>
 
@@ -171,11 +170,11 @@
 						<a
 							href="/calendar"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('calendar') || 'Calendario'}"
+							title="{$t('calendar')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-calendar-alt text-lg group-hover:pulse"></i>
-								<span class="hidden lg:inline">{t('calendar') || 'Calendario'}</span>
+								<span class="hidden lg:inline">{$t('calendar')}</span>
 							</span>
 						</a>
 
@@ -183,11 +182,11 @@
 						<a
 							href="/library"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('library') || 'Biblioteca'}"
+							title="{$t('library')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-book text-lg group-hover:swing"></i>
-								<span class="hidden lg:inline">{t('library') || 'Biblioteca'}</span>
+								<span class="hidden lg:inline">{$t('library')}</span>
 							</span>
 						</a>
 
@@ -195,11 +194,11 @@
 						<a
 							href="/material-apoyo"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('materialApoyo')}"
+							title="{$t('materialApoyo')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline whitespace-nowrap">{t('materialApoyo')}</span>
+								<span class="hidden lg:inline whitespace-nowrap">{$t('materialApoyo')}</span>
 							</span>
 						</a>
 					</div>
@@ -212,7 +211,7 @@
 						{#if canManageUsers}
 							<a href="/dashboard" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
 								<i class="fas fa-users-cog text-lg"></i>
-								<span class="hidden lg:inline">{t('panel')}</span>
+								<span class="hidden lg:inline">{$t('panel')}</span>
 							</a>
 						{/if}
 						
@@ -234,7 +233,7 @@
 								class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 							>
 								<i class="fas fa-sign-out-alt text-lg"></i>
-								<span class="hidden lg:inline">{t('logout')}</span>
+								<span class="hidden lg:inline">{$t('logout')}</span>
 							</button>
 						</form>
 					{:else}
@@ -244,7 +243,7 @@
 							class="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 						>
 							<i class="fas fa-sign-in-alt text-lg"></i>
-							<span>{t('login') || 'Entrar'}</span>
+							<span>{$t('login') || 'Entrar'}</span>
 						</a>
 					{/if}
 					
@@ -281,7 +280,7 @@
 					<a href="/" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-home text-lg"></i>
-							<span>{t('home') || 'Inicio'}</span>
+							<span>{$t('home') || 'Inicio'}</span>
 						</span>
 					</a>
 
@@ -289,7 +288,7 @@
 					<a href="/blog" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-blog text-lg"></i>
-							<span>{t('blog') || 'Blog'}</span>
+							<span>{$t('blog') || 'Blog'}</span>
 						</span>
 					</a>
 
@@ -297,7 +296,7 @@
 					<a href="/calendar" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-calendar-alt text-lg"></i>
-							<span>{t('calendar') || 'Calendario'}</span>
+							<span>{$t('calendar') || 'Calendario'}</span>
 						</span>
 					</a>
 
@@ -305,7 +304,7 @@
 					<a href="/library" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-book text-lg"></i>
-							<span>{t('library') || 'Biblioteca'}</span>
+							<span>{$t('library') || 'Biblioteca'}</span>
 						</span>
 					</a>
 
@@ -313,7 +312,7 @@
 					<a href="/material-apoyo" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-graduation-cap text-lg"></i>
-							<span>{t('materialApoyo')}</span>
+							<span>{$t('materialApoyo')}</span>
 						</span>
 					</a>
 
@@ -323,7 +322,7 @@
 							<a href="/dashboard" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 								<span class="flex items-center gap-3">
 									<i class="fas fa-users-cog text-lg"></i>
-									<span>{t('panelAdmin')}</span>
+									<span>{$t('panelAdmin')}</span>
 								</span>
 							</a>
 						{/if}
@@ -350,7 +349,7 @@
 							>
 								<span class="flex items-center gap-3 justify-center">
 									<i class="fas fa-sign-out-alt text-lg"></i>
-									<span>{t('dashboard.closeSession')}</span>
+									<span>{$t('dashboard.closeSession')}</span>
 								</span>
 							</button>
 						</form>
@@ -363,7 +362,7 @@
 						>
 							<span class="flex items-center gap-3 justify-center">
 								<i class="fas fa-sign-in-alt text-lg"></i>
-								<span>{t('login') || 'Entrar'}</span>
+								<span>{$t('login') || 'Entrar'}</span>
 							</span>
 						</a>
 					{/if}
@@ -420,7 +419,7 @@
 					&copy; {new Date().getFullYear()} Centro Cultural Víctor Jara
 				</p>
 				<p class="text-white/50 text-sm mt-1">
-					✨ Creando momentos mágicos de aprendizaje ✨
+					✨ {$t('footer.tagline')} ✨
 				</p>
 			</div>
 		</div>

@@ -22,6 +22,7 @@ namespace CentroCultural.API.Controllers
 
         // GET: api/analytics/summary
         [HttpGet("summary")]
+        [AllowAnonymous] // Público para mostrar estadísticas en el home sin autenticación
         public async Task<ActionResult<AnalyticsSummaryDto>> GetSummary()
         {
             try

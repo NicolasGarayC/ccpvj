@@ -117,13 +117,13 @@ namespace CentroCultural.Application.Services
                 throw new KeyNotFoundException($"Element with ID {elementId} not found");
             }
 
-            // Update only provided fields
+            // Update only provided fields (skip empty strings to preserve existing values)
             if (updateElementDto.ElementType != null) element.ElementType = updateElementDto.ElementType;
             if (updateElementDto.Content != null) element.Content = updateElementDto.Content;
-            if (updateElementDto.FilePath != null) element.FilePath = updateElementDto.FilePath;
-            if (updateElementDto.FileName != null) element.FileName = updateElementDto.FileName;
+            if (!string.IsNullOrEmpty(updateElementDto.FilePath)) element.FilePath = updateElementDto.FilePath;
+            if (!string.IsNullOrEmpty(updateElementDto.FileName)) element.FileName = updateElementDto.FileName;
             if (updateElementDto.FileSize.HasValue) element.FileSize = updateElementDto.FileSize;
-            if (updateElementDto.MimeType != null) element.MimeType = updateElementDto.MimeType;
+            if (!string.IsNullOrEmpty(updateElementDto.MimeType)) element.MimeType = updateElementDto.MimeType;
             if (updateElementDto.OrderNumber.HasValue) element.OrderNumber = updateElementDto.OrderNumber.Value;
             if (updateElementDto.Metadata != null) element.Metadata = updateElementDto.Metadata;
             if (updateElementDto.IsActive.HasValue) element.IsActive = updateElementDto.IsActive.Value;

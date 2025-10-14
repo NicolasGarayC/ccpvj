@@ -22,16 +22,16 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<div class="icon-warning">⚠️</div>
-				<h2>{t('modal.sessionExpired')}</h2>
+				<h2>{$t('modal.sessionExpired')}</h2>
 			</div>
 
 			<div class="modal-body">
-				<p>{message || t('modal.sessionExpiredMessage')}</p>
+				<p>{message || $t('modal.sessionExpiredMessage')}</p>
 			</div>
 
 			<div class="modal-footer">
 				<button class="btn-primary" on:click={handleClose}>
-					{t('modal.backToHome')}
+					{$t('modal.backToHome')}
 				</button>
 			</div>
 		</div>

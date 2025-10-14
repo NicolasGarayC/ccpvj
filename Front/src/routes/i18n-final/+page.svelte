@@ -1,17 +1,11 @@
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { t } from '$lib/i18n';
-  import { getLocale, setLocale } from '$lib/paraglide/runtime';
+﻿<script lang="ts">
+  import { t, locale, setLocale } from '$lib/i18n';
 
-  let currentLocale = 'es';
+  // Variable reactiva para el idioma actual
+  $: currentLocale = $locale;
 
-  onMount(() => {
-    currentLocale = getLocale();
-  });
-
-  function switchLanguage(locale: 'es' | 'en') {
-    setLocale(locale, { reload: false });
-    currentLocale = locale;
+  function switchLanguage(newLocale: 'es' | 'en') {
+    setLocale(newLocale);
   }
 </script>
 
@@ -58,11 +52,11 @@
           <div class="space-y-2 text-sm">
             <div class="bg-red-50 border border-red-200 rounded p-2">
               <strong>No permissions:</strong><br>
-              {t('auth.no_permissions_create')}
+              {$t('auth.no_permissions_create')}
             </div>
             <div class="bg-red-50 border border-red-200 rounded p-2">
               <strong>Login required:</strong><br>
-              {t('auth.login_required')}
+              {$t('auth.login_required')}
             </div>
           </div>
         </div>
@@ -72,16 +66,16 @@
           <h3 class="font-semibold text-gray-800 mb-3">⚡ Actions</h3>
           <div class="grid grid-cols-2 gap-2 text-sm">
             <div class="bg-green-50 border border-green-200 rounded p-2 text-center">
-              {t('action.create')}
+              {$t('action.create')}
             </div>
             <div class="bg-green-50 border border-green-200 rounded p-2 text-center">
-              {t('action.edit')}
+              {$t('action.edit')}
             </div>
             <div class="bg-green-50 border border-green-200 rounded p-2 text-center">
-              {t('action.save')}
+              {$t('action.save')}
             </div>
             <div class="bg-green-50 border border-green-200 rounded p-2 text-center">
-              {t('action.cancel')}
+              {$t('action.cancel')}
             </div>
           </div>
         </div>
@@ -91,10 +85,10 @@
           <h3 class="font-semibold text-gray-800 mb-3">📝 Blog</h3>
           <div class="space-y-2 text-sm">
             <div class="bg-purple-50 border border-purple-200 rounded p-2">
-              <strong>Create:</strong> {t('blog.create_article')}
+              <strong>Create:</strong> {$t('blog.create_article')}
             </div>
             <div class="bg-purple-50 border border-purple-200 rounded p-2">
-              <strong>Edit:</strong> {t('blog.edit_article')}
+              <strong>Edit:</strong> {$t('blog.edit_article')}
             </div>
           </div>
         </div>
@@ -104,10 +98,10 @@
           <h3 class="font-semibold text-gray-800 mb-3">❌ Errors</h3>
           <div class="space-y-2 text-sm">
             <div class="bg-red-50 border border-red-200 rounded p-2">
-              <strong>Save error:</strong> {t('error.saving_post')}
+              <strong>Save error:</strong> {$t('error.saving_post')}
             </div>
             <div class="bg-red-50 border border-red-200 rounded p-2">
-              <strong>Generic:</strong> {t('error.generic')}
+              <strong>Generic:</strong> {$t('error.generic')}
             </div>
           </div>
         </div>

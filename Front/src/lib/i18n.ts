@@ -1,138 +1,1117 @@
-// Simple static i18n system to replace dynamic Paraglide imports
+// ============================================
+// SISTEMA I18N ÚNICO - Centro Cultural Víctor Jara
+// ============================================
 
-// Default translations in Spanish
-const translations = {
-  // Main titles
-  'centroTitle': 'Centro Cultural Víctor Jara',
-  'centroDescription': 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje',
-  'welcomeToCentro': '¡Bienvenido al Centro Cultural! 🎉',
-  'centroPurpose': '✨ Tu espacio de aprendizaje y creatividad ✨',
+import { writable, derived } from 'svelte/store';
+import { browser } from '$app/environment';
 
-  // Action buttons
-  'educatorLogin': '👨‍🏫 Acceso Encargados',
-  'browseMaterials': '📚 Explorar Materiales',
-  'educatorDashboard': ' Panel Encargado',
-  'createContent': ' Crear Contenido',
-  'myMaterials': '🎒 Mis Materiales',
-  'startLearning': '🚀 ¡Empezar a Aprender!',
-  'joinCommunity': '🤝 Unirse a la Comunidad',
-  'exploreLibrary': '📖 Explorar Biblioteca',
+// ============================================
+// DEFINICIÓN DE TIPOS
+// ============================================
 
-  // Statistics
-  'availableCourses': '📚 Proyectos Disponibles',
-  'totalModules': '📝 Módulos Totales',
-  'studentsServed': '👥 Estudiantes Atendidos',
-  'activeProjects': '🎨 Proyectos Activos',
-  'communityMembers': '🌟 Miembros Activos',
+export type Locale = 'es' | 'en';
+export type MessageKey = keyof typeof messages.es;
 
-  // Subjects and courses
-  'preuniversity': '🎓 Preuniversitario',
-  'basicComputing': '💻 Computación Básica',
-  'craftWorkshop': '🎨 Taller de Artesanías',
-  'mathematics': '🔢 Matemáticas',
-  'physics': '⚛️ Física',
-  'socialStudies': '🌍 Ciencias Sociales',
-  'economics': '💰 Economía',
-  'digitalArt': '🎨 Arte Digital',
-  'music': '🎵 Música',
+// ============================================
+// MENSAJES COMPLETOS (ES y EN)
+// ============================================
 
-  // News and blog
-  'latestNews': ' ¡Últimas Noticias!',
-  'stayUpdated': 'Mantente al día con las últimas actividades del centro',
-  'noBlogPostsYet': '¡Próximamente tendremos noticias increíbles!',
-  'viewAllNews': ' Ver Todas las Noticias',
-  'readMore': '📖 Leer Más',
-  'newsAndAnnouncements': 'Noticias y Anuncios',
-  'blogDescription': 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara',
-  'allNews': 'Todas las noticias',
-  'loading': 'Cargando...',
-  'tryAgain': 'Intentar de nuevo',
-  'noNewsInCategory': 'No hay noticias en esta categoría',
-  'tryDifferentCategory': 'Prueba con una categoría diferente o ve todas las noticias',
-  'checkBackSoon': 'Vuelve pronto para ver las últimas novedades de nuestra comunidad',
-  'seeAllNews': 'Ver todas las noticias',
-  'createArticle': 'Crear Artículo',
+export const messages = {
+  es: {
+    // ========================================
+    // SITE METADATA & BRANDING
+    // ========================================
+    "centroTitle": "Centro Cultural Víctor Jara",
+    "centroDescription": "Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje",
+    "centroPurpose": "Explora, aprende y crea en nuestra red comunitaria de aprendizaje",
 
-  // Events and calendar
-  'upcomingEvents': ' ¡Próximos Eventos Geniales!',
-  'noEventsYet': '¡Estamos preparando eventos súper divertidos!',
-  'viewCalendar': 'Ver Calendario Completo',
-  'registerEvent': '✅ ¡Inscríbete Ya!',
+    // ========================================
+    // NAVIGATION
+    // ========================================
+    "home": "Inicio",
+    "blog": "Blog",
+    "calendar": "Calendario",
+    "library": "Biblioteca",
+    "materialApoyo": "Material de Apoyo",
+    "logout": "Salir",
+    "login": "Entrar",
+    "panel": "Panel",
+    "panelAdmin": "Panel Admin",
 
-  // Educational materials
-  'educationalMaterials': ' ¡Materiales de Aprendizaje!',
-  'accessCourseMaterials': 'Descubre recursos increíbles para aprender y crear',
-  'moduleCountLabel': '📚 {count} módulos súper geniales',
-  'accessMaterials': ' ¡Acceder Ya!',
-  'modules': 'módulos',
+    // ========================================
+    // AUTH & PERMISSIONS
+    // ========================================
+    "auth.no_permissions_create": "No tienes permisos para crear posts del blog. Necesitas ser Colaborador o Administrador.",
+    "auth.no_permissions_edit": "No tienes permisos para editar posts del blog. Necesitas ser Colaborador o Administrador.",
+    "auth.no_permissions_delete": "No tienes permisos para eliminar posts.",
+    "auth.no_permissions_role_management": "No tienes permisos para gestionar roles de usuarios. Esta función está disponible solo para Administradores.",
+    "auth.no_permissions_create_events": "No tienes permisos para crear eventos. Contacta al administrador.",
+    "auth.login_required": "Debes iniciar sesión para realizar esta acción.",
+    "auth.own_posts_only": "Solo puedes editar tus propios posts o ser Administrador.",
 
-  // Featured courses
-  'featuredCourses': '⭐ ¡Proyectos Más Populares!',
-  'exploreCourseOfferings': 'Los proyectos que más les gustan a nuestros estudiantes',
-  'noCoursesYet': '¡Estamos creando proyectos increíbles para ti!',
-  'exploreCourseMaterials': ' ¡Explorar Proyecto!',
-  'viewAllCourses': ' Ver Todos los Proyectos',
+    // ========================================
+    // ACTIONS
+    // ========================================
+    "action.create": "Crear",
+    "action.edit": "Editar",
+    "action.delete": "Eliminar",
+    "action.save": "Guardar",
+    "action.cancel": "Cancelar",
+    "action.update": "Actualizar",
+    "action.close": "Cerrar",
+    "action.retry": "Reintentar",
+    "action.clearFilters": "Limpiar filtros y empezar de nuevo",
 
-  // Center information
-  'aboutCenter': '🏛️ Sobre Nuestro Centro',
-  'centerDescription1': '¡Somos un espacio donde la educación se vuelve una aventura! Aquí puedes aprender desde matemáticas hasta arte digital, todo en un ambiente divertido y colaborativo.',
-  'centerDescription2': 'Nuestro centro está diseñado especialmente para jóvenes como tú, donde cada día es una nueva oportunidad para descubrir algo genial y compartirlo con tus amigos.',
-  'noInternetRequired': '📶 ¡Sin Internet, Sin Problema!',
-  'localNetworkExplanation': 'Todo funciona en nuestra red local, así puedes acceder a todos los recursos sin necesidad de internet. ¡Perfecto para concentrarte en aprender!',
+    // ========================================
+    // HOME PAGE
+    // ========================================
+    "welcome": "¡Bienvenido!",
+    "startLearning": "Comenzar a Aprender",
+    "educatorLogin": "Acceso Educadores",
+    "educatorDashboard": "Panel Educador",
+    "createContent": "Crear Contenido",
+    "myMaterials": "Mis Materiales",
+    "exploreLibrary": "Explorar Biblioteca",
+    "availableCourses": "Proyectos Disponibles",
+    "totalModules": "Módulos Totales",
+    "recentNews": "Noticias Recientes",
+    "uniqueVisitors": "Visitantes Únicos",
+    "latestNews": "Últimas Noticias",
+    "stayUpdated": "Mantente al día con las últimas novedades del centro",
+    "noBlogPostsYet": "Aún no hay noticias",
+    "noBlogPostsMessage": "¡Estamos trabajando en contenido súper genial para compartir contigo muy pronto!",
+    "viewAllNews": "Ver Todas las Noticias",
+    "upcomingEvents": "Próximos Eventos",
+    "upcomingEventsMessage": "¡No te pierdas los eventos más divertidos del centro!",
+    "viewCalendar": "Ver Calendario Completo",
+    "educationalMaterials": "Materiales Educativos",
+    "accessCourseMaterials": "Accede a recursos súper geniales para aprender y crear",
+    "accessMaterials": "Acceder Materiales",
+    "quickActions": "Acciones Rápidas",
+    "exploreAllProjects": "Explorar Todos los Proyectos",
+    "viewLibrary": "Ver Biblioteca",
+    "featuredCourses": "Proyectos Destacados",
+    "exploreCourseOfferings": "Explora nuestra selección de proyectos más populares e increíbles",
+    "exploreCourseMaterials": "Explorar Materiales del Proyecto",
+    "viewAllCourses": "Ver Todos los Proyectos",
+    "noCoursesYet": "Aún no hay proyectos",
+    "noCoursesMessage": "¡Estamos preparando materiales educativos increíbles para ti!",
+    "aboutCenter": "Acerca del Centro",
+    "centerDescription1": "El Centro Cultural Víctor Jara es una red comunitaria de aprendizaje dedicada a promover la educación, la cultura y el arte en nuestra comunidad.",
+    "centerDescription2": "Ofrecemos una amplia variedad de cursos, talleres y recursos educativos diseñados para apoyar el desarrollo personal y profesional de todos nuestros miembros.",
+    "noInternetRequired": "Sin Necesidad de Internet",
+    "localNetworkExplanation": "Todos los recursos están disponibles en la red local del centro, facilitando el acceso sin conexión a internet.",
+    "readyForAdventure": "¿Listo para la Aventura?",
+    "joinCommunityText": "Únete a nuestra comunidad de aprendizaje y comienza tu viaje educativo hoy mismo",
+    "exploreCourses": "Explorar Proyectos",
+    "readLatestNews": "Leer Últimas Noticias",
+    "adventureStartsNow": "¡Tu aventura de aprendizaje comienza AHORA!",
+    "modules": "módulos",
+    "module": "módulo",
 
-  // Final call to action
-  'readyToStart': '🎯 ¿Listo para la Aventura?',
-  'joinCommunityText': '¡Únete a nuestra comunidad de jóvenes creativos y empezemos juntos esta increíble experiencia de aprendizaje!',
-  'exploreCourses': 'Explorar Proyectos',
-  'readLatestNews': 'Leer Noticias',
+    // ========================================
+    // BLOG
+    // ========================================
+    "newsAndAnnouncements": "Noticias y Anuncios",
+    "blogDescription": "Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara",
+    "newsArticle": "Artículo",
+    "articleNotFound": "Artículo no encontrado",
+    "backToNews": "Volver a noticias",
+    "videoNotSupported": "Tu navegador no soporta video.",
+    "audioNotSupported": "Tu navegador no soporta audio.",
+    "newsPost": "Noticia",
+    "readMore": "Leer más",
+    "readMoreNews": "Leer más noticias",
+    "relatedEvents": "Eventos Relacionados",
+    "featured": "Destacado",
 
-  // Special sections
-  'quickActions': '⚡ Acciones Rápidas',
-  'popularContent': '🔥 Contenido Popular',
-  'achievements': '🏆 Logros y Reconocimientos',
-  'communitySpotlight': '🌟 Destacados de la Comunidad',
+    // Blog Page
+    "blog.article_deleted_success": "Artículo eliminado exitosamente",
+    "blog.error_deleting_article": "Error al eliminar el artículo",
+    "blog.delete_article_title": "Eliminar Artículo",
+    "blog.delete_article_confirm": "¿Estás seguro de que deseas eliminar el artículo '{title}'? Esta acción no se puede deshacer.",
+    "blog.untitled": "Sin título",
 
-  // Auth related
-  'login': 'Iniciar Sesión',
-  'username': 'Usuario',
-  'password': 'Contraseña',
-  'loginSubtitle': 'Red Comunitaria de Aprendizaje',
-  'usernamePlaceholder': 'Ingresa tu usuario',
-  'passwordPlaceholder': 'Ingresa tu contraseña',
-  'loggingIn': 'Iniciando sesión...',
-  'redirecting': 'Redirigiendo...',
-  'loginSuccess': 'Inicio de sesión exitoso. Redirigiendo...',
-  'loginError': 'Error al iniciar sesión',
-  'connectionError': 'Error de conexión. Verifica que el servidor esté funcionando.',
-  'backToHome': 'Volver al inicio',
+    // Blog Post Card
+    "blog.news_badge": "📰 NOTICIA",
+    "blog.media_file": "Archivo multimedia",
+    "blog.edit_post": "Editar post",
+    "blog.delete_post": "Eliminar post",
 
-  // Blog post page
-  'newsArticle': 'Artículo',
-  'articleNotFound': 'Artículo no encontrado',
-  'backToNews': 'Volver a noticias',
-  'videoNotSupported': 'Tu navegador no soporta video.',
-  'readMoreNews': 'Leer más noticias'
+    // Blog Post List
+    "blog.error_loading_posts": "Error cargando posts",
+    "blog.article_management": "Gestión de Artículos",
+    "blog.article_singular": "artículo",
+    "blog.article_plural": "artículos",
+    "blog.create_article": "Crear Artículo",
+    "blog.loading_articles": "Cargando artículos...",
+    "blog.error_loading_articles_header": "Error al cargar artículos",
+    "blog.retry": "Intentar de nuevo",
+    "blog.no_articles_yet": "No hay artículos todavía",
+    "blog.create_first_article_description": "Comienza creando tu primer artículo del blog",
+    "blog.create_first_article": "Crear Primer Artículo",
+
+    // Blog Post Form - Validation
+    "blog.title_required": "⚠️ El título es requerido",
+    "blog.complete_required_fields": "❌ Por favor completa todos los campos requeridos",
+    "blog.add_at_least_one_element": "⚠️ Debe agregar al menos un elemento al artículo",
+    "blog.article_needs_content": "❌ El artículo necesita contenido para ser publicado",
+    "blog.text_elements_not_empty": "⚠️ Los elementos de texto no pueden estar vacíos",
+    "blog.some_elements_incomplete": "❌ Algunos elementos están incompletos",
+    "blog.multimedia_requires_file": "⚠️ Los elementos multimedia requieren un archivo",
+    "blog.missing_required_files": "❌ Falta subir algunos archivos requeridos",
+
+    // Blog Post Form - Success Messages
+    "blog.article_updated_success": "✅ Artículo \"{title}\" actualizado exitosamente",
+    "blog.article_created_success": "✅ Artículo \"{title}\" creado exitosamente",
+
+    // Blog Post Form - Error Messages
+    "blog.session_expired": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+    "blog.article_duplicate_title": "⚠️ Ya existe un artículo con ese título. Por favor, usa un título diferente.",
+    "blog.article_slug_error": "⚠️ Error con el título del artículo. Por favor, elige un título diferente.",
+    "blog.error_saving_article": "❌ Error al {action} el artículo",
+
+    // Blog Post Form - UI Elements
+    "blog.edit_article": "Editar Artículo",
+    "blog.create_new_article": "Crear Nuevo Artículo",
+    "blog.new_title": "Nuevo título",
+    "blog.new_text": "Nuevo texto",
+    "blog.article_information": "Información del Artículo",
+    "blog.article_title": "Título del Artículo *",
+    "blog.article_title_placeholder": "Título del artículo",
+    "blog.article_content": "Contenido del Artículo",
+    "blog.add_elements_instruction": "Agrega elementos para crear el contenido de tu artículo",
+    "blog.elements_hint": "Puedes agregar títulos, texto, imágenes, videos, audios y documentos en cualquier orden",
+    "blog.no_content": "Sin contenido",
+    "blog.files_organized_hint": "💡 Los archivos se organizarán automáticamente cuando guardes el artículo.",
+    "blog.related_events_section": "Eventos Relacionados",
+    "blog.related_events_description": "Relaciona este artículo con eventos del calendario para que los visitantes puedan ver el contenido vinculado.",
+    "blog.uploading_files": "Subiendo archivos... ({count})",
+    "blog.updating": "Actualizando...",
+    "blog.creating": "Creando...",
+    "blog.update_article": "Actualizar Artículo",
+    "blog.cancel": "Cancelar",
+
+    // Blog Post Form - Element Types
+    "blog.title_button": "Título",
+    "blog.text_button": "Texto",
+    "blog.image_button": "Imagen",
+    "blog.video_button": "Video",
+    "blog.audio_button": "Audio",
+    "blog.document_button": "Documento",
+    "blog.title_badge": "Título",
+    "blog.text_badge": "Texto",
+    "blog.image_badge": "Imagen",
+    "blog.video_badge": "Video",
+    "blog.audio_badge": "Audio",
+    "blog.document_badge": "Documento",
+    "blog.enter_title": "Ingresa el título...",
+    "blog.enter_text": "Ingresa el texto...",
+
+    // Blog Event Relations
+    "blog.error_loading_events": "Error cargando eventos",
+    "blog.related_events_count": "Eventos Relacionados ({count})",
+    "blog.remove_event": "Quitar evento",
+    "blog.relate_to_events": "Relacionar con Eventos",
+    "blog.add_more_events": "Agregar Más Eventos",
+    "blog.search_events": "Buscar eventos por título...",
+    "blog.no_events_found": "No se encontraron eventos",
+    "blog.no_events_available": "No hay eventos disponibles",
+    "blog.selected": "✓ Seleccionado",
+    "blog.select_events_help": "Selecciona los eventos que deseas relacionar con este artículo del blog",
+
+    // Media Uploader
+    "blog.invalid_file_type": "Tipo de archivo no válido para {mediaType}",
+    "blog.file_too_large": "Archivo muy grande (máx. {maxSize}MB para {mediaType})",
+    "blog.error_uploading_file": "Error al subir el archivo",
+    "blog.error_deleting_image": "Error al eliminar la imagen",
+    "blog.video_not_supported": "Video no soportado",
+    "blog.audio_not_supported": "Audio no soportado",
+    "blog.pdf_document": "Documento PDF",
+    "blog.view_document": "Ver documento",
+    "blog.word_document": "Documento Word",
+    "blog.excel_spreadsheet": "Hoja de Excel",
+    "blog.powerpoint_presentation": "Presentación PowerPoint",
+    "blog.document": "Documento",
+    "blog.download_file": "Descargar archivo",
+    "blog.uploaded_file": "Archivo subido",
+    "blog.remove": "Eliminar",
+    "blog.uploading": "Subiendo {mediaType}...",
+    "blog.select_file": "Selecciona un archivo de {mediaType}",
+    "blog.formats_image": "Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (máx. 20MB)",
+    "blog.formats_video": "Formatos: MP4, WebM, MOV, AVI, MKV (máx. 500MB)",
+    "blog.formats_audio": "Formatos: MP3, WAV, OGG, FLAC, AAC (máx. 100MB)",
+    "blog.formats_pdf": "Formato: PDF (máx. 50MB)",
+    "blog.formats_document": "Formatos: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX) (máx. 1GB)",
+    "blog.select_media": "Seleccionar {mediaType}",
+    "blog.change_media": "Cambiar {mediaType}",
+
+    // ========================================
+    // CALENDAR & EVENTS
+    // ========================================
+    "calendarTitle": "Calendario de Eventos",
+    "calendarDescription": "Descubre todas las actividades, clases y eventos increíbles que tenemos preparados para ti en nuestro centro cultural",
+    "createEvent": "Crear Evento",
+    "list": "Lista",
+    "today": "Hoy",
+    "calendar.months.0": "Enero",
+    "calendar.months.1": "Febrero",
+    "calendar.months.2": "Marzo",
+    "calendar.months.3": "Abril",
+    "calendar.months.4": "Mayo",
+    "calendar.months.5": "Junio",
+    "calendar.months.6": "Julio",
+    "calendar.months.7": "Agosto",
+    "calendar.months.8": "Septiembre",
+    "calendar.months.9": "Octubre",
+    "calendar.months.10": "Noviembre",
+    "calendar.months.11": "Diciembre",
+    "calendar.days.0": "Dom",
+    "calendar.days.1": "Lun",
+    "calendar.days.2": "Mar",
+    "calendar.days.3": "Mie",
+    "calendar.days.4": "Jue",
+    "calendar.days.5": "Vie",
+    "calendar.days.6": "Sab",
+    "eventTypes": "Tipos de Eventos",
+    "eventType.class": "Clase",
+    "eventType.workshop": "Taller",
+    "eventType.conference": "Conferencia",
+    "eventType.event": "Evento",
+    "eventType.general": "General",
+    "featuredEvents": "Eventos Destacados",
+    "upcomingEventsTitle": "Próximos Eventos",
+    "viewAllEvents": "Ver todos los eventos",
+    "loadingCalendar": "Cargando calendario...",
+    "errorLoadingCalendar": "Error al cargar el calendario",
+    "noEventsScheduled": "No hay eventos programados para este período.",
+    "eventsFound": "evento(s) encontrado(s)",
+
+    // ========================================
+    // LIBRARY
+    // ========================================
+    "library.title": "Biblioteca Digital",
+    "library.description": "¡Explora un mundo de conocimiento increíble! Encuentra libros, videos, audios y recursos súper geniales para aprender y crear cosas asombrosas",
+    "library.addResource": "Agregar Recurso Genial",
+    "library.stats": "¡Datos Súper Geniales!",
+    "library.statsDescription": "Mira todo lo increíble que tenemos en nuestra biblioteca",
+    "library.totalResources": "Total Recursos",
+    "library.documents": "Documentos",
+    "library.videos": "Videos",
+    "library.downloads": "Descargas",
+    "library.searchPlaceholder": "Busca recursos, autores, tags súper geniales...",
+    "library.viewGrid": "Grid",
+    "library.viewList": "Lista",
+    "library.sortMostRecent": "Más recientes",
+    "library.sortNameAZ": "Nombre A-Z",
+    "library.sortMostPopular": "Más populares",
+    "library.sortMostViewed": "Más vistos",
+    "library.sortByYear": "Por año",
+    "library.orderAsc": "Orden ascendente",
+    "library.orderDesc": "Orden descendente",
+    "library.findWhat": "¡Encuentra lo que Buscas!",
+    "library.exploreResources": "Explora entre todos nuestros recursos increíbles",
+    "library.nothingFound": "No encontramos nada súper genial",
+    "library.showing": "Mostrando",
+    "library.of": "de",
+    "library.resources": "recursos súper geniales",
+    "library.loading": "¡Cargando Recursos Increíbles!",
+    "library.loadingMessage": "Preparando la mejor experiencia de aprendizaje para ti",
+    "library.searchingContent": "Buscando contenido súper genial",
+    "library.noResults": "¡Oops! No encontramos nada súper genial",
+    "library.tryOtherTerms": "Intenta con otros términos de búsqueda o ajusta los filtros para encontrar algo súper genial.",
+    "library.waitingForContent": "Biblioteca esperando contenido increíble",
+    "library.soonContent": "Pronto tendremos recursos súper geniales para que explores y aprendas cosas increíbles.",
+    "library.beFirst": "¡Sé el primero en compartir conocimiento increíble! Agrega el primer recurso y dale vida a esta biblioteca.",
+    "library.addFirstResource": "Agregar el primer recurso genial",
+    "library.epicDocuments": "¡Documentos épicos!",
+    "library.amazingVideos": "¡Videos increíbles!",
+    "library.superPopular": "¡Súper populares!",
+    "library.awesomeResources": "¡Recursos geniales!",
+
+    // ========================================
+    // MATERIAL DE APOYO
+    // ========================================
+    "material.title": "Material de Apoyo",
+    "material.description": "Explora nuestros proyectos educativos",
+    "material.noMaterials": "No hay materiales disponibles",
+    "material.createMaterial": "Crear Material de Apoyo",
+    "material.pageTitle": "Proyectos",
+    "material.pageDescription": "¡Descubre proyectos increíbles! Explora iniciativas que te ayudarán a aprender, crear y brillar como nunca antes",
+    "material.createProject": "Crear Proyecto",
+    "material.statisticsTitle": "¡Estadísticas Increíbles!",
+    "material.statisticsSubtitle": "Mira todos los proyectos increíbles disponibles",
+    "material.totalProjects": "Total Proyectos",
+    "material.awesomeProjects": "¡Proyectos geniales!",
+    "material.featured": "Destacados",
+    "material.superPopular": "¡Súper populares!",
+    "material.modules": "Módulos",
+    "material.amazingModules": "¡Módulos increíbles!",
+    "material.findPerfect": "¡Encuentra Tu Proyecto Perfecto!",
+    "material.exploreAll": "Explora todos nuestros proyectos súper geniales",
+    "material.searchPlaceholder": "🎓 Busca proyectos increíbles, encargados geniales...",
+    "material.clearSearch": "Limpiar búsqueda",
+    "material.onlyFeatured": "Solo destacados",
+    "material.sortMostRecent": "🆕 Más recientes",
+    "material.sortNameAZ": "🔤 Nombre A-Z",
+    "material.sortByEducator": "👨‍🏫 Por encargado",
+    "material.sortByModules": "📊 Por módulos",
+    "material.orderAsc": "⬆️ Orden ascendente",
+    "material.orderDesc": "⬇️ Orden descendente",
+    "material.clearFilters": "Limpiar",
+    "material.noProjectsFound": "No encontramos proyectos súper geniales",
+    "material.showing": "Mostrando",
+    "material.of": "de",
+    "material.projectsIncredible": "proyectos increíbles",
+    "material.totals": "totales",
+    "material.loadingTitle": "¡Cargando Proyectos Increíbles!",
+    "material.loadingSubtitle": "Preparando la mejor experiencia de aprendizaje para ti",
+    "material.searchingProjects": "Buscando proyectos súper geniales",
+    "material.emptyNoMatch": "¡Oops! No encontramos proyectos súper geniales",
+    "material.emptyTryAgain": "Intenta con otros términos de búsqueda o ajusta los filtros para encontrar proyectos súper geniales.",
+    "material.emptyWaitingTitle": "Esperando proyectos increíbles",
+    "material.emptyBeFirst": "¡Sé el primero en crear un proyecto increíble! Agrega el primer proyecto y dale vida a esta plataforma.",
+    "material.emptySoon": "Pronto tendremos proyectos súper geniales para que aprendas cosas increíbles y te conviertas en un experto.",
+    "material.clearFiltersButton": "Limpiar filtros y empezar de nuevo",
+    "material.createFirstProject": "Crear el primer proyecto",
+    "material.projectsWaiting": "¡Proyectos Increíbles Esperándote!",
+    "material.chooseAdventure": "Elige tu próxima aventura de aprendizaje",
+    "material.goToFirstPage": "Ir a la primera página",
+    "material.goToLastPage": "Ir a la última página",
+    "material.previousPage": "Página anterior",
+    "material.nextPage": "Página siguiente",
+    "material.errorLoading": "Error al cargar el material de apoyo",
+
+    // ========================================
+    // DASHBOARD
+    // ========================================
+    "dashboard.welcome": "¡Bienvenido",
+    "dashboard.accessMessage": "Accede a todos los recursos y actividades del centro cultural.",
+    "dashboard.projects": "Proyectos",
+    "dashboard.projectsDescription": "Material de apoyo educativo",
+    "dashboard.blogTitle": "Blog",
+    "dashboard.blogDescription": "Noticias y artículos",
+    "dashboard.eventsTitle": "Eventos",
+    "dashboard.eventsDescription": "Calendario de actividades",
+    "dashboard.libraryTitle": "Biblioteca",
+    "dashboard.libraryDescription": "Recursos y documentos",
+    "dashboard.adminPanel": "Panel de Administración",
+    "dashboard.userManagement": "Gestión de Usuarios",
+    "dashboard.userManagementDescription": "Crear, editar y administrar usuarios",
+    "dashboard.analytics": "Estadísticas",
+    "dashboard.analyticsDescription": "Análisis de uso y métricas",
+    "dashboard.yourProfile": "Tu Perfil",
+    "dashboard.username": "Usuario",
+    "dashboard.fullName": "Nombre completo",
+    "dashboard.role": "Rol",
+    "dashboard.phone": "Teléfono",
+    "dashboard.closeSession": "Cerrar Sesión",
+
+    // ========================================
+    // COMMON UI ELEMENTS
+    // ========================================
+    "common.loading": "Cargando...",
+    "common.success": "Éxito",
+    "common.error": "Error",
+    "common.search": "Buscar",
+    "common.filter": "Filtrar",
+    "common.sort": "Ordenar",
+    "common.view": "Ver",
+    "common.download": "Descargar",
+    "common.clearSearch": "Limpiar búsqueda",
+    "common.openMenu": "Abrir menú",
+    "common.closeMenu": "Cerrar menú",
+    "common.goToFirstPage": "Ir a la primera página",
+    "common.goToLastPage": "Ir a la última página",
+    "common.previousPage": "Página anterior",
+    "common.nextPage": "Página siguiente",
+    "common.closeError": "Cerrar mensaje de error",
+
+    // ========================================
+    // ERRORS
+    // ========================================
+    "error.generic": "Error desconocido",
+    "error.loading_users": "Error cargando usuarios",
+    "error.updating_role": "Error actualizando rol",
+    "error.loading_categories": "Error cargando categorías",
+    "error.saving_post": "Error al guardar el post",
+    "error.loading_resources": "Error al cargar recursos de la biblioteca",
+    "error.downloading_file": "Error al descargar el archivo",
+    "error.deleting_resource": "Error al eliminar el recurso",
+    "error.loading_calendar": "Error al cargar el calendario",
+    "error.loading_news": "Error al cargar la noticia",
+    "error.loading_initial_data": "Error cargando datos iniciales",
+    "error.loading_analytics": "Error cargando analytics",
+    "error.loading_upcoming_events": "Error al cargar eventos próximos",
+    "error.loading_featured_events": "Error al cargar eventos destacados",
+    "loginError": "Error al iniciar sesión",
+    "connectionError": "Error de conexión. Verifica que el servidor esté funcionando.",
+
+    // ========================================
+    // FOOTER
+    // ========================================
+    "footer.copyright": "Centro Cultural Víctor Jara",
+    "footer.tagline": "Creando momentos mágicos de aprendizaje",
+    "footerText": "Todos los derechos reservados",
+
+    // ========================================
+    // COURSE MANAGEMENT
+    // ========================================
+    "course.management": "Gestión de Proyectos",
+    "course.authenticated_as": "Autenticado como",
+    "course.not_authenticated": "No autenticado (modo de acceso público)",
+
+    // ========================================
+    // MODALS
+    // ========================================
+    "modal.sessionExpired": "Sesión Expirada",
+    "modal.sessionExpiredMessage": "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
+    "modal.backToHome": "Volver al Inicio",
+    "modal.closeModal": "Cerrar modal",
+    "modal.confirmAction": "¿Confirmar acción?",
+    "modal.confirmMessage": "¿Estás seguro de que deseas continuar?",
+    "modal.confirm": "Confirmar",
+
+    // ========================================
+    // FILTERS
+    // ========================================
+    "filters.title": "Filtros Súper Geniales",
+    "filters.active": "activos",
+    "filters.clearAll": "Limpiar Todo",
+    "filters.show": "Mostrar",
+    "filters.hide": "Ocultar",
+    "filters.activeFilters": "Filtros Activos",
+    "filters.fileType": "Tipo de Archivo",
+    "filters.category": "Categoría",
+    "filters.author": "Autor",
+    "filters.language": "Idioma",
+    "filters.year": "Año de Publicación",
+    "filters.tags": "Etiquetas",
+    "filters.allAuthors": "Todos los autores",
+    "filters.allLanguages": "Todos los idiomas",
+    "filters.allYears": "Todos los años",
+    "filters.noTags": "No hay etiquetas disponibles",
+    "filters.fileType.image": "🖼️ Imágenes",
+    "filters.fileType.video": "🎥 Videos",
+    "filters.fileType.audio": "🎵 Audio",
+    "filters.fileType.document": "📄 Documentos",
+    "filters.category.victorJara": "🎸 Víctor Jara",
+    "filters.category.nuevaCancion": "🎶 Nueva Canción",
+    "filters.category.educacionPopular": "📚 Educación Popular",
+    "filters.category.memoriaHistorica": "🏛️ Memoria Histórica",
+    "filters.category.talleresEventos": "🎭 Talleres y Eventos",
+    "filters.category.archivoPrensa": "📰 Archivo de Prensa",
+    "filters.category.audiovisual": "🎬 Audiovisual",
+    "filters.category.literatura": "📖 Literatura",
+    "filters.category.general": "📁 General",
+    "filters.category.historia": "📜 Historia",
+    "filters.category.musica": "🎵 Música",
+    "filters.category.arte": "🎨 Arte",
+    "filters.category.cine": "🎬 Cine",
+
+    // ========================================
+    // EVENTS WIDGET
+    // ========================================
+    "events.upcoming": "Próximos Eventos",
+    "events.viewAll": "Ver todo",
+    "events.viewFullCalendar": "Ver calendario completo",
+    "events.noUpcoming": "No hay eventos próximos",
+    "events.today": "Hoy",
+    "events.tomorrow": "Mañana",
+    "events.organizer": "Por",
+    "events.viewAllMonth": "Ver todos los eventos del mes",
+
+    // ========================================
+    // MISC
+    // ========================================
+    "createArticle": "Crear Artículo",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este recurso?"
+  },
+
+  en: {
+    // ========================================
+    // SITE METADATA & BRANDING
+    // ========================================
+    "centroTitle": "Víctor Jara Cultural Center",
+    "centroDescription": "Víctor Jara Cultural Center - Community Learning Network",
+    "centroPurpose": "Explore, learn and create in our community learning network",
+
+    // ========================================
+    // NAVIGATION
+    // ========================================
+    "home": "Home",
+    "blog": "Blog",
+    "calendar": "Calendar",
+    "library": "Library",
+    "materialApoyo": "Support Material",
+    "logout": "Logout",
+    "login": "Login",
+    "panel": "Panel",
+    "panelAdmin": "Admin Panel",
+
+    // ========================================
+    // AUTH & PERMISSIONS
+    // ========================================
+    "auth.no_permissions_create": "You don't have permission to create blog posts. You need to be a Collaborator or Administrator.",
+    "auth.no_permissions_edit": "You don't have permission to edit blog posts. You need to be a Collaborator or Administrator.",
+    "auth.no_permissions_delete": "You don't have permission to delete posts.",
+    "auth.no_permissions_role_management": "You don't have permission to manage user roles. This function is available only for Administrators.",
+    "auth.no_permissions_create_events": "You don't have permission to create events. Contact the administrator.",
+    "auth.login_required": "You must log in to perform this action.",
+    "auth.own_posts_only": "You can only edit your own posts or be an Administrator.",
+
+    // ========================================
+    // ACTIONS
+    // ========================================
+    "action.create": "Create",
+    "action.edit": "Edit",
+    "action.delete": "Delete",
+    "action.save": "Save",
+    "action.cancel": "Cancel",
+    "action.update": "Update",
+    "action.close": "Close",
+    "action.retry": "Retry",
+    "action.clearFilters": "Clear filters and start over",
+
+    // ========================================
+    // HOME PAGE
+    // ========================================
+    "welcome": "Welcome!",
+    "startLearning": "Start Learning",
+    "educatorLogin": "Educator Access",
+    "educatorDashboard": "Educator Dashboard",
+    "createContent": "Create Content",
+    "myMaterials": "My Materials",
+    "exploreLibrary": "Explore Library",
+    "availableCourses": "Available Projects",
+    "totalModules": "Total Modules",
+    "recentNews": "Recent News",
+    "uniqueVisitors": "Unique Visitors",
+    "latestNews": "Latest News",
+    "stayUpdated": "Stay up to date with the latest news from the center",
+    "noBlogPostsYet": "No news yet",
+    "noBlogPostsMessage": "We're working on super cool content to share with you very soon!",
+    "viewAllNews": "View All News",
+    "upcomingEvents": "Upcoming Events",
+    "upcomingEventsMessage": "Don't miss the most fun events at the center!",
+    "viewCalendar": "View Full Calendar",
+    "educationalMaterials": "Educational Materials",
+    "accessCourseMaterials": "Access super cool resources to learn and create",
+    "accessMaterials": "Access Materials",
+    "quickActions": "Quick Actions",
+    "exploreAllProjects": "Explore All Projects",
+    "viewLibrary": "View Library",
+    "featuredCourses": "Featured Projects",
+    "exploreCourseOfferings": "Explore our selection of the most popular and amazing projects",
+    "exploreCourseMaterials": "Explore Project Materials",
+    "viewAllCourses": "View All Projects",
+    "noCoursesYet": "No projects yet",
+    "noCoursesMessage": "We're preparing amazing educational materials for you!",
+    "aboutCenter": "About the Center",
+    "centerDescription1": "The Víctor Jara Cultural Center is a community learning network dedicated to promoting education, culture and art in our community.",
+    "centerDescription2": "We offer a wide variety of courses, workshops and educational resources designed to support the personal and professional development of all our members.",
+    "noInternetRequired": "No Internet Required",
+    "localNetworkExplanation": "All resources are available on the center's local network, facilitating access without an internet connection.",
+    "readyForAdventure": "Ready for Adventure?",
+    "joinCommunityText": "Join our learning community and start your educational journey today",
+    "exploreCourses": "Explore Projects",
+    "readLatestNews": "Read Latest News",
+    "adventureStartsNow": "Your learning adventure starts NOW!",
+    "modules": "modules",
+    "module": "module",
+
+    // ========================================
+    // BLOG
+    // ========================================
+    "newsAndAnnouncements": "News and Announcements",
+    "blogDescription": "Stay informed with the latest news and announcements from Víctor Jara Cultural Center",
+    "newsArticle": "Article",
+    "articleNotFound": "Article not found",
+    "backToNews": "Back to news",
+    "videoNotSupported": "Your browser does not support video.",
+    "audioNotSupported": "Your browser does not support audio.",
+    "newsPost": "News",
+    "readMore": "Read more",
+    "readMoreNews": "Read more news",
+    "relatedEvents": "Related Events",
+    "featured": "Featured",
+
+    // Blog Page
+    "blog.article_deleted_success": "Article deleted successfully",
+    "blog.error_deleting_article": "Error deleting article",
+    "blog.delete_article_title": "Delete Article",
+    "blog.delete_article_confirm": "Are you sure you want to delete the article '{title}'? This action cannot be undone.",
+    "blog.untitled": "Untitled",
+
+    // Blog Post Card
+    "blog.news_badge": "📰 NEWS",
+    "blog.media_file": "Media file",
+    "blog.edit_post": "Edit post",
+    "blog.delete_post": "Delete post",
+
+    // Blog Post List
+    "blog.error_loading_posts": "Error loading posts",
+    "blog.article_management": "Article Management",
+    "blog.article_singular": "article",
+    "blog.article_plural": "articles",
+    "blog.create_article": "Create Article",
+    "blog.loading_articles": "Loading articles...",
+    "blog.error_loading_articles_header": "Error loading articles",
+    "blog.retry": "Try again",
+    "blog.no_articles_yet": "No articles yet",
+    "blog.create_first_article_description": "Start by creating your first blog article",
+    "blog.create_first_article": "Create First Article",
+
+    // Blog Post Form - Validation
+    "blog.title_required": "⚠️ Title is required",
+    "blog.complete_required_fields": "❌ Please complete all required fields",
+    "blog.add_at_least_one_element": "⚠️ Must add at least one element to the article",
+    "blog.article_needs_content": "❌ The article needs content to be published",
+    "blog.text_elements_not_empty": "⚠️ Text elements cannot be empty",
+    "blog.some_elements_incomplete": "❌ Some elements are incomplete",
+    "blog.multimedia_requires_file": "⚠️ Multimedia elements require a file",
+    "blog.missing_required_files": "❌ Some required files are missing",
+
+    // Blog Post Form - Success Messages
+    "blog.article_updated_success": "✅ Article \"{title}\" updated successfully",
+    "blog.article_created_success": "✅ Article \"{title}\" created successfully",
+
+    // Blog Post Form - Error Messages
+    "blog.session_expired": "Your session has expired. Please log in again.",
+    "blog.article_duplicate_title": "⚠️ An article with that title already exists. Please use a different title.",
+    "blog.article_slug_error": "⚠️ Error with article title. Please choose a different title.",
+    "blog.error_saving_article": "❌ Error {action} article",
+
+    // Blog Post Form - UI Elements
+    "blog.edit_article": "Edit Article",
+    "blog.create_new_article": "Create New Article",
+    "blog.new_title": "New title",
+    "blog.new_text": "New text",
+    "blog.article_information": "Article Information",
+    "blog.article_title": "Article Title *",
+    "blog.article_title_placeholder": "Article title",
+    "blog.article_content": "Article Content",
+    "blog.add_elements_instruction": "Add elements to create your article content",
+    "blog.elements_hint": "You can add titles, text, images, videos, audios and documents in any order",
+    "blog.no_content": "No content",
+    "blog.files_organized_hint": "💡 Files will be organized automatically when you save the article.",
+    "blog.related_events_section": "Related Events",
+    "blog.related_events_description": "Relate this article with calendar events so visitors can see linked content.",
+    "blog.uploading_files": "Uploading files... ({count})",
+    "blog.updating": "Updating...",
+    "blog.creating": "Creating...",
+    "blog.update_article": "Update Article",
+    "blog.cancel": "Cancel",
+
+    // Blog Post Form - Element Types
+    "blog.title_button": "Title",
+    "blog.text_button": "Text",
+    "blog.image_button": "Image",
+    "blog.video_button": "Video",
+    "blog.audio_button": "Audio",
+    "blog.document_button": "Document",
+    "blog.title_badge": "Title",
+    "blog.text_badge": "Text",
+    "blog.image_badge": "Image",
+    "blog.video_badge": "Video",
+    "blog.audio_badge": "Audio",
+    "blog.document_badge": "Document",
+    "blog.enter_title": "Enter title...",
+    "blog.enter_text": "Enter text...",
+
+    // Blog Event Relations
+    "blog.error_loading_events": "Error loading events",
+    "blog.related_events_count": "Related Events ({count})",
+    "blog.remove_event": "Remove event",
+    "blog.relate_to_events": "Relate to Events",
+    "blog.add_more_events": "Add More Events",
+    "blog.search_events": "Search events by title...",
+    "blog.no_events_found": "No events found",
+    "blog.no_events_available": "No events available",
+    "blog.selected": "✓ Selected",
+    "blog.select_events_help": "Select the events you want to relate to this blog article",
+
+    // Media Uploader
+    "blog.invalid_file_type": "Invalid file type for {mediaType}",
+    "blog.file_too_large": "File too large (max. {maxSize}MB for {mediaType})",
+    "blog.error_uploading_file": "Error uploading file",
+    "blog.error_deleting_image": "Error deleting image",
+    "blog.video_not_supported": "Video not supported",
+    "blog.audio_not_supported": "Audio not supported",
+    "blog.pdf_document": "PDF Document",
+    "blog.view_document": "View document",
+    "blog.word_document": "Word Document",
+    "blog.excel_spreadsheet": "Excel Spreadsheet",
+    "blog.powerpoint_presentation": "PowerPoint Presentation",
+    "blog.document": "Document",
+    "blog.download_file": "Download file",
+    "blog.uploaded_file": "Uploaded file",
+    "blog.remove": "Remove",
+    "blog.uploading": "Uploading {mediaType}...",
+    "blog.select_file": "Select a {mediaType} file",
+    "blog.formats_image": "Formats: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (max. 20MB)",
+    "blog.formats_video": "Formats: MP4, WebM, MOV, AVI, MKV (max. 500MB)",
+    "blog.formats_audio": "Formats: MP3, WAV, OGG, FLAC, AAC (max. 100MB)",
+    "blog.formats_pdf": "Format: PDF (max. 50MB)",
+    "blog.formats_document": "Formats: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PowerPoint (PPT/PPTX) (max. 1GB)",
+    "blog.select_media": "Select {mediaType}",
+    "blog.change_media": "Change {mediaType}",
+
+    // ========================================
+    // CALENDAR & EVENTS
+    // ========================================
+    "calendarTitle": "Events Calendar",
+    "calendarDescription": "Discover all the amazing activities, classes and events we have prepared for you at our cultural center",
+    "createEvent": "Create Event",
+    "list": "List",
+    "today": "Today",
+    "calendar.months.0": "January",
+    "calendar.months.1": "February",
+    "calendar.months.2": "March",
+    "calendar.months.3": "April",
+    "calendar.months.4": "May",
+    "calendar.months.5": "June",
+    "calendar.months.6": "July",
+    "calendar.months.7": "August",
+    "calendar.months.8": "September",
+    "calendar.months.9": "October",
+    "calendar.months.10": "November",
+    "calendar.months.11": "December",
+    "calendar.days.0": "Sun",
+    "calendar.days.1": "Mon",
+    "calendar.days.2": "Tue",
+    "calendar.days.3": "Wed",
+    "calendar.days.4": "Thu",
+    "calendar.days.5": "Fri",
+    "calendar.days.6": "Sat",
+    "eventTypes": "Event Types",
+    "eventType.class": "Class",
+    "eventType.workshop": "Workshop",
+    "eventType.conference": "Conference",
+    "eventType.event": "Event",
+    "eventType.general": "General",
+    "featuredEvents": "Featured Events",
+    "upcomingEventsTitle": "Upcoming Events",
+    "viewAllEvents": "View all events",
+    "loadingCalendar": "Loading calendar...",
+    "errorLoadingCalendar": "Error loading calendar",
+    "noEventsScheduled": "No events scheduled for this period.",
+    "eventsFound": "event(s) found",
+
+    // ========================================
+    // LIBRARY
+    // ========================================
+    "library.title": "Digital Library",
+    "library.description": "Explore an incredible world of knowledge! Find books, videos, audios and super cool resources to learn and create amazing things",
+    "library.addResource": "Add Cool Resource",
+    "library.stats": "Super Cool Stats!",
+    "library.statsDescription": "See all the amazing things we have in our library",
+    "library.totalResources": "Total Resources",
+    "library.documents": "Documents",
+    "library.videos": "Videos",
+    "library.downloads": "Downloads",
+    "library.searchPlaceholder": "Search for resources, authors, super cool tags...",
+    "library.viewGrid": "Grid",
+    "library.viewList": "List",
+    "library.sortMostRecent": "Most recent",
+    "library.sortNameAZ": "Name A-Z",
+    "library.sortMostPopular": "Most popular",
+    "library.sortMostViewed": "Most viewed",
+    "library.sortByYear": "By year",
+    "library.orderAsc": "Ascending order",
+    "library.orderDesc": "Descending order",
+    "library.findWhat": "Find What You're Looking For!",
+    "library.exploreResources": "Explore all our incredible resources",
+    "library.nothingFound": "We didn't find anything super cool",
+    "library.showing": "Showing",
+    "library.of": "of",
+    "library.resources": "super cool resources",
+    "library.loading": "Loading Incredible Resources!",
+    "library.loadingMessage": "Preparing the best learning experience for you",
+    "library.searchingContent": "Searching for super cool content",
+    "library.noResults": "Oops! We didn't find anything super cool",
+    "library.tryOtherTerms": "Try other search terms or adjust the filters to find something super cool.",
+    "library.waitingForContent": "Library waiting for incredible content",
+    "library.soonContent": "We'll soon have super cool resources for you to explore and learn amazing things.",
+    "library.beFirst": "Be the first to share incredible knowledge! Add the first resource and bring this library to life.",
+    "library.addFirstResource": "Add the first cool resource",
+    "library.epicDocuments": "Epic documents!",
+    "library.amazingVideos": "Amazing videos!",
+    "library.superPopular": "Super popular!",
+    "library.awesomeResources": "Awesome resources!",
+
+    // ========================================
+    // MATERIAL DE APOYO
+    // ========================================
+    "material.title": "Support Material",
+    "material.description": "Explore our educational projects",
+    "material.noMaterials": "No materials available",
+    "material.createMaterial": "Create Support Material",
+    "material.pageTitle": "Projects",
+    "material.pageDescription": "Discover amazing projects! Explore initiatives that will help you learn, create and shine like never before",
+    "material.createProject": "Create Project",
+    "material.statisticsTitle": "Incredible Statistics!",
+    "material.statisticsSubtitle": "See all the amazing projects available",
+    "material.totalProjects": "Total Projects",
+    "material.awesomeProjects": "Awesome projects!",
+    "material.featured": "Featured",
+    "material.superPopular": "Super popular!",
+    "material.modules": "Modules",
+    "material.amazingModules": "Amazing modules!",
+    "material.findPerfect": "Find Your Perfect Project!",
+    "material.exploreAll": "Explore all our super cool projects",
+    "material.searchPlaceholder": "🎓 Search amazing projects, awesome educators...",
+    "material.clearSearch": "Clear search",
+    "material.onlyFeatured": "Only featured",
+    "material.sortMostRecent": "🆕 Most recent",
+    "material.sortNameAZ": "🔤 Name A-Z",
+    "material.sortByEducator": "👨‍🏫 By educator",
+    "material.sortByModules": "📊 By modules",
+    "material.orderAsc": "⬆️ Ascending order",
+    "material.orderDesc": "⬇️ Descending order",
+    "material.clearFilters": "Clear",
+    "material.noProjectsFound": "We didn't find any super cool projects",
+    "material.showing": "Showing",
+    "material.of": "of",
+    "material.projectsIncredible": "amazing projects",
+    "material.totals": "total",
+    "material.loadingTitle": "Loading Amazing Projects!",
+    "material.loadingSubtitle": "Preparing the best learning experience for you",
+    "material.searchingProjects": "Searching for super cool projects",
+    "material.emptyNoMatch": "Oops! We didn't find any super cool projects",
+    "material.emptyTryAgain": "Try other search terms or adjust the filters to find super cool projects.",
+    "material.emptyWaitingTitle": "Waiting for amazing projects",
+    "material.emptyBeFirst": "Be the first to create an amazing project! Add the first project and bring this platform to life.",
+    "material.emptySoon": "We'll soon have super cool projects for you to learn amazing things and become an expert.",
+    "material.clearFiltersButton": "Clear filters and start over",
+    "material.createFirstProject": "Create the first project",
+    "material.projectsWaiting": "Amazing Projects Waiting for You!",
+    "material.chooseAdventure": "Choose your next learning adventure",
+    "material.goToFirstPage": "Go to first page",
+    "material.goToLastPage": "Go to last page",
+    "material.previousPage": "Previous page",
+    "material.nextPage": "Next page",
+    "material.errorLoading": "Error loading support material",
+
+    // ========================================
+    // DASHBOARD
+    // ========================================
+    "dashboard.welcome": "Welcome",
+    "dashboard.accessMessage": "Access all the center's resources and activities.",
+    "dashboard.projects": "Projects",
+    "dashboard.projectsDescription": "Educational support material",
+    "dashboard.blogTitle": "Blog",
+    "dashboard.blogDescription": "News and articles",
+    "dashboard.eventsTitle": "Events",
+    "dashboard.eventsDescription": "Activities calendar",
+    "dashboard.libraryTitle": "Library",
+    "dashboard.libraryDescription": "Resources and documents",
+    "dashboard.adminPanel": "Administration Panel",
+    "dashboard.userManagement": "User Management",
+    "dashboard.userManagementDescription": "Create, edit and manage users",
+    "dashboard.analytics": "Analytics",
+    "dashboard.analyticsDescription": "Usage analysis and metrics",
+    "dashboard.yourProfile": "Your Profile",
+    "dashboard.username": "Username",
+    "dashboard.fullName": "Full name",
+    "dashboard.role": "Role",
+    "dashboard.phone": "Phone",
+    "dashboard.closeSession": "Close Session",
+
+    // ========================================
+    // COMMON UI ELEMENTS
+    // ========================================
+    "common.loading": "Loading...",
+    "common.success": "Success",
+    "common.error": "Error",
+    "common.search": "Search",
+    "common.filter": "Filter",
+    "common.sort": "Sort",
+    "common.view": "View",
+    "common.download": "Download",
+    "common.clearSearch": "Clear search",
+    "common.openMenu": "Open menu",
+    "common.closeMenu": "Close menu",
+    "common.goToFirstPage": "Go to first page",
+    "common.goToLastPage": "Go to last page",
+    "common.previousPage": "Previous page",
+    "common.nextPage": "Next page",
+    "common.closeError": "Close error message",
+
+    // ========================================
+    // ERRORS
+    // ========================================
+    "error.generic": "Unknown error",
+    "error.loading_users": "Error loading users",
+    "error.updating_role": "Error updating role",
+    "error.loading_categories": "Error loading categories",
+    "error.saving_post": "Error saving post",
+    "error.loading_resources": "Error loading library resources",
+    "error.downloading_file": "Error downloading file",
+    "error.deleting_resource": "Error deleting resource",
+    "error.loading_calendar": "Error loading calendar",
+    "error.loading_news": "Error loading news",
+    "error.loading_initial_data": "Error loading initial data",
+    "error.loading_analytics": "Error loading analytics",
+    "error.loading_upcoming_events": "Error loading upcoming events",
+    "error.loading_featured_events": "Error loading featured events",
+    "loginError": "Login error",
+    "connectionError": "Connection error. Please verify that the server is running.",
+
+    // ========================================
+    // FOOTER
+    // ========================================
+    "footer.copyright": "Víctor Jara Cultural Center",
+    "footer.tagline": "Creating magical learning moments",
+    "footerText": "All rights reserved",
+
+    // ========================================
+    // COURSE MANAGEMENT
+    // ========================================
+    "course.management": "Project Management",
+    "course.authenticated_as": "Authenticated as",
+    "course.not_authenticated": "Not authenticated (public access mode)",
+
+    // ========================================
+    // MODALS
+    // ========================================
+    "modal.sessionExpired": "Session Expired",
+    "modal.sessionExpiredMessage": "Your session has expired. Please log in again.",
+    "modal.backToHome": "Back to Home",
+    "modal.closeModal": "Close modal",
+    "modal.confirmAction": "Confirm action?",
+    "modal.confirmMessage": "Are you sure you want to continue?",
+    "modal.confirm": "Confirm",
+
+    // ========================================
+    // FILTERS
+    // ========================================
+    "filters.title": "Super Cool Filters",
+    "filters.active": "active",
+    "filters.clearAll": "Clear All",
+    "filters.show": "Show",
+    "filters.hide": "Hide",
+    "filters.activeFilters": "Active Filters",
+    "filters.fileType": "File Type",
+    "filters.category": "Category",
+    "filters.author": "Author",
+    "filters.language": "Language",
+    "filters.year": "Publication Year",
+    "filters.tags": "Tags",
+    "filters.allAuthors": "All authors",
+    "filters.allLanguages": "All languages",
+    "filters.allYears": "All years",
+    "filters.noTags": "No tags available",
+    "filters.fileType.image": "🖼️ Images",
+    "filters.fileType.video": "🎥 Videos",
+    "filters.fileType.audio": "🎵 Audio",
+    "filters.fileType.document": "📄 Documents",
+    "filters.category.victorJara": "🎸 Víctor Jara",
+    "filters.category.nuevaCancion": "🎶 Nueva Canción",
+    "filters.category.educacionPopular": "📚 Popular Education",
+    "filters.category.memoriaHistorica": "🏛️ Historical Memory",
+    "filters.category.talleresEventos": "🎭 Workshops and Events",
+    "filters.category.archivoPrensa": "📰 Press Archive",
+    "filters.category.audiovisual": "🎬 Audiovisual",
+    "filters.category.literatura": "📖 Literature",
+    "filters.category.general": "📁 General",
+    "filters.category.historia": "📜 History",
+    "filters.category.musica": "🎵 Music",
+    "filters.category.arte": "🎨 Art",
+    "filters.category.cine": "🎬 Cinema",
+
+    // ========================================
+    // EVENTS WIDGET
+    // ========================================
+    "events.upcoming": "Upcoming Events",
+    "events.viewAll": "View all",
+    "events.viewFullCalendar": "View full calendar",
+    "events.noUpcoming": "No upcoming events",
+    "events.today": "Today",
+    "events.tomorrow": "Tomorrow",
+    "events.organizer": "By",
+    "events.viewAllMonth": "View all events this month",
+
+    // ========================================
+    // MISC
+    // ========================================
+    "createArticle": "Create Article",
+    "deleteConfirm": "Are you sure you want to delete this resource?"
+  }
 };
 
+// ============================================
+// STORE REACTIVO PARA EL IDIOMA ACTUAL
+// ============================================
+
+const STORAGE_KEY = 'ccpvj_locale';
+const DEFAULT_LOCALE: Locale = 'es';
+
+// Obtener idioma inicial
+function getInitialLocale(): Locale {
+  if (browser) {
+    // Intentar obtener de localStorage
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'es' || stored === 'en') {
+      return stored;
+    }
+  }
+  return DEFAULT_LOCALE;
+}
+
+// Store reactivo
+export const locale = writable<Locale>(getInitialLocale());
+
+// ============================================
+// FUNCIONES PRINCIPALES
+// ============================================
+
 /**
- * Simple translation function
- * @param key - Translation key
- * @returns Translated string or the key if not found
+ * Obtiene el idioma actual
  */
-export function t(key: string): string {
-  return translations[key as keyof typeof translations] || key;
+export function getLocale(): Locale {
+  let currentLocale: Locale = DEFAULT_LOCALE;
+  locale.subscribe(value => currentLocale = value)();
+  return currentLocale;
 }
 
 /**
- * Translation function with placeholder replacement
- * @param key - Translation key
- * @param params - Object with values to replace placeholders
- * @returns Translated string with placeholders replaced
+ * Cambia el idioma
  */
-export function t_params(key: string, params: Record<string, string | number>): string {
-  let translated = t(key);
+export function setLocale(newLocale: Locale): void {
+  locale.set(newLocale);
+  if (browser) {
+    localStorage.setItem(STORAGE_KEY, newLocale);
+  }
+}
 
-  // Replace placeholders like {count}, {name}, etc.
+/**
+ * Función de traducción NO reactiva (para usar en scripts TypeScript)
+ * Para uso en templates, usar el store: {$t('key')}
+ */
+export function translate(key: MessageKey): string {
+  const currentLocale = getLocale();
+  return messages[currentLocale][key] || messages.es[key] || key;
+}
+
+/**
+ * Store derivado reactivo para traducciones
+ * Uso en templates: {$t('home')}
+ * El $ es la sintaxis de Svelte para suscribirse automáticamente al store
+ */
+export const t = derived(locale, ($locale) => {
+  return (key: MessageKey): string => {
+    return messages[$locale][key] || messages.es[key] || key;
+  };
+});
+
+/**
+ * Función de traducción con parámetros (NO reactiva)
+ */
+export function translate_params(key: MessageKey, params: Record<string, string | number>): string {
+  let translated = translate(key);
+
+  // Reemplazar placeholders {param}
   Object.entries(params).forEach(([param, value]) => {
     translated = translated.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
   });
@@ -140,4 +1119,24 @@ export function t_params(key: string, params: Record<string, string | number>): 
   return translated;
 }
 
-export default t;
+/**
+ * Store derivado reactivo para traducciones con parámetros
+ * Uso: {$tParams('moduleCountLabel', { count: 5 })}
+ */
+export const tParams = derived(locale, ($locale) => {
+  return (key: MessageKey, params: Record<string, string | number>): string => {
+    let translated = messages[$locale][key] || messages.es[key] || key;
+
+    Object.entries(params).forEach(([param, value]) => {
+      translated = translated.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+    });
+
+    return translated;
+  };
+});
+
+// ============================================
+// EXPORTS
+// ============================================
+
+export default translate;

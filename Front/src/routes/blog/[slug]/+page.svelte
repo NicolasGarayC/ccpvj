@@ -74,10 +74,10 @@
 
 <svelte:head>
   {#if post}
-    <title>{post.title} | {t('centroTitle') || 'Centro Cultural'}</title>
+    <title>{post.title} | {$t('centroTitle') || 'Centro Cultural'}</title>
     <meta name="description" content={post.excerpt} />
   {:else}
-    <title>{t('newsArticle') || 'Artículo'} | {t('centroTitle') || 'Centro Cultural'}</title>
+    <title>{$t('newsArticle') || 'Artículo'} | {$t('centroTitle') || 'Centro Cultural'}</title>
   {/if}
 </svelte:head>
 
@@ -95,12 +95,12 @@
       <h1 class="text-2xl font-bold text-gray-900 mb-4">
         {error || (t('articleNotFound') || 'Artículo no encontrado')}
       </h1>
-      <a 
-        href="/blog" 
+      <a
+        href="/blog"
         class="inline-flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
       >
         <i class="fas fa-arrow-left mr-2"></i>
-        {t('backToNews') || 'Volver a noticias'}
+        {$t('backToNews') || 'Volver a noticias'}
       </a>
     </div>
 
@@ -109,12 +109,12 @@
     <article>
       <!-- Back Navigation -->
       <div class="mb-8">
-        <a 
-          href="/blog" 
+        <a
+          href="/blog"
           class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
         >
           <i class="fas fa-arrow-left mr-2"></i>
-          {t('backToNews') || 'Volver a noticias'}
+          {$t('backToNews') || 'Volver a noticias'}
         </a>
       </div>
 
@@ -163,7 +163,7 @@
             >
               <source src={getMediaUrl(post.featuredMedia, true)} type="video/mp4">
               <track kind="captions" src="" label="Captions" default>
-              <p class="text-gray-500 p-4">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
+              <p class="text-gray-500 p-4">{$t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
             </video>
           {:else if isImage(post.featuredMedia)}
             <img
@@ -204,7 +204,7 @@
                 >
                   <source src={getMediaUrl(element.filePath, true)} type={element.mimeType || 'video/mp4'}>
                   <track kind="captions" src="" label="Captions" default>
-                  <p class="text-gray-500 p-4">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
+                  <p class="text-gray-500 p-4">{$t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
                 </video>
               </div>
 
@@ -215,7 +215,7 @@
                   controls
                 >
                   <source src={getMediaUrl(element.filePath, true)} type={element.mimeType || 'audio/mp3'}>
-                  <p class="text-gray-500">{t('audioNotSupported') || 'Tu navegador no soporta audio.'}</p>
+                  <p class="text-gray-500">{$t('audioNotSupported') || 'Tu navegador no soporta audio.'}</p>
                 </audio>
               </div>
             {/if}
@@ -334,7 +334,7 @@
             href="/blog"
             class="inline-flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            {t('readMoreNews') || 'Leer más noticias'}
+            {$t('readMoreNews') || 'Leer más noticias'}
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>

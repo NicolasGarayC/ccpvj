@@ -3,7 +3,9 @@ import { readFile } from 'fs/promises';
 import { existsSync, statSync } from 'fs';
 import path from 'path';
 import { error } from '@sveltejs/kit';
-import { API_BASE_URL } from '$lib/config';
+
+// API base URL for analytics tracking
+const API_BASE_URL = 'http://localhost:5251';
 
 // Use process.cwd() to get current working directory, then navigate to Back/Data/media
 // When running from Front/ directory, go up one level to root, then to Back/Data/media

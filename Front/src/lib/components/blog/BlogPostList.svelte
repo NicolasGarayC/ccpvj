@@ -5,6 +5,7 @@
 	import BlogPostModal from './BlogPostModal.svelte';
 	import LoadingSpinner from '../common/LoadingSpinner.svelte';
 	import type { BlogPost } from '$lib/data/models/interfaces';
+	import { t, translate } from '$lib/i18n';
 
 	export let showActions = false;
 
@@ -33,7 +34,7 @@
 			dispatch('postsLoaded', posts);
 		} catch (err) {
 			console.error('Error loading posts:', err);
-			error = err instanceof Error ? err.message : 'Error cargando posts';
+			error = err instanceof Error ? err.message : $t('blog.error_loading_posts');
 		} finally {
 			isLoading = false;
 		}
@@ -80,9 +81,9 @@
 	{#if showActions}
 		<div class="list-header">
 			<div class="header-info">
-				<h2 class="header-title">Gestión de Artículos</h2>
+				<h2 class="header-title">{$t('blog.article_management')}</h2>
 				<p class="header-subtitle">
-					{posts.length} {posts.length === 1 ? 'artículo' : 'artículos'}
+					{posts.length} {posts.length === 1 ? $t('blog.article_singular') : $t('blog.article_plural')}
 				</p>
 			</div>
 			<button class="btn-create" on:click={handleCreatePost}>
@@ -90,7 +91,7 @@
 					<line x1="12" y1="5" x2="12" y2="19"></line>
 					<line x1="5" y1="12" x2="19" y2="12"></line>
 				</svg>
-				Crear Artículo
+				{$t('blog.create_article')}
 			</button>
 		</div>
 	{/if}
@@ -99,7 +100,7 @@
 	{#if isLoading}
 		<div class="loading-container">
 			<LoadingSpinner size="large" />
-			<p class="loading-text">Cargando artículos...</p>
+			<p class="loading-text">{$t('blog.loading_articles')}</p>
 		</div>
 
 	<!-- Error State -->
@@ -111,10 +112,10 @@
 					<line x1="15" y1="9" x2="9" y2="15"></line>
 					<line x1="9" y1="9" x2="15" y2="15"></line>
 				</svg>
-				<h3>Error al cargar artículos</h3>
+				<h3>{$t('blog.error_loading_articles_header')}</h3>
 				<p>{error}</p>
 				<button class="btn-retry" on:click={loadPosts}>
-					Intentar de nuevo
+					{$t('blog.retry')}
 				</button>
 			</div>
 		</div>
@@ -129,15 +130,15 @@
 					<line x1="12" y1="18" x2="12" y2="12"></line>
 					<line x1="9" y1="15" x2="15" y2="15"></line>
 				</svg>
-				<h3>No hay artículos todavía</h3>
-				<p>Comienza creando tu primer artículo del blog</p>
+				<h3>{$t('blog.no_articles_yet')}</h3>
+				<p>{$t('blog.create_first_article_description')}</p>
 				{#if showActions}
 					<button class="btn-create-first" on:click={handleCreatePost}>
 						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<line x1="12" y1="5" x2="12" y2="19"></line>
 							<line x1="5" y1="12" x2="19" y2="12"></line>
 						</svg>
-						Crear Primer Artículo
+						{$t('blog.create_first_article')}
 					</button>
 				{/if}
 			</div>

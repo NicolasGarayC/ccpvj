@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { modalStore } from './modalStore';
+import { translate } from '$lib/i18n';
 
 export interface AuthModalState {
     show: boolean;
@@ -27,12 +28,12 @@ function createAuthModalStore() {
             // Mostrar modal de sesión expirada
             set({
                 show: true,
-                message: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.'
+                message: translate('modal.sessionExpiredMessage')
             });
         },
         showUnauthorized: () => set({
             show: true,
-            message: 'No tienes autorización para realizar esta acción.'
+            message: translate('auth.login_required')
         }),
         hide: () => set({
             show: false,

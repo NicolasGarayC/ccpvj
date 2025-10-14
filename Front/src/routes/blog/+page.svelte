@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from 'svelte';
   import BlogPostList from '$lib/components/blog/BlogPostList.svelte';
   import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
@@ -88,8 +88,8 @@
 </script>
 
 <svelte:head>
-  <title>{t('newsAndAnnouncements') || 'Noticias y Anuncios'} | {t('centroTitle') || 'Centro Cultural'}</title>
-  <meta name="description" content={t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara'} />
+  <title>{$t('newsAndAnnouncements') || 'Noticias y Anuncios'} | {$t('centroTitle') || 'Centro Cultural'}</title>
+  <meta name="description" content={$t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara'} />
 </svelte:head>
 
 <div class="blog-page">
@@ -98,10 +98,10 @@
     <div class="header-content">
       <h1 class="page-title">
         <span class="icon">📰</span>
-        <span class="gradient-text">{t('newsAndAnnouncements') || 'Noticias y Anuncios'}</span>
+        <span class="gradient-text">{$t('newsAndAnnouncements') || 'Noticias y Anuncios'}</span>
       </h1>
       <p class="page-description">
-        {t('stayUpdated') || 'Mantente informado sobre las últimas actividades, proyectos y eventos de nuestra comunidad educativa.'}
+        {$t('stayUpdated') || 'Mantente informado sobre las últimas actividades, proyectos y eventos de nuestra comunidad educativa.'}
       </p>
     </div>
   </div>

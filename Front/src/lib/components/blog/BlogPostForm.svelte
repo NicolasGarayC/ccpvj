@@ -80,9 +80,11 @@
 					id: elem.id,
 					elementType: elem.elementType as ElementType,
 					content: elem.content || '',
-					filePath: elem.filePath || '',
-					fileName: elem.fileName || '',
-					previewUrl: elem.filePath || '',
+					// IMPORTANT: Don't convert null/undefined to '' - preserve original values
+					// This ensures that existing filePath values are maintained when editing
+					filePath: elem.filePath || undefined,
+					fileName: elem.fileName || undefined,
+					previewUrl: elem.filePath || undefined,
 					orderNumber: elem.orderNumber,
 					isEditing: false
 				};
@@ -253,7 +255,35 @@
 				const usedElementIds = new Set();
 
 				for (const elem of elements) {
-					if (elem.file) {
+					// Check if this is a media element with a newly uploaded file
+					const hasNewUpload = elem.filePath && elem.filePath.trim() !== '' &&
+					                     elem.id && existingElements.some(e => e.id === elem.id && !e.filePath);
+
+					if (hasNewUpload) {
+						// Media element with NEW upload on existing element with empty file_path
+						// DELETE old element and CREATE new one with the media
+						const existingElem = existingElements.find(e => e.id === elem.id);
+						if (existingElem) {
+							await blogPostElementService.deleteElement(existingElem.id);
+							console.log(`🗑️ Deleted old empty media element ${existingElem.id}`);
+						}
+
+						// Create new element with uploaded media
+						const newElementData: ElementWithFile = {
+							element: {
+								blogPostId: post.id,
+								elementType: elem.elementType,
+								content: elem.content,
+								orderNumber: elem.orderNumber,
+								filePath: elem.filePath,
+								fileName: elem.fileName
+							},
+							file: undefined
+						};
+						const createdElements = await blogPostElementService.createElementsInBatch(post.id, [newElementData]);
+						updatedElements.push(...createdElements);
+						console.log(`✅ Created new media element with uploaded file`);
+					} else if (elem.file) {
 						// New file uploaded - create new element with file
 						const newElementData: ElementWithFile = {
 							element: {
@@ -268,15 +298,24 @@
 						updatedElements.push(...createdElements);
 					} else if (elem.id && existingElements.some(existing => existing.id === elem.id)) {
 						// Existing element - update only content/order if needed
-						const updatedElement = await blogPostElementService.updateElement({
+						const updateData: any = {
 							id: elem.id,
 							elementType: elem.elementType,
 							content: elem.content,
-							orderNumber: elem.orderNumber,
-							// Preserve existing file information
-							filePath: elem.filePath,
-							fileName: elem.fileName
-						});
+							orderNumber: elem.orderNumber
+						};
+
+						// IMPORTANT: Only include file fields if they have non-empty values
+						// This prevents overwriting existing files with empty strings
+						// The backend will preserve existing values if fields are not sent
+						if (elem.filePath && elem.filePath.trim() !== '') {
+							updateData.filePath = elem.filePath;
+							updateData.fileName = elem.fileName;
+						}
+						// If elem.filePath is empty/undefined, we DON'T send it to backend
+						// Backend will preserve the existing file information
+
+						const updatedElement = await blogPostElementService.updateElement(updateData);
 						updatedElements.push(updatedElement);
 						usedElementIds.add(elem.id);
 					} else {

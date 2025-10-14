@@ -1,12 +1,12 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
-	import { t } from '$lib/i18n';
+	import { t, translate } from '$lib/i18n';
 
 	export let limit: number = 5;
 	export let showHeader: boolean = true;
-	export let title: string = t('events.upcoming');
+	export let title: string = translate('events.upcoming');
 
 	let events: EventSummary[] = [];
 	let loading = true;
@@ -23,7 +23,7 @@
 			events = await calendarService.getUpcomingEvents(limit);
 		} catch (err) {
 			console.error('Error loading upcoming events:', err);
-			error = t('error.loading_upcoming_events');
+			error = translate('error.loading_upcoming_events');
 		} finally {
 			loading = false;
 		}
@@ -39,11 +39,11 @@
 
 	function getEventTypeColor(eventType: string): string {
 		const colors: Record<string, string> = {
-			[t('eventType.class')]: 'bg-blue-100 text-blue-800',
-			[t('eventType.workshop')]: 'bg-green-100 text-green-800',
-			[t('eventType.conference')]: 'bg-purple-100 text-purple-800',
-			[t('eventType.event')]: 'bg-yellow-100 text-yellow-800',
-			[t('eventType.general')]: 'bg-gray-100 text-gray-800'
+			[translate('eventType.class')]: 'bg-blue-100 text-blue-800',
+			[translate('eventType.workshop')]: 'bg-green-100 text-green-800',
+			[translate('eventType.conference')]: 'bg-purple-100 text-purple-800',
+			[translate('eventType.event')]: 'bg-yellow-100 text-yellow-800',
+			[translate('eventType.general')]: 'bg-gray-100 text-gray-800'
 		};
 		return colors[eventType] || 'bg-gray-100 text-gray-800';
 	}
@@ -71,8 +71,8 @@
 	}
 
 	function getDateLabel(date: Date): string {
-		if (isToday(date)) return t('events.today');
-		if (isTomorrow(date)) return t('events.tomorrow');
+		if (isToday(date)) return translate('events.today');
+		if (isTomorrow(date)) return translate('events.tomorrow');
 		return formatEventDate(date);
 	}
 </script>
@@ -91,7 +91,7 @@
 					on:click={navigateToCalendar}
 					class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
 				>
-					{t('events.viewAll')}
+					{$t('events.viewAll')}
 					<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
 					</svg>
@@ -123,7 +123,7 @@
 					on:click={loadEvents}
 					class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
 				>
-					{t('action.retry')}
+					{$t('action.retry')}
 				</button>
 			</div>
 		{:else if events.length === 0}
@@ -131,12 +131,12 @@
 				<svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
 				</svg>
-				<p class="text-sm text-gray-600">{t('events.noUpcoming')}</p>
+				<p class="text-sm text-gray-600">{$t('events.noUpcoming')}</p>
 				<button
 					on:click={navigateToCalendar}
 					class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
 				>
-					{t('events.viewFullCalendar')}
+					{$t('events.viewFullCalendar')}
 				</button>
 			</div>
 		{:else}
@@ -195,7 +195,7 @@
 
 							<!-- Organizador -->
 							<div class="text-xs text-gray-500 mt-1">
-								{t('events.organizer')} {event.organizerName}
+								{$t('events.organizer')} {event.organizerName}
 							</div>
 						</div>
 
@@ -203,11 +203,11 @@
 						<div class="flex-shrink-0 text-right">
 							{#if isToday(event.startDateTime)}
 								<div class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-									{t('events.today')}
+									{$t('events.today')}
 								</div>
 							{:else if isTomorrow(event.startDateTime)}
 								<div class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-									{t('events.tomorrow')}
+									{$t('events.tomorrow')}
 								</div>
 							{:else}
 								<div class="text-xs text-gray-500">
@@ -226,7 +226,7 @@
 						on:click={navigateToCalendar}
 						class="text-sm text-blue-600 hover:text-blue-800 font-medium"
 					>
-						{t('events.viewAllMonth')}
+						{$t('events.viewAllMonth')}
 					</button>
 				</div>
 			{/if}
