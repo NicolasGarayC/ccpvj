@@ -25,6 +25,7 @@ type BlogPostCreateInput = {
 	authorId?: number;
 	authorName?: string;
 	publishDate?: string;
+	isPublished?: boolean;
 };
 
 type BlogPostUpdateInput = BlogPostCreateInput & {
@@ -140,14 +141,20 @@ class BlogHttpService extends BaseHttpService {
 			featuredMedia: this.extractFeaturedMediaFromElements(blogPost.elements || []),
 			videoPoster: undefined,
 			tags: Array.isArray(blogPost.tags) ? blogPost.tags : (blogPost.tags ? blogPost.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0) : []),
-			status: blogPost.isPublished ? 'published' : 'draft',
+			status: blogPost.status ?? (blogPost.isPublished ? 'published' : 'draft'),
 			publishDate: blogPost.publishedAt
 				? new Date(blogPost.publishedAt * 1000).toISOString()
 				: blogPost.createdAt
 					? new Date(blogPost.createdAt * 1000).toISOString()
 					: new Date().toISOString(),
-			authorId: blogPost.authorId,
-			authorName: blogPost.authorName || 'Author',
+			authorId: Number(
+				blogPost.authorId ??
+				blogPost.authorID ??
+				blogPost.author?.id ??
+				blogPost.author?.authorId ??
+				0
+			),
+			authorName: this.resolveAuthorName(blogPost),
 			categoryId: blogPost.categoryId != null ? String(blogPost.categoryId) : undefined,
 			categoryName: blogPost.categoryName,
 			createdAt: blogPost.createdAt
@@ -173,7 +180,8 @@ class BlogHttpService extends BaseHttpService {
 			categoryId: post.categoryId ?? undefined,
 			tags: Array.isArray(post.tags) ? post.tags : [],
 			featuredImagePath: post.featuredMedia ?? undefined,
-			elements
+			elements,
+			status: post.status ?? 'draft'
 		};
 	}
 
@@ -188,7 +196,8 @@ class BlogHttpService extends BaseHttpService {
 			isActive: true,
 			categoryId: post.categoryId ?? null,
 			tags: Array.isArray(post.tags) ? post.tags : [],
-			featuredImagePath: post.featuredMedia ?? undefined
+			featuredImagePath: post.featuredMedia ?? undefined,
+			status: post.status ?? 'draft'
 		};
 
 		if (includeElements) {
@@ -240,11 +249,62 @@ class BlogHttpService extends BaseHttpService {
 	}
 
 	private generateSlugFromTitle(title: string): string {
-		return title
-			.toLowerCase()
-			.replace(/[^a-z0-9\s-]/g, '')
-			.replace(/\s+/g, '-')
-			.trim();
+			return title
+				.toLowerCase()
+				.replace(/[^a-z0-9\s-]/g, '')
+				.replace(/\s+/g, '-')
+				.trim();
+	}
+
+	private resolveAuthorName(blogPost: any): string {
+		const rawName = typeof blogPost.authorName === 'string' ? blogPost.authorName.trim() : '';
+		if (rawName && !this.isPlaceholderAuthor(rawName)) {
+			return rawName;
+		}
+
+		const author = blogPost.author ?? blogPost.authorInfo ?? null;
+		if (author) {
+			const nameParts = [
+				author.nombre ?? author.firstName ?? author.name ?? author.first_name ?? null,
+				author.apellido ?? author.lastName ?? author.last_name ?? null
+			]
+				.filter((part: string | null | undefined) => typeof part === 'string' && part.trim().length > 0)
+				.map((part: string | null) => part!.trim());
+
+			if (nameParts.length > 0) {
+				return nameParts.join(' ');
+			}
+
+			const usernameCandidates = [
+				author.nombreUsuario,
+				author.username,
+				author.userName
+			];
+
+			for (const candidate of usernameCandidates) {
+				if (typeof candidate === 'string' && candidate.trim().length > 0 && !this.isPlaceholderAuthor(candidate)) {
+					return candidate.trim();
+				}
+			}
+		}
+
+		const fallback =
+			blogPost.authorUsername ??
+			blogPost.author_user_name ??
+			blogPost.createdBy ??
+			blogPost.createdByName ??
+			null;
+
+		if (typeof fallback === 'string' && fallback.trim().length > 0 && !this.isPlaceholderAuthor(fallback)) {
+			return fallback.trim();
+		}
+
+		return 'Autor';
+	}
+
+	private isPlaceholderAuthor(value: string): boolean {
+		const normalized = value.trim().toLowerCase();
+		return normalized === 'author' || normalized === 'autor';
 	}
 
 	// High-level methods that return BlogPost interface for compatibility
@@ -253,8 +313,13 @@ class BlogHttpService extends BaseHttpService {
 		return articles.map(article => this.adaptBlogPostToBlogPost(article));
 	}
 
-	async getAllPosts(): Promise<BlogPost[]> {
-		const result = await this.getArticles({ isPublished: true, pageSize: 50 });
+	async getAllPosts(includeDrafts: boolean = false): Promise<BlogPost[]> {
+		const searchParams: ArticleSearchDto = { pageSize: 50 };
+		if (!includeDrafts) {
+			searchParams.isPublished = true;
+		}
+
+		const result = await this.getArticles(searchParams);
 		const articles = result.posts || result; // Handle both paginated and array responses
 		return Array.isArray(articles) ? articles.map(article => this.adaptBlogPostToBlogPost(article)) : [];
 	}

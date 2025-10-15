@@ -42,9 +42,10 @@
 		orderNumber: nextOrderNumber
 	};
 
-	let elements: ElementBlock[] = [];
-	let draggedIndex: number | null = null;
-	let selectedEventIds: string[] = [];
+let elements: ElementBlock[] = [];
+let draggedIndex: number | null = null;
+let selectedEventIds: string[] = [];
+let postStatus: 'draft' | 'published' = 'draft';
 
 	$: isEdit = !!post;
 	$: modalTitle = isEdit ? 'Editar Artículo' : 'Crear Nuevo Artículo';
@@ -70,10 +71,13 @@ $: if (post && visible) {
 }
 
 	async function loadPostData(postData: BlogPost) {
-		formData = {
-			title: postData.title || '',
-			orderNumber: 0 // Blog posts don't use orderNumber like course posts
-		};
+	formData = {
+		title: postData.title || '',
+		orderNumber: 0 // Blog posts don't use orderNumber like course posts
+	};
+	postStatus = (postData as any).status === 'published' || (postData as any).isPublished
+		? 'published'
+		: 'draft';
 
 		// Load existing elements for editing
 		try {
@@ -120,11 +124,12 @@ onMount(() => {
     };
 });
 
-	function resetForm() {
-		formData = {
-			title: '',
-			orderNumber: nextOrderNumber
-		};
+function resetForm() {
+	formData = {
+		title: '',
+		orderNumber: nextOrderNumber
+	};
+	postStatus = 'draft';
 		elements = [];
 		errors = {};
 		isLoading = false;
@@ -282,7 +287,8 @@ onMount(() => {
 				title: formData.title.trim(),
 				excerpt: post?.excerpt ?? '',
 				slug: post?.slug ?? '',
-				status: post?.status ?? 'draft',
+				status: postStatus,
+				isPublished: postStatus === 'published',
 				categoryId: resolvedCategoryId,
 				featuredMedia: post?.featuredMedia ?? undefined,
 				tags: resolvedTags,
@@ -311,7 +317,8 @@ onMount(() => {
 				excerpt: '',
 				content: combinedContent,
 				slug: '',
-				status: 'draft' as const,
+				status: postStatus,
+				isPublished: postStatus === 'published',
 				categoryId: null as string | null,
 				tags: [] as string[]
 			};
@@ -645,6 +652,22 @@ onMount(() => {
 							{#if errors.title}
 								<span class="error-text">{errors.title}</span>
 							{/if}
+						</div>
+					</div>
+
+					<div class="form-section">
+						<h4>Estado de Publicación</h4>
+						<div class="form-group">
+							<label for="postStatus">Elige el estado</label>
+							<select
+								id="postStatus"
+								bind:value={postStatus}
+								disabled={isLoading}
+							>
+								<option value="draft">Borrador (no visible para visitantes)</option>
+								<option value="published">Publicado (visible para todos)</option>
+							</select>
+							<p class="hint">Cambia a "Publicado" cuando quieras que el artículo sea público.</p>
 						</div>
 					</div>
 

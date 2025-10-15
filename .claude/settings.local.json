@@ -67,7 +67,18 @@
       "Bash(Data/sqlite3.exe Data/ccpvj.db \"SELECT id, title, slug, created_at FROM blog_post WHERE created_at &lt; 100000000 OR created_at IS NULL;\")",
       "Bash(Data/sqlite3.exe Data/ccpvj.db \"SELECT id, title, slug, created_at FROM blog_post ORDER BY created_at ASC LIMIT 1;\")",
       "Bash(Data/sqlite3.exe Data/ccpvj.db \"SELECT COUNT(*) as total FROM blog_post;\")",
-      "Bash(Data/sqlite3.exe:*)"
+      "Bash(Data/sqlite3.exe:*)",
+      "Bash(./sqlite3.exe ccpvj.db \"SELECT id, title, educator_name FROM material_apoyo ORDER BY created_at DESC LIMIT 3;\")",
+      "Bash(sqlite3 Data/ccpvj.db \"PRAGMA table_info(material_apoyo);\")",
+      "Bash(sqlite3 Data/ccpvj.db \"ALTER TABLE material_apoyo ADD COLUMN educator_name TEXT;\")",
+      "Bash(sqlite3 Data/ccpvj.db \"SELECT id, title, educator_name, created_at FROM material_apoyo ORDER BY created_at DESC LIMIT 3;\")",
+      "Bash(sqlite3 Data/ccpvj.db \"UPDATE material_apoyo SET educator_name = ''Pepe F'' WHERE id = ''4b07d054-9f32-4736-86bd-6e2cff31ca78'';\")",
+      "Bash(sqlite3 Data/ccpvj.db \"SELECT id, title, educator_name FROM material_apoyo WHERE id = ''4b07d054-9f32-4736-86bd-6e2cff31ca78'';\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(pkill -9 dotnet)",
+      "Bash(dotnet ef dbcontext info)",
+      "Bash(dotnet build --no-incremental)",
+      "Bash(dotnet build --no-incremental Back/)"
     ],
     "deny": [],
     "ask": []

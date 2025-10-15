@@ -1,3 +1,6 @@
+import { jwtService } from '$lib/services/auth/jwtService.js';
+import { BACKEND_API_URL } from '$lib/config/backend';
+
 /**
  * Contextual Upload Service for Centro Cultural Víctor Jara
  * Handles file uploads with proper contextual organization following the documentation structure
@@ -38,6 +41,23 @@ export interface BlogMediaUploadOptions {
 }
 
 class ContextualUploadService {
+    private readonly apiBaseUrl = BACKEND_API_URL;
+
+    private buildAuthHeaders(): Record<string, string> {
+        const headers: Record<string, string> = {};
+        const token = jwtService.getToken();
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    private async parseResponse(response: Response) {
+        const contentType = response.headers.get('content-type') ?? '';
+        const isJson = contentType.includes('application/json');
+        const payload = isJson ? await response.json() : await response.text();
+        return { isJson, payload };
+    }
 
     /**
      * Upload course banner image
@@ -50,15 +70,33 @@ class ContextualUploadService {
                 formData.append('oldImagePath', oldImagePath);
             }
 
-            const response = await fetch(`/api/upload/material-apoyo/${courseId}`, {
+            const response = await fetch(`${this.apiBaseUrl}/upload/material-apoyo/${courseId}`, {
                 method: 'POST',
-                body: formData
+                headers: this.buildAuthHeaders(),
+                body: formData,
+                credentials: 'include'
             });
 
-            const result = await response.json();
+            const { isJson, payload } = await this.parseResponse(response);
+            const result: UploadResult = isJson
+                ? payload
+                : {
+                    success: response.ok,
+                    filename: file.name,
+                    relativePath: '',
+                    url: '',
+                    size: file.size,
+                    type: file.type,
+                    context: 'material-apoyo',
+                    contentId: courseId
+                };
 
             if (!response.ok) {
-                throw new Error(result.error || 'Upload failed');
+                const message =
+                    (typeof result === 'object' && 'error' in result && (result as any).error) ||
+                    (typeof payload === 'string' && payload) ||
+                    'Upload failed';
+                throw new Error(message);
             }
 
             return result;
@@ -83,18 +121,25 @@ class ContextualUploadService {
                 formData.append('oldFilePath', oldFilePath);
             }
 
-            const response = await fetch(`/api/upload/posts/${postId}`, {
+            const response = await fetch(`${this.apiBaseUrl}/upload/posts/${postId}`, {
                 method: 'POST',
-                body: formData
+                headers: this.buildAuthHeaders(),
+                body: formData,
+                credentials: 'include'
             });
 
-            const result = await response.json();
+            const { isJson, payload } = await this.parseResponse(response);
+            const result = isJson ? payload : { success: response.ok };
 
             if (!response.ok) {
-                throw new Error(result.error || 'Upload failed');
+                const message =
+                    (typeof result === 'object' && result?.error) ||
+                    (typeof payload === 'string' && payload) ||
+                    'Upload failed';
+                throw new Error(message);
             }
 
-            return result;
+            return result as UploadResult;
 
         } catch (error) {
             console.error(`Post ${mediaType} upload error:`, error);
@@ -114,18 +159,25 @@ class ContextualUploadService {
                 formData.append('oldFilePath', oldFilePath);
             }
 
-            const response = await fetch(`/api/upload/blog/${blogPostId}`, {
+            const response = await fetch(`${this.apiBaseUrl}/upload/blog/${blogPostId}`, {
                 method: 'POST',
-                body: formData
+                headers: this.buildAuthHeaders(),
+                body: formData,
+                credentials: 'include'
             });
 
-            const result = await response.json();
+            const { isJson, payload } = await this.parseResponse(response);
+            const result = isJson ? payload : { success: response.ok };
 
             if (!response.ok) {
-                throw new Error(result.error || 'Upload failed');
+                const message =
+                    (typeof result === 'object' && result?.error) ||
+                    (typeof payload === 'string' && payload) ||
+                    'Upload failed';
+                throw new Error(message);
             }
 
-            return result;
+            return result as UploadResult;
 
         } catch (error) {
             console.error(`Blog ${mediaType} upload error:`, error);

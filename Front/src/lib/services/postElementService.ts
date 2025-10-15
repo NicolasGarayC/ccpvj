@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation';
 import { getModuloMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
+import { BACKEND_API_URL, BACKEND_BASE_URL } from '$lib/config/backend';
 
 // Type definitions for PostElement
 export interface PostElement {
@@ -66,8 +67,8 @@ export interface CreateElementsBatchDto {
 }
 
 class PostElementService {
-	private apiUrl = 'http://localhost:5251/api/postelement';
-	private backendUrl = 'http://localhost:5251';
+	private apiUrl = `${BACKEND_API_URL}/postelement`;
+	private backendUrl = BACKEND_BASE_URL;
 
 	// Helper to convert relative file paths to absolute backend URLs
 	getFileUrl(relativePath: string): string {

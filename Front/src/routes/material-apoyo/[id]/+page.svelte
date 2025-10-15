@@ -25,7 +25,8 @@ import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto }
 		title: '',
 		description: '',
 		isFeatured: false,
-		imagePath: ''
+		imagePath: '',
+		educatorName: ''
 	};
 
 	// Form errors
@@ -106,7 +107,8 @@ let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo pa
 			title: course.title,
 			description: course.description,
 			isFeatured: course.isFeatured || false,
-			imagePath: course.imagePath || ''
+			imagePath: course.imagePath || '',
+			educatorName: course.educatorName || ''
 		};
 
 		formErrors = {};
@@ -162,7 +164,8 @@ let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo pa
 				title: editForm.title.trim(),
 				description: editForm.description.trim(),
 				isFeatured: editForm.isFeatured,
-				imagePath: editForm.imagePath || undefined
+				imagePath: editForm.imagePath || undefined,
+				educatorName: editForm.educatorName.trim() || undefined
 			};
 
 			await materialApoyoService.updateMaterialApoyo(course.id, updateData);
@@ -446,7 +449,7 @@ function handleImageRemove() {
 									</div>
 								</div>
 							{:else}
-								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap break-words overflow-wrap-anywhere hyphens-auto max-w-full overflow-hidden">{course.description}</p>
+								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap break-words overflow-wrap-anywhere hyphens-auto max-w-full">{course.description}</p>
 							{/if}
 						</div>
 					</div>
@@ -513,6 +516,27 @@ function handleImageRemove() {
 							</label>
 							<p class="text-gray-500 text-sm mt-2">
 								Los proyectos destacados aparecen en la sección principal.
+							</p>
+						</div>
+					{/if}
+
+					<!-- Educator Name (Edit Mode) -->
+					{#if editMode && canManage}
+						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
+							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+								<span class="text-2xl">👨‍🏫</span>
+								Encargado del Proyecto
+							</h3>
+							<input
+								type="text"
+								bind:value={editForm.educatorName}
+								class="w-full p-3 border-2 border-emerald-200 rounded-xl text-gray-700 focus:outline-none focus:border-emerald-500 transition-colors"
+								placeholder="Nombre del encargado"
+								maxlength="100"
+								disabled={saving}
+							/>
+							<p class="text-gray-500 text-sm mt-2">
+								Nombre de la persona responsable de este proyecto.
 							</p>
 						</div>
 					{/if}

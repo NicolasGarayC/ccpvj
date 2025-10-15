@@ -1,5 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { BACKEND_API_URL } from '$lib/config/backend';
+
+const AUTH_ENDPOINT = `${BACKEND_API_URL}/auth/validate`;
 
 export const GET: RequestHandler = async ({ request }) => {
 	try {
@@ -14,7 +17,7 @@ export const GET: RequestHandler = async ({ request }) => {
 		}
 
 		// Forward the request to the backend
-		const backendResponse = await fetch('http://localhost:5251/api/auth/validate', {
+		const backendResponse = await fetch(AUTH_ENDPOINT, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',

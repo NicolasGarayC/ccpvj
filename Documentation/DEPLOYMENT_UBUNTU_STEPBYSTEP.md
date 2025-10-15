@@ -191,10 +191,15 @@ npm install
 
 # Crear archivo de variables de entorno
 cat > .env.production << 'EOF'
-PUBLIC_API_URL=http://localhost:5251/api
-PUBLIC_BACKEND_URL=http://localhost:5251
+PUBLIC_BACKEND_BASE_URL=http://localhost:5251
+DATABASE_URL=file:/var/www/centro-cultural/data/ccpvj.db
 NODE_ENV=production
 EOF
+
+# Notas:
+# - `PUBLIC_BACKEND_BASE_URL` debe apuntar a la raíz pública del backend (sin `/api` al final).
+# - `DATABASE_URL` apunta al archivo SQLite dentro del directorio de despliegue. Ajusta la ruta si cambias la ubicación de la base de datos.
+
 ```
 
 ### Compilar la aplicación SvelteKit

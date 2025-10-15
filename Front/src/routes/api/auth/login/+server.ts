@@ -1,5 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { BACKEND_API_URL } from '$lib/config/backend';
+
+const AUTH_ENDPOINT = `${BACKEND_API_URL}/auth`;
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
@@ -20,9 +23,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		console.log(`[DEBUG] Request body to backend: ${requestBody}`);
 
 		// Forward the request to the backend
-		console.log('[DEBUG] Attempting to connect to backend at http://localhost:5251/api/auth/login');
+		console.log('[DEBUG] Attempting to connect to backend at', `${AUTH_ENDPOINT}/login`);
 
-		const backendResponse = await fetch('http://localhost:5251/api/auth/login', {
+		const backendResponse = await fetch(`${AUTH_ENDPOINT}/login`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

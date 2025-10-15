@@ -89,7 +89,7 @@
 
 <svelte:head>
   <title>{$t('newsAndAnnouncements') || 'Noticias y Anuncios'} | {$t('centroTitle') || 'Centro Cultural'}</title>
-  <meta name="description" content={$t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara'} />
+  <meta name="description" content={$t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Popular Víctor Jara'} />
 </svelte:head>
 
 <div class="blog-page">

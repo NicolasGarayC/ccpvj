@@ -1,4 +1,5 @@
 import { jwtService } from '../auth/jwtService.js';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
 // Tipos TypeScript para gestión de usuarios
 export interface User {
@@ -67,7 +68,7 @@ export interface UserStats {
 }
 
 class UserManagementService {
-  private baseURL = 'http://localhost:5251/api';
+  private baseURL = BACKEND_API_URL;
 
   // Using JWT authentication headers
 

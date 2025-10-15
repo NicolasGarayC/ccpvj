@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
+	import { t } from '$lib/i18n';
 	import type { User, Role } from '$lib/services/users/userManagementService';
 	import { userManagementService } from '$lib/services/users/userManagementService';
 
@@ -172,24 +173,24 @@
 	}
 
 	const roles = [
-		{ value: '', label: 'Todos los roles' },
-		{ value: 'asistente', label: 'Asistentes' },
-		{ value: 'colaborador', label: 'Colaboradores' },
-		{ value: 'administrador', label: 'Administradores' }
+		{ value: '', labelKey: 'dashboard.userFilters.allRoles' },
+		{ value: 'asistente', labelKey: 'dashboard.userFilters.assistants' },
+		{ value: 'colaborador', labelKey: 'dashboard.userFilters.collaborators' },
+		{ value: 'administrador', labelKey: 'dashboard.userFilters.admins' }
 	];
 
 	const statusOptions = [
-		{ value: '', label: 'Todos los estados' },
-		{ value: 'active', label: 'Activos' },
-		{ value: 'inactive', label: 'Inactivos' }
+		{ value: '', labelKey: 'dashboard.userFilters.allStatuses' },
+		{ value: 'active', labelKey: 'dashboard.userFilters.active' },
+		{ value: 'inactive', labelKey: 'dashboard.userFilters.inactive' }
 	];
 
 	const sortOptions = [
-		{ value: 'created_desc', label: 'Más recientes' },
-		{ value: 'created_asc', label: 'Más antiguos' },
-		{ value: 'name_asc', label: 'Nombre (A-Z)' },
-		{ value: 'username_asc', label: 'Usuario (A-Z)' },
-		{ value: 'role_asc', label: 'Rol (A-Z)' }
+		{ value: 'created_desc', labelKey: 'dashboard.userSort.mostRecent' },
+		{ value: 'created_asc', labelKey: 'dashboard.userSort.oldest' },
+		{ value: 'name_asc', labelKey: 'dashboard.userSort.nameAZ' },
+		{ value: 'username_asc', labelKey: 'dashboard.userSort.usernameAZ' },
+		{ value: 'role_asc', labelKey: 'dashboard.userSort.roleAZ' }
 	];
 </script>
 
@@ -207,7 +208,7 @@
 						<input
 							type="text"
 							bind:value={searchTerm}
-							placeholder="Buscar usuarios..."
+							placeholder={$t('dashboard.userSearchPlaceholder')}
 							class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						/>
 					</div>
@@ -221,7 +222,7 @@
 						class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					>
 						{#each roles as role}
-							<option value={role.value}>{role.label}</option>
+							<option value={role.value}>{$t(role.labelKey)}</option>
 						{/each}
 					</select>
 
@@ -231,7 +232,7 @@
 						class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					>
 						{#each statusOptions as status}
-							<option value={status.value}>{status.label}</option>
+							<option value={status.value}>{$t(status.labelKey)}</option>
 						{/each}
 					</select>
 
@@ -241,7 +242,7 @@
 						class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					>
 						{#each sortOptions as option}
-							<option value={option.value}>{option.label}</option>
+							<option value={option.value}>{$t(option.labelKey)}</option>
 						{/each}
 					</select>
 				</div>
@@ -255,7 +256,7 @@
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
 						</svg>
-						<span>Crear Usuario</span>
+						<span class="text-center whitespace-normal text-sm sm:text-base">{$t('dashboard.userCreateButton')}</span>
 					</button>
 				{/if}
 			</div>
@@ -281,9 +282,9 @@
 				<p class="text-gray-500 mb-4">{error}</p>
 				<button
 					on:click={refreshUsers}
-					class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+					class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base text-center whitespace-normal"
 				>
-					Intentar de nuevo
+					{$t('dashboard.userRetryButton')}
 				</button>
 			</div>
 		{:else if filteredUsers.length === 0}
@@ -296,9 +297,9 @@
 				{#if showCreateButton}
 					<button
 						on:click={handleCreateUser}
-						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base text-center whitespace-normal"
 					>
-						Crear Primer Usuario
+						{$t('dashboard.userCreateFirstButton')}
 					</button>
 				{/if}
 			</div>
@@ -371,17 +372,19 @@
 
 								<!-- Acciones -->
 								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-									<div class="flex items-center justify-end space-x-2">
+									<div class="flex flex-wrap items-center justify-end gap-2">
 										<!-- Ver/Editar -->
 										{#if canEditUser(user)}
 											<button
 												on:click={() => handleEditUser(user)}
-												class="text-blue-600 hover:text-blue-900 transition-colors"
-												title="Editar usuario"
+												class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-blue-100 text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+												title={$t('action.edit')}
+												aria-label={$t('action.edit')}
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
 												</svg>
+												<span>{$t('action.edit')}</span>
 											</button>
 										{/if}
 
@@ -389,17 +392,20 @@
 										{#if canEditUser(user)}
 											<button
 												on:click={() => handleToggleUser(user)}
-												class="{user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} transition-colors"
-												title="{user.isActive ? 'Desactivar' : 'Activar'} usuario"
+												class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 {user.isActive ? 'border-red-100 text-red-600 hover:bg-red-50 focus:ring-red-500' : 'border-green-100 text-green-600 hover:bg-green-50 focus:ring-green-500'}"
+												title={user.isActive ? $t('users.actions.deactivate') : $t('users.actions.activate')}
+												aria-label={user.isActive ? $t('users.actions.deactivate') : $t('users.actions.activate')}
 											>
 												{#if user.isActive}
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636"/>
 													</svg>
+													<span>{$t('users.actions.deactivate')}</span>
 												{:else}
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
 													</svg>
+													<span>{$t('users.actions.activate')}</span>
 												{/if}
 											</button>
 										{/if}
@@ -408,12 +414,14 @@
 										{#if canEditUser(user)}
 											<button
 												on:click={() => handleResetPassword(user)}
-												class="text-yellow-600 hover:text-yellow-900 transition-colors"
-												title="Restablecer contraseña"
+												class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-yellow-100 text-yellow-600 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1 transition-colors"
+												title={$t('users.actions.resetPassword')}
+												aria-label={$t('users.actions.resetPassword')}
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2H7v-2H4a1 1 0 01-1-1v-4a1 1 0 011-1h3l4.586-4.586A6 6 0 0119 9z"/>
 												</svg>
+												<span>{$t('users.actions.resetPassword')}</span>
 											</button>
 										{/if}
 
@@ -421,12 +429,14 @@
 										{#if canDeleteUser(user)}
 											<button
 												on:click={() => handleDeleteUser(user)}
-												class="text-red-600 hover:text-red-900 transition-colors"
-												title="Eliminar usuario"
+												class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md border border-red-200 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+												title={$t('action.delete')}
+												aria-label={$t('action.delete')}
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
 												</svg>
+												<span>{$t('action.delete')}</span>
 											</button>
 										{/if}
 									</div>
@@ -470,46 +480,66 @@
 								<div class="text-xs text-gray-500">
 									Creado: {formatDate(user.createdAt)}
 								</div>
-								<div class="flex items-center space-x-2">
-									{#if canEditUser(user)}
-										<button
-											on:click={() => handleEditUser(user)}
-											class="text-blue-600 hover:text-blue-900 transition-colors p-1"
-											title="Editar"
-										>
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-											</svg>
-										</button>
-									{/if}
-									{#if canEditUser(user)}
-										<button
-											on:click={() => handleToggleUser(user)}
-											class="{user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} transition-colors p-1"
-											title="{user.isActive ? 'Desactivar' : 'Activar'}"
-										>
-											{#if user.isActive}
+								<div class="flex flex-wrap items-center justify-end gap-2">
+										{#if canEditUser(user)}
+											<button
+												on:click={() => handleEditUser(user)}
+												class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-blue-100 text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+												title={$t('action.edit')}
+												aria-label={$t('action.edit')}
+											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636"/>
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
 												</svg>
-											{:else}
+												<span>{$t('action.edit')}</span>
+											</button>
+										{/if}
+										{#if canEditUser(user)}
+											<button
+												on:click={() => handleToggleUser(user)}
+												class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 {user.isActive ? 'border-red-100 text-red-600 hover:bg-red-50 focus:ring-red-500' : 'border-green-100 text-green-600 hover:bg-green-50 focus:ring-green-500'}"
+												title={user.isActive ? $t('users.actions.deactivate') : $t('users.actions.activate')}
+												aria-label={user.isActive ? $t('users.actions.deactivate') : $t('users.actions.activate')}
+											>
+												{#if user.isActive}
+													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636"/>
+													</svg>
+													<span>{$t('users.actions.deactivate')}</span>
+												{:else}
+													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+													</svg>
+													<span>{$t('users.actions.activate')}</span>
+												{/if}
+											</button>
+										{/if}
+										{#if canEditUser(user)}
+											<button
+												on:click={() => handleResetPassword(user)}
+												class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-yellow-100 text-yellow-600 hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-1 transition-colors"
+												title={$t('users.actions.resetPassword')}
+												aria-label={$t('users.actions.resetPassword')}
+											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v-2H7v-2H4a1 1 0 01-1-1v-4a1 1 0 011-1h3l4.586-4.586A6 6 0 0119 9z"/>
 												</svg>
-											{/if}
-										</button>
-									{/if}
-									{#if canDeleteUser(user)}
-										<button
-											on:click={() => handleDeleteUser(user)}
-											class="text-red-600 hover:text-red-900 transition-colors p-1"
-											title="Eliminar"
-										>
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-											</svg>
-										</button>
-									{/if}
+												<span>{$t('users.actions.resetPassword')}</span>
+											</button>
+										{/if}
+										{#if canDeleteUser(user)}
+											<button
+												on:click={() => handleDeleteUser(user)}
+												class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-red-200 text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+												title={$t('action.delete')}
+												aria-label={$t('action.delete')}
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+												</svg>
+												<span>{$t('action.delete')}</span>
+											</button>
+										{/if}
 								</div>
 							</div>
 						</div>

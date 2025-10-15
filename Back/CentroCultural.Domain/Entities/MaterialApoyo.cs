@@ -32,5 +32,8 @@ namespace CentroCultural.Domain.Entities
 
         [Column("educator_id")]
         public string EducatorId { get; set; } = "1";
+
+        [Column("educator_name")]
+        public string? EducatorName { get; set; }
     }
 }

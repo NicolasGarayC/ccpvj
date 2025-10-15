@@ -47,6 +47,7 @@ export interface CreateArticleDto {
 	tags?: string[];
 	featuredImagePath?: string;
 	elements?: BlogPostElementDto[];
+	status?: string;
 }
 
 export interface UpdateArticleDto {
@@ -61,6 +62,7 @@ export interface UpdateArticleDto {
 	tags?: string[];
 	featuredImagePath?: string;
 	elements?: BlogPostElementDto[];
+	status?: string;
 }
 
 export interface ArticleSearchDto {

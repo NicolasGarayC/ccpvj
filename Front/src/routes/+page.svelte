@@ -9,7 +9,7 @@
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import { analyticsService } from '$lib/services/analytics/analyticsService';
 import type { BlogPost } from '$lib/types/api';
-import type { MaterialApoyoDetailDto, MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
+import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
 
 	import { t } from '$lib/i18n';
 
@@ -25,7 +25,7 @@ import type { MaterialApoyoDetailDto, MaterialApoyoSummaryDto } from '$lib/types
 	$: isEducator = isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
 
 	let latestBlogPosts: BlogPost[] = [];
-let featuredCourses: MaterialApoyoDetailDto[] = [];
+let featuredCourses: MaterialApoyoSummaryDto[] = [];
 let allCourses: MaterialApoyoSummaryDto[] = [];
 	let totalModulesCount = 0;
 	let totalVisitors = 0;
@@ -53,11 +53,20 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 	$: welcomeChars = splitTextIntoAnimatedSpans($t('welcome'));
 	$: readyAdventureChars = splitTextIntoAnimatedSpans($t('readyForAdventure'));
 
+	function truncateDescription(text: string, maxLength = 220): string {
+		if (!text) return '';
+		return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
+	}
+
 	onMount(async () => {
 		try {
 			latestBlogPosts = await blogService.getLatestPosts();
-			featuredCourses = await materialApoyoService.getFeaturedMaterialApoyo();
 			allCourses = await materialApoyoService.getAllMaterialApoyo();
+
+			const activeCourses = allCourses.filter((course) => course.isActive !== false);
+			const featuredFromAll = activeCourses.filter((course) => course.isFeatured);
+			const sourceCourses = featuredFromAll.length > 0 ? featuredFromAll : activeCourses;
+			featuredCourses = sourceCourses.slice(0, 6);
 
 			// Calcular total de módulos
 			totalModulesCount = allCourses.reduce((sum, course) => sum + (course.moduleCount || 0), 0);
@@ -77,8 +86,8 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 </script>
 
 <svelte:head>
-	<title>{$t('centroTitle') || 'Centro Cultural Víctor Jara'}</title>
-	<meta name="description" content={$t('centroDescription') || 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje'} />
+	<title>{$t('centroTitle') || 'Centro Cultural Popular Víctor Jara'}</title>
+	<meta name="description" content={$t('centroDescription') || 'Centro Cultural Popular Víctor Jara - Red Comunitaria de Aprendizaje'} />
 	<link
 		rel="stylesheet"
 		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -214,10 +223,10 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 		</div>
 
 		<!-- Grid de noticias con efectos juveniles -->
-		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 {latestBlogPosts.length === 1 ? 'justify-center' : ''}">
 			{#if latestBlogPosts.length > 0}
 				{#each latestBlogPosts as post, index}
-					<div class="group relative transform transition-all duration-500 hover:-translate-y-4 hover:rotate-1" style="animation-delay: {index * 0.1}s;">
+					<div class="group relative w-full max-w-md mx-auto transform transition-all duration-500 hover:-translate-y-4 hover:rotate-1" style="animation-delay: {index * 0.1}s;">
 						<!-- Sombra de color -->
 						<div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300"></div>
 
@@ -335,11 +344,11 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 		</div>
 
 		<!-- Grid de materias súper cool -->
-		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {allCourses.length === 1 ? 'justify-center' : ''}">
 			{#if allCourses.length > 0}
 				{#each allCourses.slice(0, 8) as course, index}
 					{@const colorScheme = courseColors[index % courseColors.length]}
-					<div class="group relative transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
+					<div class="group relative w-full max-w-xs mx-auto transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
 						 style="animation-delay: {index * 0.2}s;">
 
 						<!-- Sombra colorida -->
@@ -452,10 +461,10 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 		</div>
 
 		<!-- Proyectos destacados con diseño juvenil -->
-		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 {featuredCourses.length === 1 ? 'justify-center' : ''}">
 			{#if featuredCourses.length > 0}
 				{#each featuredCourses as course, index}
-					<div class="group relative transform transition-all duration-700 hover:-translate-y-8 hover:rotate-2 hover:scale-105"
+					<div class="group relative w-full max-w-sm mx-auto transform transition-all duration-700 hover:-translate-y-8 hover:rotate-2 hover:scale-105"
 					     style="animation-delay: {index * 0.3}s;">
 
 						<!-- Sombra holográfica -->
@@ -488,9 +497,9 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 								<h3 class="text-2xl font-bold mb-4 text-gray-800 group-hover:text-purple-600 transition-colors duration-300">
 									{course.title}
 								</h3>
-								<p class="text-gray-600 mb-6 leading-relaxed">
-									{course.description}
-								</p>
+									<p class="text-gray-600 mb-6 leading-relaxed">
+										{truncateDescription(course.description)}
+									</p>
 
 								<!-- Estadísticas mini -->
 								{#if course.moduleCount || course.educatorName}

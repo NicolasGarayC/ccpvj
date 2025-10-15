@@ -1,79 +1,130 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { blogService } from '$lib/services/blog/blogService';
-	import BlogPostCard from './BlogPostCard.svelte';
-	import BlogPostModal from './BlogPostModal.svelte';
-	import LoadingSpinner from '../common/LoadingSpinner.svelte';
-import type { BlogPost } from '$lib/types/api';
-	import { t, translate } from '$lib/i18n';
+  import { createEventDispatcher, onMount } from 'svelte';
+  import { blogService } from '$lib/services/blog/blogService';
+  import { blogHttpService } from '$lib/services/blog/blogHttpService';
+  import BlogPostCard from './BlogPostCard.svelte';
+  import BlogPostModal from './BlogPostModal.svelte';
+  import LoadingSpinner from '../common/LoadingSpinner.svelte';
+  import type { BlogPost } from '$lib/types/api';
+  import { t } from '$lib/i18n';
 
-	export let showActions = false;
+  export let showActions = false;
 
-	const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-	export let posts: BlogPost[] = [];
-	let isLoading = false;
-	let error: string | null = null;
-	let showPostModal = false;
-	let editingPost: BlogPost | null = null;
+  export let posts: BlogPost[] = [];
+  let isLoading = false;
+  let error: string | null = null;
+  let showPostModal = false;
+  let editingPost: BlogPost | null = null;
+  let showTitlePrompt = false;
+  let newPostTitle = '';
+  let titleError = '';
+  let isCreatingDraft = false;
 
-	$: nextOrderNumber = posts.length > 0 ? Math.max(...posts.map(p => p.viewCount || 0)) + 1 : 1;
+  $: nextOrderNumber = posts.length > 0 ? Math.max(...posts.map((p) => p.viewCount || 0)) + 1 : 1;
 
-	onMount(() => {
-		loadPosts();
-	});
+  onMount(() => {
+    loadPosts();
+  });
 
-	export async function loadPosts() {
-		if (isLoading) return;
+  export async function loadPosts() {
+    if (isLoading) return;
 
-		isLoading = true;
-		error = null;
+    isLoading = true;
+    error = null;
 
-		try {
-			posts = await blogService.getAllPosts();
-			dispatch('postsLoaded', posts);
-		} catch (err) {
-			console.error('Error loading posts:', err);
-			error = err instanceof Error ? err.message : $t('blog.error_loading_posts');
-		} finally {
-			isLoading = false;
-		}
-	}
+    try {
+      posts = await blogService.getAllPosts(showActions);
+      if (!showActions) {
+        posts = posts.filter((post) => post.status === 'published');
+      }
+      dispatch('postsLoaded', posts);
+    } catch (err) {
+      console.error('Error loading posts:', err);
+      error = err instanceof Error ? err.message : $t('blog.error_loading_posts');
+    } finally {
+      isLoading = false;
+    }
+  }
 
-	function handleCreatePost() {
-		editingPost = null;
-		showPostModal = true;
-	}
+  function handleCreatePost() {
+    newPostTitle = '';
+    titleError = '';
+    editingPost = null;
+    showTitlePrompt = true;
+  }
 
-	function handleEditPost(post: BlogPost) {
-		editingPost = post;
-		showPostModal = true;
-	}
+  function handleEditPost(post: BlogPost) {
+    editingPost = post;
+    showPostModal = true;
+  }
 
-	function handleDeletePost(post: BlogPost) {
-		dispatch('deletePost', post);
-	}
+  function handleDeletePost(post: BlogPost) {
+    dispatch('deletePost', post);
+  }
 
-	function handlePostCreated(event: CustomEvent) {
-		loadPosts();
-		dispatch('postCreated', event.detail);
-		handleModalClose();
-	}
+  function handlePostCreated(event: CustomEvent) {
+    loadPosts();
+    dispatch('postCreated', event.detail);
+    handleModalClose();
+  }
 
-	function handlePostUpdated(event: CustomEvent) {
-		loadPosts();
-		dispatch('postUpdated', event.detail);
-		handleModalClose();
-	}
+  function handlePostUpdated(event: CustomEvent) {
+    loadPosts();
+    dispatch('postUpdated', event.detail);
+    handleModalClose();
+  }
 
-	function handleModalClose() {
-		showPostModal = false;
-		editingPost = null;
-	}
+  function handleModalClose() {
+    showPostModal = false;
+    editingPost = null;
+  }
 
-	export function removePostFromList(postId: string) {
-		posts = posts.filter(p => p.id !== postId);
-	}
+  export function removePostFromList(postId: string) {
+    posts = posts.filter((p) => p.id !== postId);
+  }
+
+  async function handleCreateDraft() {
+    const trimmedTitle = newPostTitle.trim();
+    if (!trimmedTitle) {
+      titleError = 'El título es obligatorio';
+      return;
+    }
+
+    isCreatingDraft = true;
+    titleError = '';
+
+    try {
+      const draftPost = await blogHttpService.createPost({
+        title: trimmedTitle,
+        excerpt: '',
+        content: '',
+        slug: '',
+        status: 'draft',
+        categoryId: null,
+        tags: []
+      });
+
+      await loadPosts();
+
+      showTitlePrompt = false;
+      editingPost = draftPost;
+      showPostModal = true;
+    } catch (err) {
+      console.error('Error creating draft post:', err);
+      titleError = err instanceof Error ? err.message : 'No se pudo crear el borrador del artículo';
+    } finally {
+      isCreatingDraft = false;
+    }
+  }
+
+  function handleCancelDraftCreation() {
+    if (isCreatingDraft) return;
+    showTitlePrompt = false;
+    newPostTitle = '';
+    titleError = '';
+  }
 </script>
 
 <div class="blog-post-list">
@@ -160,6 +211,34 @@ import type { BlogPost } from '$lib/types/api';
 		</div>
 	{/if}
 </div>
+
+{#if showTitlePrompt}
+	<div class="draft-modal-backdrop" aria-modal="true" role="dialog">
+		<div class="draft-modal">
+			<h3>Nuevo borrador</h3>
+			<p>Ingresa un título para crear el borrador del artículo.</p>
+			<input
+				type="text"
+				bind:value={newPostTitle}
+				placeholder="Título del artículo"
+				autofocus
+				disabled={isCreatingDraft}
+			/>
+			{#if titleError}
+				<p class="draft-error">{titleError}</p>
+			{/if}
+			<div class="draft-actions">
+				<button class="btn btn-outline" on:click={handleCancelDraftCreation} disabled={isCreatingDraft}>Cancelar</button>
+				<button class="btn btn-primary" on:click={handleCreateDraft} disabled={isCreatingDraft}>
+					{#if isCreatingDraft}
+						<span class="loading-spinner"></span>
+					{/if}
+					Crear borrador
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Post Editor Modal -->
 <BlogPostModal
@@ -303,6 +382,62 @@ import type { BlogPost } from '$lib/types/api';
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 		gap: 1.5rem;
+	}
+
+	.draft-modal-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(17, 24, 39, 0.55);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1050;
+		backdrop-filter: blur(4px);
+	}
+
+	.draft-modal {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+		padding: 1.75rem;
+		width: min(420px, 90vw);
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.draft-modal h3 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #111827;
+	}
+
+	.draft-modal input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		border: 1px solid #d1d5db;
+		border-radius: 10px;
+		font-size: 1rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.draft-modal input:focus {
+		outline: none;
+		border-color: #2563eb;
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+	}
+
+	.draft-error {
+		margin: 0;
+		color: #dc2626;
+		font-size: 0.9rem;
+	}
+
+	.draft-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
 	}
 
 	@media (max-width: 768px) {

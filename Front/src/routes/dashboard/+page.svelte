@@ -118,13 +118,13 @@
           </div>
         </a>
 
-        <a href="/events" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
+        <a href="/calendar" class="group bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6">
           <div class="flex items-center">
             <div class="bg-purple-100 rounded-lg p-3">
               <i class="fas fa-calendar text-purple-600 text-xl"></i>
             </div>
             <div class="ml-4">
-              <h3 class="text-lg font-medium text-gray-900 group-hover:text-purple-600">{$t('dashboard.eventsTitle')}</h3>
+              <h3 class="text-lg font-medium text-gray-900 group-hover:text-purple-600">{$t('calendar')}</h3>
               <p class="text-gray-500 text-sm">{$t('dashboard.eventsDescription')}</p>
             </div>
           </div>

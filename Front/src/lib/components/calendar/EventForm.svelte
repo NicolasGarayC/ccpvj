@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import type { CreateEventData, EventDetail } from '$lib/services/calendar/calendarService';
+	import { t, translate, type MessageKey } from '$lib/i18n';
 
 	export let event: EventDetail | null = null;
 	export let isEdit: boolean = false;
@@ -66,32 +67,42 @@
 		};
 	}
 
-	// Opciones de formulario
-	const eventTypes = [
-		{ value: 'General', label: 'General' },
-		{ value: 'Clase', label: 'Clase' },
-		{ value: 'Taller', label: 'Taller' },
-		{ value: 'Conferencia', label: 'Conferencia' },
-		{ value: 'Evento', label: 'Evento Cultural' },
-		{ value: 'Otro', label: 'Otro' }
+	type SelectOption = { value: string; label: string };
+
+	const translateKey = (key: MessageKey, fallback: string): string => {
+		const value = translate(key);
+		return value && value !== key ? value : fallback;
+	};
+
+	let eventTypes: SelectOption[] = [];
+	let recurrencePatterns: SelectOption[] = [];
+	let daysOfWeek: SelectOption[] = [];
+
+	$: eventTypes = [
+		{ value: 'General', label: $t('eventType.general') || 'General' },
+		{ value: 'Clase', label: $t('eventType.class') || 'Clase' },
+		{ value: 'Taller', label: $t('eventType.workshop') || 'Taller' },
+		{ value: 'Conferencia', label: $t('eventType.conference') || 'Conferencia' },
+		{ value: 'Evento', label: $t('eventType.event') || 'Evento Cultural' },
+		{ value: 'Otro', label: $t('eventType.other') || 'Otro' }
 	];
 
-	const recurrencePatterns = [
-		{ value: '', label: 'No recurrente' },
-		{ value: 'daily', label: 'Diario' },
-		{ value: 'weekly', label: 'Semanal' },
-		{ value: 'monthly', label: 'Mensual' },
-		{ value: 'yearly', label: 'Anual' }
+	$: recurrencePatterns = [
+		{ value: '', label: $t('calendar.recurrence.none') || 'No recurrente' },
+		{ value: 'daily', label: $t('calendar.recurrence.daily') || 'Diario' },
+		{ value: 'weekly', label: $t('calendar.recurrence.weekly') || 'Semanal' },
+		{ value: 'monthly', label: $t('calendar.recurrence.monthly') || 'Mensual' },
+		{ value: 'yearly', label: $t('calendar.recurrence.yearly') || 'Anual' }
 	];
 
-	const daysOfWeek = [
-		{ value: '1', label: 'Lunes' },
-		{ value: '2', label: 'Martes' },
-		{ value: '3', label: 'Miércoles' },
-		{ value: '4', label: 'Jueves' },
-		{ value: '5', label: 'Viernes' },
-		{ value: '6', label: 'Sábado' },
-		{ value: '0', label: 'Domingo' }
+	$: daysOfWeek = [
+		{ value: '1', label: $t('calendar.days.long.1') || 'Lunes' },
+		{ value: '2', label: $t('calendar.days.long.2') || 'Martes' },
+		{ value: '3', label: $t('calendar.days.long.3') || 'Miércoles' },
+		{ value: '4', label: $t('calendar.days.long.4') || 'Jueves' },
+		{ value: '5', label: $t('calendar.days.long.5') || 'Viernes' },
+		{ value: '6', label: $t('calendar.days.long.6') || 'Sábado' },
+		{ value: '0', label: $t('calendar.days.long.0') || 'Domingo' }
 	];
 
 	// Validaciones
@@ -99,28 +110,28 @@
 		errors = {};
 
 		if (!formData.title.trim()) {
-			errors.title = 'El título es obligatorio';
+			errors.title = translateKey('calendar.form.error_title_required', 'El título es obligatorio');
 		}
 
 		if (!formData.startDateTime) {
-			errors.startDateTime = 'La fecha de inicio es obligatoria';
+			errors.startDateTime = translateKey('calendar.form.error_start_required', 'La fecha de inicio es obligatoria');
 		}
 
 		if (formData.isRecurring) {
 			// Para eventos recurrentes, endDateTime es obligatorio (representa hasta cuándo se repite)
 			if (!formData.endDateTime) {
-				errors.endDateTime = 'Para eventos recurrentes, debes especificar hasta cuándo se repite';
+				errors.endDateTime = translateKey('calendar.form.error_end_required_recurring', 'Para eventos recurrentes, debes especificar hasta cuándo se repite');
 			} else if (new Date(formData.endDateTime) <= new Date(formData.startDateTime)) {
-				errors.endDateTime = 'La fecha final debe ser posterior a la fecha de inicio';
+				errors.endDateTime = translateKey('calendar.form.error_end_after_start', 'La fecha final debe ser posterior a la fecha de inicio');
 			}
 
 			if (!formData.recurrencePattern) {
-				errors.recurrencePattern = 'Debe seleccionar un patrón de recurrencia';
+				errors.recurrencePattern = translateKey('calendar.form.error_recurrence_pattern', 'Debe seleccionar un patrón de recurrencia');
 			}
 		} else {
 			// Para eventos no recurrentes, endDateTime es opcional pero debe ser posterior
 			if (formData.endDateTime && formData.startDateTime && new Date(formData.endDateTime) <= new Date(formData.startDateTime)) {
-				errors.endDateTime = 'La fecha de fin debe ser posterior a la fecha de inicio';
+				errors.endDateTime = translateKey('calendar.form.error_end_after_start', 'La fecha de fin debe ser posterior a la fecha de inicio');
 			}
 		}
 
@@ -205,31 +216,31 @@
 </script>
 
 <div class="event-form">
-	<div class="form-header">
-		<h2 class="form-title">
-			🎪 {isEdit ? 'Editar Evento' : 'Crear Nuevo Evento'}
-		</h2>
-		<p class="form-subtitle">
-			{isEdit ? 'Modifica los detalles de tu evento' : 'Crea una nueva actividad para el centro cultural'}
-		</p>
-	</div>
+    <div class="form-header">
+        <h2 class="form-title">
+            🎪 {isEdit ? ($t('calendar.form.edit_title') || 'Editar Evento') : ($t('calendar.form.create_title') || 'Crear Nuevo Evento')}
+        </h2>
+        <p class="form-subtitle">
+            {isEdit ? ($t('calendar.form.edit_subtitle') || 'Modifica los detalles de tu evento') : ($t('calendar.form.create_subtitle') || 'Crea una nueva actividad para el centro cultural')}
+        </p>
+    </div>
 
 	<form on:submit|preventDefault={handleSubmit} class="form-content">
 		<!-- Información básica -->
 		<div class="form-section">
-			<h3 class="section-title">📝 Información Básica</h3>
+            <h3 class="section-title">📝 {$t('calendar.form.section_basic') || 'Información Básica'}</h3>
 
 			<div class="form-group full-width">
-				<label for="title" class="label">
-					Título del evento <span class="required">*</span>
-				</label>
+                <label for="title" class="label">
+                    {$t('calendar.form.title_label') || 'Título del evento'} <span class="required">*</span>
+                </label>
 				<input
 					id="title"
 					type="text"
 					bind:value={formData.title}
 					class="input"
 					class:error={errors.title}
-					placeholder="Ej: Taller de Teatro Infantil"
+                    placeholder={$t('calendar.form.title_placeholder') || 'Ej: Taller de Teatro Infantil'}
 					maxlength="200"
 					disabled={isSubmitting}
 					required
@@ -238,15 +249,15 @@
 					<span class="error-message">{errors.title}</span>
 				{/if}
 				<div class="character-count">
-					{formData.title.length}/200 caracteres
+                    {formData.title.length}/200 {$t('calendar.form.characters') || 'caracteres'}
 				</div>
 			</div>
 
 			<div class="form-row">
 				<div class="form-group">
-					<label for="eventType" class="label">
-						🏷️ Tipo de Evento
-					</label>
+                    <label for="eventType" class="label">
+                        🏷️ {$t('calendar.form.event_type') || 'Tipo de Evento'}
+                    </label>
 					<select
 						id="eventType"
 						bind:value={formData.eventType}
@@ -260,15 +271,15 @@
 				</div>
 
 				<div class="form-group">
-					<label for="location" class="label">
-						📍 Ubicación
-					</label>
+                    <label for="location" class="label">
+                        📍 {$t('calendar.form.location') || 'Ubicación'}
+                    </label>
 					<input
 						id="location"
 						type="text"
 						bind:value={formData.location}
 						class="input"
-						placeholder="Ej: Aula Principal, Salón de Eventos"
+                    placeholder={$t('calendar.form.location_placeholder') || 'Ej: Aula Principal, Salón de Eventos'}
 						maxlength="200"
 						disabled={isSubmitting}
 					/>
@@ -276,29 +287,29 @@
 			</div>
 		</div>
 
-		<div class="form-section">
-			<div class="form-group full-width">
-				<label for="description" class="label">
-					📄 Descripción
-				</label>
-				<textarea
-					id="description"
-					bind:value={formData.description}
-					class="textarea"
-					placeholder="Describe el evento, actividades, objetivos y todo lo que los participantes deben saber..."
-					rows="5"
-					maxlength="1000"
-					disabled={isSubmitting}
-				></textarea>
-				<div class="character-count">
-					{formData.description?.length ?? 0}/1000 caracteres
+			<div class="form-section">
+				<div class="form-group full-width">
+					<label for="description" class="label">
+						📄 {$t('calendar.form.description_label') || 'Descripción'}
+					</label>
+					<textarea
+						id="description"
+						bind:value={formData.description}
+						class="textarea"
+						placeholder={$t('calendar.form.description_placeholder') || 'Describe el evento, actividades, objetivos y todo lo que los participantes deben saber...'}
+						rows="5"
+						maxlength="1000"
+						disabled={isSubmitting}
+					></textarea>
+					<div class="character-count">
+						{formData.description?.length ?? 0}/1000 {$t('calendar.form.characters') || 'caracteres'}
+					</div>
 				</div>
 			</div>
-		</div>
 
 		<!-- Fechas y horarios -->
 		<div class="form-section">
-			<h3 class="section-title">📅 Fechas y Horarios</h3>
+			<h3 class="section-title">📅 {$t('calendar.form.section_schedule') || 'Fechas y Horarios'}</h3>
 
 			<div class="form-group full-width">
 				<label class="checkbox-label">
@@ -309,14 +320,14 @@
 						class="checkbox"
 						disabled={isSubmitting}
 					/>
-					✨ Evento de todo el día
+					✨ {$t('calendar.form.all_day') || 'Evento de todo el día'}
 				</label>
 			</div>
 
 			<div class="form-row">
 				<div class="form-group">
 					<label for="startDateTime" class="label">
-						🚀 Fecha de Inicio <span class="required">*</span>
+						🚀 {$t('calendar.form.start_label') || 'Fecha de Inicio'} <span class="required">*</span>
 					</label>
 					<input
 						id="startDateTime"
@@ -346,9 +357,9 @@
 				<div class="form-group">
 					<label for="endDateTime" class="label">
 						{#if formData.isRecurring}
-							📅 Repetir Hasta <span class="required">*</span>
+							📅 {$t('calendar.form.end_label_recurring') || 'Repetir Hasta'} <span class="required">*</span>
 						{:else}
-							🏁 Fecha/Hora de Fin (opcional)
+							🏁 {$t('calendar.form.end_label_optional') || 'Fecha/Hora de Fin (opcional)'}
 						{/if}
 					</label>
 					<input
@@ -382,9 +393,9 @@
 					{/if}
 					<p class="help-text">
 						{#if formData.isRecurring}
-							💡 Fecha límite hasta la cual se repetirá este evento
+							💡 {$t('calendar.form.end_help_recurring') || 'Fecha límite hasta la cual se repetirá este evento'}
 						{:else}
-							💡 Cuándo termina este evento (ej: taller de 10am a 12pm)
+							💡 {$t('calendar.form.end_help_single') || 'Cuándo termina este evento (ej: taller de 10am a 12pm)'}
 						{/if}
 					</p>
 				</div>
@@ -393,7 +404,7 @@
 
 		<!-- Eventos recurrentes -->
 		<div class="form-section">
-			<h3 class="section-title">🔄 Recurrencia</h3>
+			<h3 class="section-title">🔄 {$t('calendar.form.section_recurrence') || 'Recurrencia'}</h3>
 
 			<div class="form-group full-width">
 				<label class="checkbox-label">
@@ -403,16 +414,16 @@
 						class="checkbox"
 						disabled={isSubmitting}
 					/>
-					🔁 Evento recurrente
+					🔁 {$t('calendar.form.recurrence_toggle') || 'Evento recurrente'}
 				</label>
-				<p class="help-text">💡 Los eventos recurrentes se repetirán automáticamente según el patrón configurado</p>
+				<p class="help-text">💡 {$t('calendar.form.recurrence_help') || 'Los eventos recurrentes se repetirán automáticamente según el patrón configurado'}</p>
 			</div>
 
 			{#if formData.isRecurring}
 				<div class="form-row">
 					<div class="form-group">
 						<label for="recurrencePattern" class="label">
-							🔄 Patrón de Recurrencia <span class="required">*</span>
+							🔄 {$t('calendar.form.recurrence_pattern') || 'Patrón de Recurrencia'} <span class="required">*</span>
 						</label>
 						<select
 							id="recurrencePattern"
@@ -432,7 +443,7 @@
 
 					<div class="form-group">
 						<label for="recurrenceInterval" class="label">
-							⏱️ Cada
+							⏱️ {$t('calendar.form.recurrence_interval') || 'Cada'}
 						</label>
 						<input
 							id="recurrenceInterval"
@@ -443,9 +454,7 @@
 							max="52"
 							disabled={isSubmitting}
 						/>
-						<p class="help-text">
-							{#if formData.recurrencePattern === 'daily'}📅 días{:else if formData.recurrencePattern === 'weekly'}📅 semanas{:else if formData.recurrencePattern === 'monthly'}📅 meses{:else if formData.recurrencePattern === 'yearly'}📅 años{/if}
-						</p>
+						<p class="help-text">💡 {$t('calendar.form.recurrence_interval_hint') || 'Define cada cuántos periodos se repite según el patrón seleccionado.'}</p>
 					</div>
 
 				</div>
@@ -453,7 +462,7 @@
 				{#if formData.recurrencePattern === 'weekly'}
 					<div class="form-group full-width">
 						<label class="label">
-							📅 Días de la Semana
+							📅 {$t('calendar.form.recurrence_days_label') || 'Días de la Semana'}
 						</label>
 						<div class="flex flex-wrap gap-3">
 							{#each daysOfWeek as day}
@@ -465,11 +474,11 @@
 										class="checkbox"
 										disabled={isSubmitting}
 									/>
-									{day.label}
-								</label>
-							{/each}
+										{day.label}
+									</label>
+								{/each}
 						</div>
-						<p class="help-text">💡 Selecciona los días en que se repetirá el evento</p>
+						<p class="help-text">💡 {$t('calendar.form.recurrence_days_help') || 'Selecciona los días en que se repetirá el evento'}</p>
 					</div>
 				{/if}
 			{/if}
@@ -477,14 +486,14 @@
 
 		<!-- Enlaces relacionados -->
 		<div class="form-section">
-			<h3 class="section-title">🔗 Enlaces Relacionados</h3>
+			<h3 class="section-title">🔗 {$t('calendar.form.section_links') || 'Enlaces Relacionados'}</h3>
 
 			<div class="form-row">
 				<!-- Proyecto relacionado -->
 				{#if availableProjects.length > 0}
 					<div class="form-group">
 						<label for="relatedProjectId" class="label">
-							📚 Proyecto Relacionado
+							📚 {$t('calendar.form.project_label') || 'Proyecto Relacionado'}
 						</label>
 						<select
 							id="relatedProjectId"
@@ -492,12 +501,12 @@
 							class="input"
 							disabled={isSubmitting}
 						>
-							<option value="">Ninguno</option>
+							<option value="">{$t('calendar.form.none') || 'Ninguno'}</option>
 							{#each availableProjects as project}
 								<option value={project.id}>{project.title}</option>
 							{/each}
 						</select>
-						<p class="help-text">💡 Vincula este evento con un proyecto específico</p>
+						<p class="help-text">💡 {$t('calendar.form.project_help') || 'Vincula este evento con un proyecto específico'}</p>
 					</div>
 				{/if}
 
@@ -505,7 +514,7 @@
 				{#if availableBlogPosts.length > 0}
 					<div class="form-group">
 						<label for="relatedBlogPostId" class="label">
-							📝 Artículo de Blog Relacionado
+							📝 {$t('calendar.form.blog_label') || 'Artículo de Blog Relacionado'}
 						</label>
 						<select
 							id="relatedBlogPostId"
@@ -513,12 +522,12 @@
 							class="input"
 							disabled={isSubmitting}
 						>
-							<option value="">Ninguno</option>
+							<option value="">{$t('calendar.form.none') || 'Ninguno'}</option>
 							{#each availableBlogPosts as blogPost}
 								<option value={blogPost.id}>{blogPost.title}</option>
 							{/each}
 						</select>
-						<p class="help-text">💡 Vincula este evento con un artículo de blog (anuncios, contexto, etc.)</p>
+						<p class="help-text">💡 {$t('calendar.form.blog_help') || 'Vincula este evento con un artículo de blog (anuncios, contexto, etc.)'}</p>
 					</div>
 				{/if}
 			</div>
@@ -526,7 +535,7 @@
 
 		<!-- Configuración especial -->
 		<div class="form-section">
-			<h3 class="section-title">⭐ Configuración Especial</h3>
+			<h3 class="section-title">⭐ {$t('calendar.form.section_special') || 'Configuración Especial'}</h3>
 
 			<div class="form-group full-width">
 				<label class="checkbox-label">
@@ -536,9 +545,9 @@
 						class="checkbox"
 						disabled={isSubmitting}
 					/>
-					⭐ Marcar como evento destacado
+					⭐ {$t('calendar.form.featured_label') || 'Marcar como evento destacado'}
 				</label>
-				<p class="help-text">💡 Los eventos destacados aparecerán en la página principal y tendrán mayor visibilidad</p>
+				<p class="help-text">💡 {$t('calendar.form.featured_help') || 'Los eventos destacados aparecerán en la página principal y tendrán mayor visibilidad'}</p>
 			</div>
 		</div>
 
@@ -550,7 +559,7 @@
 				class="btn btn-secondary"
 				disabled={isSubmitting}
 			>
-				❌ Cancelar
+				❌ {$t('calendar.form.cancel') || 'Cancelar'}
 			</button>
 
 			<button
@@ -560,9 +569,9 @@
 			>
 				{#if isSubmitting}
 					<div class="loading-spinner"></div>
-					⏳ Guardando...
+					⏳ {$t('calendar.form.saving') || 'Guardando...'}
 				{:else}
-					✨ {isEdit ? 'Actualizar' : 'Crear'} Evento
+					✨ {isEdit ? ($t('calendar.form.save_update') || 'Actualizar Evento') : ($t('calendar.form.save_create') || 'Crear Evento')}
 				{/if}
 			</button>
 		</div>

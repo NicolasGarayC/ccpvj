@@ -3,10 +3,11 @@
 	import type { EventSummary } from '$lib/services/calendar/calendarService';
 
 	export let events: EventSummary[] = [];
-	export let showFilters: boolean = true;
-	export let showCreateButton: boolean = false;
-	export let limit: number = 0;
-	export let featured: boolean = false;
+	export let showFilters = true;
+	export let showCreateButton = false;
+	export let limit = 0;
+	export let itemsPerPage = 10;
+	export let featured = false;
 
 	const dispatch = createEventDispatcher<{
 		eventClick: { event: EventSummary };
@@ -19,37 +20,80 @@
 	let selectedEventType = '';
 	let sortBy = 'start_asc';
 
-	$: filteredEvents = filterAndSortEvents(events, searchTerm, selectedEventType, sortBy, limit, featured);
+let baseFilteredEvents: EventSummary[] = [];
+let filteredEvents: EventSummary[] = [];
+let paginatedEvents: EventSummary[] = [];
+let totalPages = 1;
+let currentPage = 1;
+let startItem = 0;
+let endItem = 0;
+let lastFiltersKey = '';
+
+$: {
+  const eventsFingerprint = events
+    .map((event) => `${event.id}-${new Date(event.startDateTime).toISOString()}`)
+    .join('|');
+
+  const filtersKey = JSON.stringify({
+    searchTerm,
+    selectedEventType,
+    sortBy,
+    featured,
+    limit,
+    eventsFingerprint
+  });
+
+  if (filtersKey !== lastFiltersKey) {
+    currentPage = 1;
+    lastFiltersKey = filtersKey;
+  }
+}
+
+$: baseFilteredEvents = filterAndSortEvents(events, searchTerm, selectedEventType, sortBy, featured);
+$: filteredEvents = limit > 0 ? baseFilteredEvents.slice(0, limit) : baseFilteredEvents;
+$: {
+  const pageSize = itemsPerPage > 0 ? itemsPerPage : filteredEvents.length || 1;
+  totalPages = Math.max(1, Math.ceil(filteredEvents.length / pageSize));
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIndex = (currentPage - 1) * pageSize;
+  paginatedEvents = itemsPerPage > 0 ? filteredEvents.slice(startIndex, startIndex + pageSize) : filteredEvents;
+
+  if (filteredEvents.length === 0) {
+    startItem = 0;
+    endItem = 0;
+  } else {
+    startItem = startIndex + 1;
+    endItem = startIndex + paginatedEvents.length;
+  }
+}
 
 	function filterAndSortEvents(
 		eventList: EventSummary[],
 		search: string,
 		eventType: string,
 		sort: string,
-		itemLimit: number,
 		onlyFeatured: boolean
 	): EventSummary[] {
 		let filtered = [...eventList];
 
-		// Filtrar por búsqueda
 		if (search.trim()) {
-			filtered = filtered.filter(event =>
+			filtered = filtered.filter((event) =>
 				event.title.toLowerCase().includes(search.toLowerCase()) ||
 				(event.description && event.description.toLowerCase().includes(search.toLowerCase()))
 			);
 		}
 
-		// Filtrar por tipo de evento
 		if (eventType) {
-			filtered = filtered.filter(event => event.eventType === eventType);
+			filtered = filtered.filter((event) => event.eventType === eventType);
 		}
 
-		// Filtrar por destacados
 		if (onlyFeatured) {
-			filtered = filtered.filter(event => event.isFeatured);
+			filtered = filtered.filter((event) => event.isFeatured);
 		}
 
-		// Ordenar
 		filtered.sort((a, b) => {
 			switch (sort) {
 				case 'start_desc':
@@ -58,15 +102,10 @@
 					return a.title.localeCompare(b.title);
 				case 'title_desc':
 					return b.title.localeCompare(a.title);
-				default: // start_asc
+				default:
 					return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
 			}
 		});
-
-		// Limitar resultados
-		if (itemLimit > 0) {
-			filtered = filtered.slice(0, itemLimit);
-		}
 
 		return filtered;
 	}
@@ -89,75 +128,72 @@
 
 	function getEventTypeColor(eventType: string): string {
 		const colors: Record<string, string> = {
-			'Clase': 'border-blue-500 bg-blue-50',
-			'Taller': 'border-green-500 bg-green-50',
-			'Conferencia': 'border-purple-500 bg-purple-50',
-			'Evento': 'border-yellow-500 bg-yellow-50',
-			'General': 'border-gray-500 bg-gray-50'
+			Clase: 'border-blue-500 bg-blue-50',
+			Taller: 'border-green-500 bg-green-50',
+			Conferencia: 'border-purple-500 bg-purple-50',
+			Evento: 'border-yellow-500 bg-yellow-50',
+			General: 'border-gray-500 bg-gray-50'
 		};
 		return colors[eventType] || 'border-gray-500 bg-gray-50';
 	}
 
 	function getEventTypeTextColor(eventType: string): string {
 		const colors: Record<string, string> = {
-			'Clase': 'text-blue-700',
-			'Taller': 'text-green-700',
-			'Conferencia': 'text-purple-700',
-			'Evento': 'text-yellow-700',
-			'General': 'text-gray-700'
+			Clase: 'text-blue-700',
+			Taller: 'text-green-700',
+			Conferencia: 'text-purple-700',
+			Evento: 'text-yellow-700',
+			General: 'text-gray-700'
 		};
 		return colors[eventType] || 'text-gray-700';
 	}
 
-	function formatDateTime(date: Date): string {
-		return new Intl.DateTimeFormat('es-ES', {
-			weekday: 'long',
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		}).format(new Date(date));
-	}
+function formatDateOnly(date: Date): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  }).format(new Date(date));
+}
 
-	function formatDateOnly(date: Date): string {
-		return new Intl.DateTimeFormat('es-ES', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric'
-		}).format(new Date(date));
-	}
+function formatTimeOnly(date: Date): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(date));
+}
 
-	function formatTimeOnly(date: Date): string {
-		return new Intl.DateTimeFormat('es-ES', {
-			hour: '2-digit',
-			minute: '2-digit'
-		}).format(new Date(date));
-	}
+function isUpcoming(date: Date): boolean {
+  return new Date(date) > new Date();
+}
 
-	function isUpcoming(date: Date): boolean {
-		return new Date(date) > new Date();
-	}
+function isPast(date: Date): boolean {
+  return new Date(date) < new Date();
+}
 
-	function isPast(date: Date): boolean {
-		return new Date(date) < new Date();
-	}
+const eventTypes = [
+  { value: '', label: 'Todos los tipos' },
+  { value: 'Clase', label: 'Clases' },
+  { value: 'Taller', label: 'Talleres' },
+  { value: 'Conferencia', label: 'Conferencias' },
+  { value: 'Evento', label: 'Eventos' },
+  { value: 'General', label: 'General' }
+];
 
-	const eventTypes = [
-		{ value: '', label: 'Todos los tipos' },
-		{ value: 'Clase', label: 'Clases' },
-		{ value: 'Taller', label: 'Talleres' },
-		{ value: 'Conferencia', label: 'Conferencias' },
-		{ value: 'Evento', label: 'Eventos' },
-		{ value: 'General', label: 'General' }
-	];
+const sortOptions = [
+  { value: 'start_asc', label: 'Fecha (próximos primero)' },
+  { value: 'start_desc', label: 'Fecha (recientes primero)' },
+  { value: 'title_asc', label: 'Título (A-Z)' },
+  { value: 'title_desc', label: 'Título (Z-A)' }
+];
 
-	const sortOptions = [
-		{ value: 'start_asc', label: 'Fecha (próximos primero)' },
-		{ value: 'start_desc', label: 'Fecha (recientes primero)' },
-		{ value: 'title_asc', label: 'Título (A-Z)' },
-		{ value: 'title_desc', label: 'Título (Z-A)' }
-	];
+function goToPreviousPage() {
+  if (currentPage > 1) currentPage -= 1;
+}
+
+function goToNextPage() {
+  if (currentPage < totalPages) currentPage += 1;
+}
 </script>
 
 <div class="space-y-6">
@@ -174,6 +210,7 @@
 						<input
 							type="text"
 							bind:value={searchTerm}
+							on:input={() => (currentPage = 1)}
 							placeholder="Buscar eventos..."
 							class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						/>
@@ -184,6 +221,7 @@
 				<div class="w-full md:w-48">
 					<select
 						bind:value={selectedEventType}
+						on:change={() => (currentPage = 1)}
 						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					>
 						{#each eventTypes as type}
@@ -196,6 +234,7 @@
 				<div class="w-full md:w-48">
 					<select
 						bind:value={sortBy}
+						on:change={() => (currentPage = 1)}
 						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					>
 						{#each sortOptions as option}
@@ -231,7 +270,7 @@
 				<p class="text-gray-500">No se encontraron eventos que coincidan con los filtros seleccionados.</p>
 			</div>
 		{:else}
-			{#each filteredEvents as event}
+			{#each paginatedEvents as event}
 				<div 
 					class="bg-white border-l-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer
 						{getEventTypeColor(event.eventType)}
@@ -300,11 +339,6 @@
 									</div>
 								{/if}
 
-								<!-- Descripción -->
-								{#if event.description}
-									<p class="text-gray-700 text-sm line-clamp-2 mb-2">{event.description}</p>
-								{/if}
-
 								<!-- Organizador -->
 								<div class="flex items-center space-x-1 text-sm text-gray-500">
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,13 +397,31 @@
 			{/each}
 		{/if}
 	</div>
-</div>
 
-<style>
-	.line-clamp-2 {
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-</style>
+	{#if filteredEvents.length > itemsPerPage && itemsPerPage > 0}
+		<div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-lg border border-gray-200">
+			<p class="text-sm text-gray-600">
+				Mostrando {startItem} - {endItem} de {filteredEvents.length} evento{filteredEvents.length === 1 ? '' : 's'}
+			</p>
+			<div class="flex items-center gap-2">
+				<button
+					class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+					on:click={goToPreviousPage}
+					disabled={currentPage === 1}
+				>
+					Anterior
+				</button>
+				<span class="text-sm font-medium text-gray-700">
+					Página {currentPage} de {totalPages}
+				</span>
+				<button
+					class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+					on:click={goToNextPage}
+					disabled={currentPage === totalPages}
+				>
+					Siguiente
+				</button>
+			</div>
+		</div>
+	{/if}
+</div>

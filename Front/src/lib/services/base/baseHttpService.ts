@@ -4,6 +4,7 @@
  */
 
 import { jwtService } from '../auth/jwtService.js';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
 export interface ApiResponse<T> {
 	success: boolean;
@@ -32,7 +33,7 @@ export class ApiError extends Error {
 }
 
 export class BaseHttpService {
-	protected readonly baseURL = 'http://localhost:5251/api';
+	protected readonly baseURL = BACKEND_API_URL;
 
 	/**
 	 * Realizar petición HTTP con manejo de errores y autenticación

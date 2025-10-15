@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation';
 import { jwtService } from '../auth/jwtService';
+import { BACKEND_API_URL, BACKEND_BASE_URL } from '$lib/config/backend';
 
 // Type definitions for BlogPostElement
 export interface BlogPostElement {
@@ -70,8 +71,8 @@ export interface CreateElementsBatchDto {
 }
 
 class BlogPostElementService {
-	private apiUrl = 'http://localhost:5251/api/blogpostelement';
-	private backendUrl = 'http://localhost:5251';
+	private apiUrl = `${BACKEND_API_URL}/blogpostelement`;
+	private backendUrl = BACKEND_BASE_URL;
 
 	// Helper to convert relative file paths to absolute backend URLs
 	getFileUrl(relativePath: string): string {

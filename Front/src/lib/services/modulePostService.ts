@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation';
 import { jwtService } from './auth/jwtService';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
 // Local type definitions to replace schema imports
 export interface ModulePost {
@@ -63,7 +64,7 @@ export interface PostSearchParams {
 }
 
 class ModulePostService {
-	private apiUrl = 'http://localhost:5251/api/materialapoyo';
+	private apiUrl = `${BACKEND_API_URL}/materialapoyo`;
 
 	// Get all posts for a specific module
 	async getModulePosts(moduleId: string): Promise<PostDetail[]> {

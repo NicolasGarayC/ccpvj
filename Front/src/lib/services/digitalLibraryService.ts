@@ -4,6 +4,7 @@
  */
 
 import { jwtService } from './auth/jwtService.js';
+import { BACKEND_BASE_URL } from '$lib/config/backend';
 import { getLibraryDownloadUrl } from '$lib/utils/mediaUtils.js';
 
 export interface LibraryItemDto {
@@ -136,7 +137,7 @@ export interface LibraryUploadOptions {
 }
 
 class DigitalLibraryService {
-    private apiUrl = 'http://localhost:5251';
+    private apiUrl = BACKEND_BASE_URL;
 
     private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
         const headers = {

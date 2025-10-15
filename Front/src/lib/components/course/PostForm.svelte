@@ -30,6 +30,9 @@
 		previewUrl?: string;
 		orderNumber: number;
 		isEditing?: boolean;
+		isUploading?: boolean;
+		uploadProgress?: number;
+		uploadFileName?: string;
 	}
 
 	let formData = {
@@ -41,19 +44,22 @@
 	let draggedIndex: number | null = null;
 
 	// Track uploaded files for cleanup
-	let uploadedFiles: string[] = [];
-	let postSaved = false;
+let uploadedFiles: string[] = [];
+let postSaved = false;
 
-	// Track uploading state to disable submit button
-	let isUploadingMedia = false;
+// Track uploading state to disable submit button
+let isUploadingMedia = false;
+let activeElementUpload: ElementBlock | null = null;
 
 	$: isEdit = !!post;
 	$: modalTitle = isEdit ? 'Editar Post' : 'Crear Nuevo Post';
 
 	// Update order number for new posts when nextOrderNumber changes
-	$: if (!isEdit && nextOrderNumber) {
-		formData.orderNumber = nextOrderNumber;
-	}
+$: if (!isEdit && nextOrderNumber) {
+	formData.orderNumber = nextOrderNumber;
+}
+
+$: activeElementUpload = elements.find((elem) => elem.isUploading) ?? null;
 
 	// Track when we need to load post data
 	let loadedPostId: string | null = null;
@@ -75,20 +81,23 @@
 
 		// Load existing elements for editing
 		try {
-			const postElements = await postElementService.getElementsByPostId(postData.id);
-			elements = postElements.map(elem => {
-				const elementBlock = {
-					id: elem.id,
-					elementType: elem.elementType as ElementType,
-					content: elem.content || '',
-					filePath: elem.filePath || '',
-					fileName: elem.fileName || '',
-					previewUrl: elem.filePath || '',
-					orderNumber: elem.orderNumber,
-					isEditing: false
-				};
-				return elementBlock;
-			});
+		const postElements = await postElementService.getElementsByPostId(postData.id);
+		elements = postElements.map(elem => {
+			const elementBlock: ElementBlock = {
+				id: elem.id,
+				elementType: elem.elementType as ElementType,
+				content: elem.content || '',
+				filePath: elem.filePath || '',
+				fileName: elem.fileName || '',
+				previewUrl: elem.filePath || '',
+				orderNumber: elem.orderNumber,
+				isEditing: false,
+				isUploading: false,
+				uploadProgress: 0,
+				uploadFileName: undefined
+			};
+			return elementBlock;
+		});
 		} catch (error) {
 			console.error('Error loading post elements:', error);
 			elements = [];
@@ -394,13 +403,16 @@
 
 	// Element management functions
 	function addElement(type: ElementType) {
-		const newElement: ElementBlock = {
-			id: crypto.randomUUID(),
-			elementType: type,
-			content: type === 'title' ? 'Nuevo título' : (type === 'text' ? 'Nuevo texto' : ''),
-			orderNumber: elements.length + 1,
-			isEditing: true
-		};
+	const newElement: ElementBlock = {
+		id: crypto.randomUUID(),
+		elementType: type,
+		content: type === 'title' ? 'Nuevo título' : (type === 'text' ? 'Nuevo texto' : ''),
+		orderNumber: elements.length + 1,
+		isEditing: true,
+		isUploading: false,
+		uploadProgress: 0,
+		uploadFileName: undefined
+	};
 		elements = [...elements, newElement];
 	}
 
@@ -434,49 +446,73 @@
 		elements = [...elements];
 	}
 
-	function handleMediaUploadStart() {
-		isUploadingMedia = true;
+function handleMediaUploadStart(index: number) {
+	if (elements[index]) {
+		elements[index].isUploading = true;
+		elements[index].uploadProgress = 0;
+		elements[index].uploadFileName = undefined;
+		elements = [...elements];
 	}
+	isUploadingMedia = elements.some(elem => elem.isUploading);
+}
+
+function handleMediaUploadProgress(index: number, event: CustomEvent<{ progress: number; fileName: string; mediaType: string; size: number }>) {
+	const { progress, fileName } = event.detail;
+	if (elements[index]) {
+		elements[index].uploadProgress = progress;
+		elements[index].uploadFileName = fileName;
+		elements = [...elements];
+	}
+}
 
 	function handleMediaUpload(index: number, event: CustomEvent<UploadResult>) {
-		const result = event.detail;
+	const result = event.detail;
 
-		if (elements[index]) {
-			// Track uploaded file for potential cleanup
-			if (!isEdit) {
-				uploadedFiles.push(result.relativePath);
-			}
-
-			// Update element with uploaded file information
-			elements[index].filePath = result.relativePath;
-			elements[index].fileName = result.filename;
-			elements[index].previewUrl = result.url;
-			elements[index].file = undefined; // Clear the file object since it's uploaded
-			elements = [...elements];
+	if (elements[index]) {
+		// Track uploaded file for potential cleanup
+		if (!isEdit) {
+			uploadedFiles.push(result.relativePath);
 		}
 
-		// Upload finished (success)
-		isUploadingMedia = false;
+		// Update element with uploaded file information
+		elements[index].filePath = result.relativePath;
+		elements[index].fileName = result.filename;
+		elements[index].previewUrl = result.url;
+		elements[index].file = undefined; // Clear the file object since it's uploaded
+		elements[index].isUploading = false;
+		elements[index].uploadProgress = 100;
+		elements = [...elements];
 	}
 
-	function handleMediaUploadError(index: number, event: CustomEvent<string>) {
-		const error = event.detail;
-		console.error(`Media upload error for element ${index}:`, error);
+	// Upload finished (success)
+	isUploadingMedia = elements.some(elem => elem.isUploading);
+}
 
-		// Upload finished (error)
-		isUploadingMedia = false;
+function handleMediaUploadError(index: number, event: CustomEvent<string>) {
+	const error = event.detail;
+	console.error(`Media upload error for element ${index}:`, error);
+
+	// Upload finished (error)
+	if (elements[index]) {
+		elements[index].isUploading = false;
+		elements[index].uploadProgress = 0;
 	}
+	isUploadingMedia = elements.some(elem => elem.isUploading);
+}
 
 	function handleRemoveMedia(index: number) {
-		if (elements[index]) {
-			// Clear all media-related properties
-			elements[index].file = undefined;
-			elements[index].previewUrl = '';
-			elements[index].filePath = '';
-			elements[index].fileName = '';
-			elements = [...elements];
-		}
+	if (elements[index]) {
+		// Clear all media-related properties
+		elements[index].file = undefined;
+		elements[index].previewUrl = '';
+		elements[index].filePath = '';
+		elements[index].fileName = '';
+		elements[index].isUploading = false;
+		elements[index].uploadProgress = 0;
+		elements[index].uploadFileName = undefined;
+		elements = [...elements];
 	}
+}
 
 	// Drag and drop functions
 	function handleDragStart(event: DragEvent, index: number) {
@@ -722,25 +758,38 @@
 												{/if}
 											{:else if ['image', 'video', 'audio'].includes(element.elementType)}
 												<div class="media-uploader-container">
-													<ContextualMediaUploader
-														context="post"
-														mediaType={element.elementType}
-														materialApoyoId={materialApoyoId}
-														moduleId={moduleId}
-														postId={post ? String(post.id) : 'temp'}
-														currentMedia={element.filePath || ''}
-														disabled={isLoading}
-														label=""
-																on:uploadStart={handleMediaUploadStart}
-														on:uploadSuccess={(e) => handleMediaUpload(index, e)}
-														on:uploadError={(e) => handleMediaUploadError(index, e)}
-														on:mediaRemoved={() => handleRemoveMedia(index)}
-													/>
-													{#if !post?.id}
-														<p class="media-upload-hint">
-															💡 Los archivos se organizarán automáticamente cuando guardes el post.
-														</p>
-													{/if}
+								<ContextualMediaUploader
+									context="post"
+									mediaType={element.elementType}
+									materialApoyoId={materialApoyoId}
+									moduleId={moduleId}
+									postId={post ? String(post.id) : 'temp'}
+									currentMedia={element.filePath || ''}
+									disabled={isLoading}
+									label=""
+									on:uploadStart={() => handleMediaUploadStart(index)}
+									on:uploadSuccess={(e) => handleMediaUpload(index, e)}
+									on:uploadError={(e) => handleMediaUploadError(index, e)}
+									on:mediaRemoved={() => handleRemoveMedia(index)}
+									on:uploadProgress={(e) => handleMediaUploadProgress(index, e)}
+								/>
+
+								{#if element.isUploading}
+									<div class="element-upload-status">
+										<div class="element-status-text">
+											<span>Subiendo {element.uploadFileName || 'archivo'}...</span>
+											<strong>{Math.round(element.uploadProgress ?? 0)}%</strong>
+										</div>
+										<div class="element-status-bar">
+											<div class="element-status-bar-fill" style={`width: ${Math.round(element.uploadProgress ?? 0)}%;`}></div>
+										</div>
+									</div>
+								{/if}
+								{#if !post?.id}
+									<p class="media-upload-hint">
+										💡 Los archivos se organizarán automáticamente cuando guardes el post.
+									</p>
+								{/if}
 												</div>
 											{/if}
 										</div>
@@ -756,16 +805,20 @@
 						Cancelar
 					</button>
 					<button type="submit" class="btn btn-primary" disabled={isLoading || isUploadingMedia}>
-						{#if isLoading}
-							<div class="loading-spinner"></div>
-							{isEdit ? 'Actualizando...' : 'Creando...'}
-t				{:else if isUploadingMedia}
-						<div class="loading-spinner"></div>
-						Subiendo archivo...
-						{:else}
-							{isEdit ? 'Actualizar Post' : 'Crear Post'}
-						{/if}
-					</button>
+				{#if isLoading}
+					<div class="loading-spinner"></div>
+					{isEdit ? 'Actualizando...' : 'Creando...'}
+				{:else if isUploadingMedia}
+				<div class="loading-spinner"></div>
+				{#if activeElementUpload}
+					Subiendo {activeElementUpload.uploadFileName || 'archivo'}... {Math.round(activeElementUpload.uploadProgress ?? 0)}%
+				{:else}
+					Subiendo archivo...
+				{/if}
+				{:else}
+					{isEdit ? 'Actualizar Post' : 'Crear Post'}
+				{/if}
+			</button>
 				</div>
 			</form>
 		</div>
@@ -1378,6 +1431,39 @@ t				{:else if isUploadingMedia}
 		background: var(--color-background-muted);
 		border-radius: 6px;
 		text-align: center;
+	}
+
+	.element-upload-status {
+		margin-top: 0.75rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--color-primary, #6366f1);
+		background: var(--color-primary-lightest, rgba(129, 140, 248, 0.08));
+		border-radius: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.element-status-text {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.85rem;
+		color: var(--color-text-primary);
+	}
+
+	.element-status-bar {
+		height: 6px;
+		background: rgba(99, 102, 241, 0.2);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.element-status-bar-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--color-primary, #6366f1), #a855f7);
+		border-radius: inherit;
+		transition: width 0.2s ease;
 	}
 
 	@media (max-width: 768px) {

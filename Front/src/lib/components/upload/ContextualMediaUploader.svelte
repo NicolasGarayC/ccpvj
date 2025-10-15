@@ -22,12 +22,13 @@ export let mediaType: MediaType = 'image';
 	// Support legacy properties
 	$: actualContentId = contentId || materialApoyoId || courseId;
 
-	const dispatch = createEventDispatcher<{
-		uploadStart: void;
-		uploadSuccess: UploadResult;
-		uploadError: string;
-		mediaRemoved: void;
-	}>();
+const dispatch = createEventDispatcher<{
+	uploadStart: void;
+	uploadSuccess: UploadResult;
+	uploadError: string;
+	mediaRemoved: void;
+	uploadProgress: { progress: number; fileName: string; mediaType: MediaType; size: number };
+}>();
 
 	let isUploading = false;
 	let uploadProgress = 0;
@@ -92,12 +93,13 @@ function getDefaultLabel(ctx: UploadContext, type: MediaType): string {
 			return;
 		}
 
-		error = '';
-		isUploading = true;
-		uploadProgress = 0;
+	error = '';
+	isUploading = true;
+	uploadProgress = 0;
+	emitProgress(0, file);
 
-		// Notify parent that upload has started
-		dispatch('uploadStart');
+	// Notify parent that upload has started
+	dispatch('uploadStart');
 
 		try {
 			// Create preview immediately for visual feedback
@@ -118,6 +120,7 @@ function getDefaultLabel(ctx: UploadContext, type: MediaType): string {
 					if (currentProgress < 90) {
 						currentProgress += Math.random() * 5;
 						uploadProgress = Math.min(90, currentProgress);
+						emitProgress(uploadProgress, file);
 					}
 				}, 500);
 			}
@@ -148,21 +151,23 @@ function getDefaultLabel(ctx: UploadContext, type: MediaType): string {
 				});
 			}
 
-			// Clear progress interval
-			if (progressInterval) {
-				clearInterval(progressInterval);
-			}
+		// Clear progress interval
+		if (progressInterval) {
+			clearInterval(progressInterval);
+		}
 
-			uploadProgress = 100;
+		uploadProgress = 100;
+		emitProgress(uploadProgress, file);
 
-			// Brief delay to show 100% before finishing
-			await new Promise(resolve => setTimeout(resolve, 300));
+		// Brief delay to show 100% before finishing
+		await new Promise(resolve => setTimeout(resolve, 300));
 
-			dispatch('uploadSuccess', result);
+		dispatch('uploadSuccess', result);
 
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Upload failed';
-			dispatch('uploadError', error);
+	} catch (err) {
+		error = err instanceof Error ? err.message : 'Upload failed';
+		dispatch('uploadError', error);
+		emitProgress(0, file);
 
 			// Clean up preview URL on error
 			if (previewUrl) {
@@ -216,12 +221,21 @@ function getDefaultLabel(ctx: UploadContext, type: MediaType): string {
 		return contextualUploadService.formatFileSize(bytes);
 	}
 
-	function getFileIcon(type: string): string {
-		if (type === 'image') return '🖼️';
-		if (type === 'video') return '🎥';
-		if (type === 'audio') return '🎵';
-		return '📁';
-	}
+function getFileIcon(type: string): string {
+	if (type === 'image') return '🖼️';
+	if (type === 'video') return '🎥';
+	if (type === 'audio') return '🎵';
+	return '📁';
+}
+
+const emitProgress = (value: number, file: File) => {
+	dispatch('uploadProgress', {
+		progress: Math.min(100, Math.max(0, value)),
+		fileName: file.name,
+		mediaType,
+		size: file.size
+	});
+};
 
 function getMaxSizeInfo(type: MediaType): string {
 	const sizes: Record<MediaType, string> = {

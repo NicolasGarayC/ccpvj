@@ -106,6 +106,24 @@ namespace CentroCultural.API.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
+            try
+            {
+                var authHeader = Request.Headers["Authorization"].ToString();
+                if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var token = authHeader["Bearer ".Length..].Trim();
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        _jwtService.RevokeToken(token);
+                        _logger.LogInformation("Token revoked successfully during logout");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to revoke token during logout");
+            }
+
             return Ok(new { success = true, message = "Logged out successfully" });
         }
     }

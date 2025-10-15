@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-import { analyticsService } from '$lib/services/analytics/analyticsService.js';
-import type { TopResource } from '$lib/services/analytics/analyticsService.js';
   import { browser } from '$app/environment';
+  import { t, tParams } from '$lib/i18n';
+  import { jwtService } from '$lib/services/auth/jwtService.js';
+  import { analyticsService } from '$lib/services/analytics/analyticsService.js';
+  import type { TopResource } from '$lib/services/analytics/analyticsService.js';
 
   let loading = true;
   let stats = {
@@ -102,22 +103,22 @@ let topResources: TopResource[] = [];
 </script>
 
 <svelte:head>
-  <title>Estadísticas - Centro Cultural Víctor Jara</title>
+  <title>{$t('analytics.metaTitle')}</title>
 </svelte:head>
 
 <div class="container mx-auto px-4 py-8">
   <!-- Header -->
   <div class="flex justify-between items-center mb-8">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">Estadísticas</h1>
-      <p class="text-gray-600 mt-2">Dashboard de métricas y análisis</p>
+      <h1 class="text-3xl font-bold text-gray-900">{$t('dashboard.analytics')}</h1>
+      <p class="text-gray-600 mt-2">{$t('dashboard.analyticsDescription')}</p>
     </div>
     <a
       href="/dashboard"
       class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2"
     >
       <i class="fas fa-arrow-left"></i>
-      Volver al Dashboard
+      {$t('analytics.backToDashboard')}
     </a>
   </div>
 
@@ -125,7 +126,7 @@ let topResources: TopResource[] = [];
     <!-- Loading State -->
     <div class="text-center py-12">
       <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
-      <p class="text-gray-600">Cargando estadísticas...</p>
+      <p class="text-gray-600">{$t('analytics.loading')}</p>
     </div>
   {:else}
     <!-- Stats Cards -->
@@ -136,7 +137,7 @@ let topResources: TopResource[] = [];
             <i class="fas fa-users text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total Visitantes</p>
+            <p class="text-sm font-medium text-gray-500">{$t('analytics.totalVisitors')}</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalVisitors.toLocaleString()}</p>
           </div>
         </div>
@@ -148,7 +149,7 @@ let topResources: TopResource[] = [];
             <i class="fas fa-download text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total Descargas</p>
+            <p class="text-sm font-medium text-gray-500">{$t('analytics.totalDownloads')}</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalDownloads.toLocaleString()}</p>
           </div>
         </div>
@@ -160,9 +161,9 @@ let topResources: TopResource[] = [];
             <i class="fas fa-folder text-xl"></i>
           </div>
           <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total Recursos</p>
+            <p class="text-sm font-medium text-gray-500">{$t('analytics.totalResources')}</p>
             <p class="text-2xl font-bold text-gray-900">{stats.totalResources.toLocaleString()}</p>
-            <p class="text-xs text-gray-400 mt-1">Eventos, Proyectos, Módulos y Biblioteca</p>
+            <p class="text-xs text-gray-400 mt-1">{$t('analytics.totalResourcesHint')}</p>
           </div>
         </div>
       </div>
@@ -174,7 +175,7 @@ let topResources: TopResource[] = [];
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           <i class="fas fa-chart-line text-blue-600 mr-2"></i>
-          Visitantes (Últimos 30 días)
+          {$t('analytics.visitorsChartTitle')}
         </h3>
         <div class="h-64 flex items-end justify-between gap-1">
           {#each visitorsChart as day}
@@ -182,7 +183,7 @@ let topResources: TopResource[] = [];
               <div
                 class="bg-blue-500 rounded-t w-full transition-all duration-300 hover:bg-blue-600"
                 style="height: {(day.visitors / Math.max(...visitorsChart.map(d => d.visitors))) * 100}%"
-                title="{day.date}: {day.visitors} visitantes"
+                title={$tParams('analytics.tooltip.visitors', { date: day.date, count: day.visitors })}
               ></div>
               <span class="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left">
                 {day.date}
@@ -196,7 +197,7 @@ let topResources: TopResource[] = [];
       <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           <i class="fas fa-trophy text-yellow-600 mr-2"></i>
-          Recursos Más Descargados
+          {$t('analytics.topResourcesTitle')}
         </h3>
         <div class="space-y-4">
           {#each topResources as resource, index}
@@ -234,16 +235,14 @@ let topResources: TopResource[] = [];
         </div>
         <div class="ml-3">
           <h3 class="text-sm font-medium text-blue-800">
-            Información sobre las estadísticas
+            {$t('analytics.info.title')}
           </h3>
-          <div class="mt-2 text-sm text-blue-700">
-            <p>
-              • Los datos se cargan directamente de la base de datos<br>
-              • Total Visitantes: Visitantes únicos registrados en el sistema (basado en IP)<br>
-              • Total Descargas: Archivos multimedia descargados desde la plataforma<br>
-              • Total Recursos: Suma de eventos, proyectos, módulos e items de biblioteca activos
-            </p>
-          </div>
+          <ul class="mt-2 text-sm text-blue-700 list-disc pl-5 space-y-1">
+            <li>{$t('analytics.info.source')}</li>
+            <li>{$t('analytics.info.visitors')}</li>
+            <li>{$t('analytics.info.downloads')}</li>
+            <li>{$t('analytics.info.resources')}</li>
+          </ul>
         </div>
       </div>
     </div>

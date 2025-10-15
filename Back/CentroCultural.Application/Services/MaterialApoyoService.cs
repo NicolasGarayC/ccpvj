@@ -21,21 +21,24 @@ namespace CentroCultural.Application.Services
 
         public async Task<IEnumerable<MaterialApoyoSummaryDto>> GetAllMaterialApoyoAsync()
         {
-            var materialApoyo = await _context.MaterialApoyo
-                .Select(c => new MaterialApoyoSummaryDto
-                {
-                    Id = c.Id,
-                    Title = c.Title,
-                    Description = c.Description,
-                    IsFeatured = c.IsFeatured,
-                    IsActive = c.IsActive,
-                    CreatedAt = c.CreatedAt,
-                    EducatorName = "Instructor",
-                    ImagePath = c.ImagePath ?? "",
-                    ModuleCount = _context.Modulo.Count(m => m.MaterialApoyoId == c.Id)
-                })
+            // Primero obtenemos las entidades completas
+            var materialApoyoEntities = await _context.MaterialApoyo
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
+
+            // Luego mapeamos a DTOs, esto fuerza a EF a cargar todas las propiedades
+            var materialApoyo = materialApoyoEntities.Select(c => new MaterialApoyoSummaryDto
+            {
+                Id = c.Id,
+                Title = c.Title,
+                Description = c.Description,
+                IsFeatured = c.IsFeatured,
+                IsActive = c.IsActive,
+                CreatedAt = c.CreatedAt,
+                EducatorName = c.EducatorName ?? "Instructor",
+                ImagePath = c.ImagePath ?? "",
+                ModuleCount = _context.Modulo.Count(m => m.MaterialApoyoId == c.Id)
+            }).ToList();
 
             return materialApoyo;
         }
@@ -87,7 +90,7 @@ namespace CentroCultural.Application.Services
                     IsFeatured = m.IsFeatured,
                     IsActive = m.IsActive,
                     CreatedAt = m.CreatedAt,
-                    EducatorName = "Instructor",
+                    EducatorName = m.EducatorName ?? "Instructor",
                     ImagePath = m.ImagePath ?? "",
                     ModuleCount = _context.Modulo.Count(mod => mod.MaterialApoyoId == m.Id)
                 })
@@ -119,7 +122,7 @@ namespace CentroCultural.Application.Services
                     IsFeatured = m.IsFeatured,
                     IsActive = m.IsActive,
                     CreatedAt = m.CreatedAt,
-                    EducatorName = "Instructor",
+                    EducatorName = m.EducatorName ?? "Instructor",
                     ImagePath = m.ImagePath ?? "",
                     ModuleCount = _context.Modulo.Count(mod => mod.MaterialApoyoId == m.Id)
                 })
@@ -169,7 +172,7 @@ namespace CentroCultural.Application.Services
                 CreatedAt = DateTimeOffset.FromUnixTimeSeconds(materialApoyo.CreatedAt).DateTime,
                 UpdatedAt = materialApoyo.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(materialApoyo.UpdatedAt.Value).DateTime : null,
                 EducatorId = int.TryParse(materialApoyo.EducatorId, out var educatorId) ? educatorId : 1,
-                EducatorName = "Instructor",
+                EducatorName = materialApoyo.EducatorName ?? "Instructor",
                 ImagePath = materialApoyo.ImagePath,
                 ModuleCount = modules.Count(),
                 Modules = modules
@@ -193,7 +196,8 @@ namespace CentroCultural.Application.Services
                 IsActive = true,
                 CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 UpdatedAt = null,
-                EducatorId = userId.ToString()
+                EducatorId = userId.ToString(),
+                EducatorName = createMaterialApoyoDto.EducatorName ?? "Instructor"
             };
 
             _context.MaterialApoyo.Add(materialApoyo);
@@ -209,7 +213,7 @@ namespace CentroCultural.Application.Services
                 CreatedAt = DateTimeOffset.FromUnixTimeSeconds(materialApoyo.CreatedAt).DateTime,
                 UpdatedAt = materialApoyo.UpdatedAt.HasValue ? DateTimeOffset.FromUnixTimeSeconds(materialApoyo.UpdatedAt.Value).DateTime : null,
                 EducatorId = int.Parse(materialApoyo.EducatorId),
-                EducatorName = "Instructor",
+                EducatorName = materialApoyo.EducatorName ?? "Instructor",
                 ImagePath = materialApoyo.ImagePath,
                 ModuleCount = 0
             };
@@ -236,6 +240,7 @@ namespace CentroCultural.Application.Services
                 materialApoyo.Description = updateMaterialApoyoDto.Description;
                 materialApoyo.IsFeatured = updateMaterialApoyoDto.IsFeatured;
                 materialApoyo.ImagePath = updateMaterialApoyoDto.ImagePath;
+                materialApoyo.EducatorName = updateMaterialApoyoDto.EducatorName;
                 materialApoyo.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                 _context.MaterialApoyo.Update(materialApoyo);

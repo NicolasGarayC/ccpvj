@@ -5,20 +5,26 @@
 	import { t, locale } from '$lib/i18n';
 	import CalendarView from '$lib/components/calendar/CalendarView.svelte';
 	import EventList from '$lib/components/calendar/EventList.svelte';
-	import { calendarService, type EventSummary, type CalendarView as CalendarViewType } from '$lib/services/calendar/calendarService';
+	import { calendarService, type EventSummary, type CalendarView as CalendarViewType, type EventDetail } from '$lib/services/calendar/calendarService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 
 	// Get current locale for date formatting
 	$: currentLocale = $locale === 'es' ? 'es-ES' : 'en-US';
 
-	// Estado de la página
-	let loading = true;
-	let error = '';
-	let currentView: 'calendar' | 'list' = 'calendar';
-	let currentDate = new Date();
-	let calendarData: CalendarViewType | null = null;
-	let upcomingEvents: EventSummary[] = [];
-	let featuredEvents: EventSummary[] = [];
+// Estado de la página
+let loading = true;
+let error = '';
+let currentView: 'calendar' | 'list' = 'calendar';
+let currentDate = new Date();
+let calendarData: CalendarViewType | null = null;
+let upcomingEvents: EventSummary[] = [];
+let featuredEvents: EventSummary[] = [];
+let listEvents: EventSummary[] = [];
+let listLoading = false;
+let listError = '';
+let listLoaded = false;
+const LIST_HORIZON_DAYS = 180;
+const MAX_OCCURRENCES_PER_EVENT = 200;
 	
 	// ✅ Estado de autenticación
 	let isAuthenticated = false;
@@ -78,13 +84,217 @@
 		}
 	}
 
-	async function loadFeaturedEvents() {
-		try {
-			featuredEvents = await calendarService.getFeaturedEvents(5);
-		} catch (err) {
-			console.error('Error al cargar eventos destacados:', err);
+async function loadFeaturedEvents() {
+	try {
+		featuredEvents = await calendarService.getFeaturedEvents(5);
+	} catch (err) {
+		console.error('Error al cargar eventos destacados:', err);
+	}
+}
+
+async function loadListEvents(force = false) {
+	if (listLoaded && !force) return;
+	try {
+		listLoading = true;
+		listError = '';
+
+		const now = new Date();
+		const horizon = addDays(now, LIST_HORIZON_DAYS);
+		const data = await calendarService.getAllEvents();
+
+		const occurrences: EventSummary[] = [];
+
+		const recurringEvents = data.filter((event) => event.isRecurring);
+		const recurringDetails = await Promise.all(
+			recurringEvents.map(async (event) => {
+				try {
+					return await calendarService.getEventById(event.id);
+				} catch (error) {
+					console.error('Error al cargar detalles del evento recurrente:', error);
+					return null;
+				}
+			})
+		);
+
+		const recurringMap = new Map<string, EventDetail>();
+		recurringEvents.forEach((event, index) => {
+			const detail = recurringDetails[index];
+			if (detail) {
+				recurringMap.set(event.id, detail);
+			}
+		});
+
+		for (const event of data) {
+			if (event.isRecurring && recurringMap.has(event.id)) {
+				const detail = recurringMap.get(event.id)!;
+				const expanded = expandRecurringEvent(detail, now, horizon, MAX_OCCURRENCES_PER_EVENT);
+				occurrences.push(...expanded);
+			} else {
+				const start = new Date(event.startDateTime);
+				const end = event.endDateTime ? new Date(event.endDateTime) : undefined;
+				const stillActive = end ? end >= now : start >= now;
+				if (stillActive) {
+					occurrences.push({
+						...event,
+						startDateTime: start,
+						endDateTime: end
+					});
+				}
+			}
+		}
+
+		occurrences.sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+		listEvents = occurrences;
+		listLoaded = true;
+	} catch (err) {
+		console.error('Error al cargar eventos en lista:', err);
+		listError = $t('errorLoadingCalendar');
+	} finally {
+		listLoading = false;
+	}
+}
+
+function addDays(date: Date, days: number): Date {
+	const result = new Date(date);
+	result.setDate(result.getDate() + days);
+	return result;
+}
+
+function addMonths(date: Date, months: number): Date {
+	const result = new Date(date);
+	result.setMonth(result.getMonth() + months);
+	return result;
+}
+
+function addYears(date: Date, years: number): Date {
+	const result = new Date(date);
+	result.setFullYear(result.getFullYear() + years);
+	return result;
+}
+
+function startOfWeek(date: Date): Date {
+	const result = new Date(date);
+	const day = result.getDay();
+	result.setDate(result.getDate() - day);
+	result.setHours(0, 0, 0, 0);
+	return result;
+}
+
+function expandRecurringEvent(
+	event: EventDetail,
+	fromDate: Date,
+	horizonDate: Date,
+	maxOccurrences: number
+): EventSummary[] {
+	const occurrences: EventSummary[] = [];
+	const baseStart = new Date(event.startDateTime);
+	const baseEnd = event.endDateTime ? new Date(event.endDateTime) : undefined;
+	const duration = baseEnd ? baseEnd.getTime() - baseStart.getTime() : 0;
+	const interval = event.recurrenceInterval ?? 1;
+	const recurrenceEnd = event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null;
+	const limitDate = recurrenceEnd && recurrenceEnd < horizonDate ? recurrenceEnd : horizonDate;
+	const pattern = event.recurrencePattern ?? '';
+
+	const pushOccurrence = (start: Date) => {
+		if (start < fromDate) return;
+		if (start > limitDate) return;
+		const occurrenceEnd = duration > 0 ? new Date(start.getTime() + duration) : undefined;
+		occurrences.push({
+			id: event.id,
+			title: event.title,
+			description: event.description,
+			startDateTime: new Date(start),
+			endDateTime: occurrenceEnd,
+			isAllDay: event.isAllDay,
+			location: event.location,
+			eventType: event.eventType,
+			isFeatured: event.isFeatured,
+			imagePath: event.imagePath,
+			isRecurring: event.isRecurring,
+			organizerName: event.organizerName,
+			relatedProjectId: event.relatedProjectId,
+			relatedCourseTitle: event.relatedCourseTitle,
+			relatedBlogPostId: event.relatedBlogPostId,
+			relatedBlogPostTitle: event.relatedBlogPostTitle,
+			relatedBlogPostSlug: event.relatedBlogPostSlug
+		});
+	};
+
+	if (!event.isRecurring) {
+		return occurrences;
+	}
+
+	switch (pattern) {
+		case 'daily': {
+			let occurrence = new Date(baseStart);
+			while (occurrence < fromDate) {
+				occurrence = addDays(occurrence, interval);
+			}
+			while (occurrence <= limitDate && occurrences.length < maxOccurrences) {
+				pushOccurrence(occurrence);
+				occurrence = addDays(occurrence, interval);
+			}
+			break;
+		}
+		case 'weekly': {
+			const daysOfWeek = event.recurrenceDaysOfWeek
+				? event.recurrenceDaysOfWeek
+						.split(',')
+						.map((d) => Number(d.trim()))
+						.filter((d) => !Number.isNaN(d))
+				: [baseStart.getDay()];
+			const startWeek = startOfWeek(baseStart);
+			let currentDay = new Date(fromDate);
+			currentDay.setHours(baseStart.getHours(), baseStart.getMinutes(), baseStart.getSeconds(), baseStart.getMilliseconds());
+			while (currentDay <= limitDate && occurrences.length < maxOccurrences) {
+				const weeksDiff = Math.floor((startOfWeek(currentDay).getTime() - startWeek.getTime()) / (7 * 24 * 60 * 60 * 1000));
+				if (weeksDiff >= 0 && weeksDiff % interval === 0) {
+					const dayOfWeek = currentDay.getDay();
+					if (daysOfWeek.includes(dayOfWeek)) {
+						pushOccurrence(new Date(currentDay));
+					}
+				}
+				currentDay = addDays(currentDay, 1);
+			}
+			break;
+		}
+		case 'monthly': {
+			let occurrence = new Date(baseStart);
+			while (occurrence < fromDate) {
+				occurrence = addMonths(occurrence, interval);
+			}
+			while (occurrence <= limitDate && occurrences.length < maxOccurrences) {
+				pushOccurrence(occurrence);
+				occurrence = addMonths(occurrence, interval);
+			}
+			break;
+		}
+		case 'yearly': {
+			let occurrence = new Date(baseStart);
+			while (occurrence < fromDate) {
+				occurrence = addYears(occurrence, interval);
+			}
+			while (occurrence <= limitDate && occurrences.length < maxOccurrences) {
+				pushOccurrence(occurrence);
+				occurrence = addYears(occurrence, interval);
+			}
+			break;
+		}
+		default: {
+			let occurrence = new Date(baseStart);
+			while (occurrence < fromDate) {
+				occurrence = addDays(occurrence, interval);
+			}
+			while (occurrence <= limitDate && occurrences.length < maxOccurrences) {
+				pushOccurrence(occurrence);
+				occurrence = addDays(occurrence, interval);
+			}
+			break;
 		}
 	}
+
+	return occurrences;
+}
 
 	// Manejar cambios en la vista del calendario
 	async function handleViewChange(event: CustomEvent<{ date: Date; viewType: string }>) {
@@ -110,9 +320,12 @@
 	}
 
 	// Cambiar vista
-	function setView(view: 'calendar' | 'list') {
-		currentView = view;
+function setView(view: 'calendar' | 'list') {
+	currentView = view;
+	if (view === 'list') {
+		loadListEvents();
 	}
+}
 
 	// Navegar a crear evento
 	function navigateToCreateEvent() {
@@ -126,14 +339,20 @@
 	}
 
 	// Obtener mensaje de estado
-	function getStatusMessage(): string {
-		if (loading) return $t('loadingCalendar');
-		if (error) return error;
-		if (!calendarData?.events || calendarData.events.length === 0) {
-			return $t('noEventsScheduled');
-		}
-		return `${calendarData.events.length} ${$t('eventsFound')}`;
+function getStatusMessage(): string {
+	if (currentView === 'list') {
+		if (listLoading) return $t('loadingCalendar');
+		if (listError) return listError;
+		if (!listEvents.length) return $t('noEventsScheduled');
+		return `${listEvents.length} ${$t('eventsFound')}`;
 	}
+	if (loading) return $t('loadingCalendar');
+	if (error) return error;
+	if (!calendarData?.events || calendarData.events.length === 0) {
+		return $t('noEventsScheduled');
+	}
+	return `${calendarData.events.length} ${$t('eventsFound')}`;
+}
 </script>
 
 <svelte:head>
@@ -174,9 +393,6 @@
 										? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
 										: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'}"
 							>
-								<svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 8V9a2 2 0 012-2h4a2 2 0 012 2v8m-6 4v-2"/>
-								</svg>
 								📅 {$t('calendar')}
 							</button>
 							<button
@@ -186,9 +402,6 @@
 										? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
 										: 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'}"
 							>
-								<svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-								</svg>
 								📋 {$t('list')}
 							</button>
 						</div>
@@ -250,14 +463,29 @@
 						on:dateClick={handleDateClick}
 						on:viewChange={handleViewChange}
 					/>
-				{:else if currentView === 'list' && calendarData}
-					<EventList
-						events={calendarData.events}
-						showFilters={true}
-						showCreateButton={false}
-						on:eventClick={handleEventClick}
-						on:createEvent={navigateToCreateEvent}
-					/>
+				{:else if currentView === 'list'}
+					{#if listLoading}
+						<div class="flex justify-center py-12">
+							<div class="text-center">
+								<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+								<p class="text-gray-600">{$t('loadingCalendar')}</p>
+							</div>
+						</div>
+					{:else if listError}
+						<div class="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700">
+							<h3 class="text-lg font-semibold mb-2">{$t('errorLoadingCalendar')}</h3>
+							<p>{listError}</p>
+						</div>
+					{:else}
+						<EventList
+							events={listEvents}
+							showFilters={true}
+							showCreateButton={false}
+							itemsPerPage={10}
+							on:eventClick={handleEventClick}
+							on:createEvent={navigateToCreateEvent}
+						/>
+					{/if}
 				{/if}
 			</div>
 

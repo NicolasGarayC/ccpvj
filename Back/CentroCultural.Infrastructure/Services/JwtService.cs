@@ -4,6 +4,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using CentroCultural.Infrastructure.Configuration;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace CentroCultural.Infrastructure.Services
 {
@@ -16,12 +18,15 @@ namespace CentroCultural.Infrastructure.Services
         string? GetRoleFromToken(string token);
         bool IsTokenValid(string token);
         DateTime GetTokenExpiration(string token);
+        void RevokeToken(string token);
+        bool IsTokenRevoked(string token);
     }
 
     public class JwtService : IJwtService
     {
         private readonly JwtSettings _jwtSettings;
         private readonly ILogger<JwtService> _logger;
+        private static readonly ConcurrentDictionary<string, DateTime> _revokedTokens = new();
 
         public JwtService(IOptions<JwtSettings> jwtSettings, ILogger<JwtService> logger)
         {
@@ -95,6 +100,12 @@ namespace CentroCultural.Infrastructure.Services
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
 
+                if (IsTokenRevoked(token))
+                {
+                    _logger.LogWarning("JWT token has been revoked and is no longer valid");
+                    return null;
+                }
+
                 _logger.LogDebug("JWT token validated successfully");
                 return principal;
             }
@@ -136,13 +147,60 @@ namespace CentroCultural.Infrastructure.Services
             return ValidateToken(token) != null;
         }
 
+        public void RevokeToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            try
+            {
+                CleanupRevokedTokens();
+                var expiration = GetTokenExpiration(token);
+                if (expiration == DateTime.MinValue)
+                {
+                    expiration = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes);
+                }
+
+                _revokedTokens[token] = expiration.ToUniversalTime();
+                _logger.LogInformation("JWT token revoked until {Expiration}", expiration);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to revoke JWT token");
+            }
+        }
+
+        public bool IsTokenRevoked(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            CleanupRevokedTokens();
+            return _revokedTokens.ContainsKey(token);
+        }
+
+        private void CleanupRevokedTokens()
+        {
+            foreach (var entry in _revokedTokens.ToArray())
+            {
+                if (entry.Value <= DateTime.UtcNow)
+                {
+                    _revokedTokens.TryRemove(entry.Key, out _);
+                }
+            }
+        }
+
         public DateTime GetTokenExpiration(string token)
         {
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var jwtToken = tokenHandler.ReadJwtToken(token);
-                return jwtToken.ValidTo;
+                return jwtToken.ValidTo.ToUniversalTime();
             }
             catch
             {

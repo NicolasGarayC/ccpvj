@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using CentroCultural.Domain.Entities;
 using CentroCultural.Application.DTOs;
@@ -23,6 +25,7 @@ namespace CentroCultural.Application.Services
         {
             var query = _context.BlogPost
                 .Include(p => p.Elements)
+                .Include(p => p.Author)
                 .AsQueryable();
 
             // Apply filters
@@ -59,6 +62,13 @@ namespace CentroCultural.Application.Services
                 .ToListAsync();
 
             // Map to DTOs with featured image resolution
+            var authorIds = postEntities
+                .Select(p => p.AuthorId)
+                .Distinct()
+                .ToList();
+
+            var authorNames = await GetAuthorNamesAsync(authorIds);
+
             var posts = postEntities.Select(p => new BlogPostSummaryDto
             {
                 Id = p.Id,
@@ -70,10 +80,11 @@ namespace CentroCultural.Application.Services
                 Views = p.Views,
                 CreatedAt = p.CreatedAt,
                 PublishedAt = p.PublishedAt,
-                AuthorName = "Author", // TODO: Implement author name lookup
+                AuthorName = ResolveAuthorName(p, authorNames),
                 FeaturedImagePath = p.Elements?
                     .Where(e => e.ElementType == "image" && e.OrderNumber == 0)
-                    .FirstOrDefault()?.FilePath
+                    .FirstOrDefault()?.FilePath,
+                Status = p.Status
             }).ToList();
 
             return new BlogPostPagedResultDto
@@ -91,30 +102,35 @@ namespace CentroCultural.Application.Services
         public async Task<BlogPostDto?> GetBlogPostByIdAsync(string id)
         {
             var post = await _context.BlogPost
+                .Include(p => p.Author)
                 .Include(p => p.Elements.OrderBy(e => e.OrderNumber))
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (post == null)
                 return null;
 
-            return MapToBlogPostDto(post);
+            var authorName = await GetAuthorNameAsync(post.AuthorId);
+            return MapToBlogPostDto(post, authorName);
         }
 
         public async Task<BlogPostDto?> GetBlogPostBySlugAsync(string slug)
         {
             var post = await _context.BlogPost
+                .Include(p => p.Author)
                 .Include(p => p.Elements.OrderBy(e => e.OrderNumber))
                 .FirstOrDefaultAsync(p => p.Slug == slug && p.IsPublished);
 
             if (post == null)
                 return null;
 
-            return MapToBlogPostDto(post);
+            var authorName = await GetAuthorNameAsync(post.AuthorId);
+            return MapToBlogPostDto(post, authorName);
         }
 
         public async Task<BlogPostDto?> GetBlogPostBySlugAsync(string slug, int? currentUserId)
         {
             var query = _context.BlogPost
+                .Include(p => p.Author)
                 .Include(p => p.Elements.OrderBy(e => e.OrderNumber))
                 .Where(p => p.Slug == slug);
 
@@ -132,7 +148,8 @@ namespace CentroCultural.Application.Services
             if (post == null)
                 return null;
 
-            return MapToBlogPostDto(post);
+            var authorName = await GetAuthorNameAsync(post.AuthorId);
+            return MapToBlogPostDto(post, authorName);
         }
 
         public async Task<BlogPostDto> CreateBlogPostAsync(CreateBlogPostDto createDto, int authorId)
@@ -166,6 +183,7 @@ namespace CentroCultural.Application.Services
                 AuthorId = author.IdUsuario,
                 CategoryId = createDto.CategoryId,
                 Tags = createDto.Tags.Any() ? JsonSerializer.Serialize(createDto.Tags) : null,
+                Status = string.IsNullOrWhiteSpace(createDto.Status) ? "draft" : createDto.Status!,
                 CreatedAt = currentTime
             };
 
@@ -205,6 +223,7 @@ namespace CentroCultural.Application.Services
         public async Task<BlogPostDto?> UpdateBlogPostAsync(string id, UpdateBlogPostDto updateDto, int userId)
         {
             var post = await _context.BlogPost
+                .Include(p => p.Author)
                 .Include(p => p.Elements)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -234,6 +253,7 @@ namespace CentroCultural.Application.Services
             post.IsActive = updateDto.IsActive;
             post.CategoryId = updateDto.CategoryId;
             post.Tags = updateDto.Tags.Any() ? JsonSerializer.Serialize(updateDto.Tags) : null;
+            post.Status = string.IsNullOrWhiteSpace(updateDto.Status) ? post.Status : updateDto.Status!;
             post.UpdatedAt = currentTime;
 
             // Set published date if publishing for first time
@@ -392,6 +412,13 @@ namespace CentroCultural.Application.Services
                 .Take(count)
                 .ToListAsync();
 
+            var authorIds = postEntities
+                .Select(p => p.AuthorId)
+                .Distinct()
+                .ToList();
+
+            var authorNames = await GetAuthorNamesAsync(authorIds);
+
             var posts = postEntities.Select(p => new BlogPostSummaryDto
             {
                 Id = p.Id,
@@ -403,10 +430,11 @@ namespace CentroCultural.Application.Services
                 Views = p.Views,
                 CreatedAt = p.CreatedAt,
                 PublishedAt = p.PublishedAt,
-                AuthorName = "Author", // TODO: Implement author name lookup
+                AuthorName = ResolveAuthorName(p, authorNames),
                 FeaturedImagePath = p.Elements?
                     .Where(e => e.ElementType == "image" && e.OrderNumber == 0)
-                    .FirstOrDefault()?.FilePath
+                    .FirstOrDefault()?.FilePath,
+                Status = p.Status
             }).ToList();
 
             return posts;
@@ -421,6 +449,13 @@ namespace CentroCultural.Application.Services
                 .Take(count)
                 .ToListAsync();
 
+            var authorIds = postEntities
+                .Select(p => p.AuthorId)
+                .Distinct()
+                .ToList();
+
+            var authorNames = await GetAuthorNamesAsync(authorIds);
+
             var posts = postEntities.Select(p => new BlogPostSummaryDto
             {
                 Id = p.Id,
@@ -432,10 +467,11 @@ namespace CentroCultural.Application.Services
                 Views = p.Views,
                 CreatedAt = p.CreatedAt,
                 PublishedAt = p.PublishedAt,
-                AuthorName = "Author", // TODO: Implement author name lookup
+                AuthorName = ResolveAuthorName(p, authorNames),
                 FeaturedImagePath = p.Elements?
                     .Where(e => e.ElementType == "image" && e.OrderNumber == 0)
-                    .FirstOrDefault()?.FilePath
+                    .FirstOrDefault()?.FilePath,
+                Status = p.Status
             }).ToList();
 
             return posts;
@@ -450,6 +486,13 @@ namespace CentroCultural.Application.Services
                 .Take(count)
                 .ToListAsync();
 
+            var authorIds = postEntities
+                .Select(p => p.AuthorId)
+                .Distinct()
+                .ToList();
+
+            var authorNames = await GetAuthorNamesAsync(authorIds);
+
             var posts = postEntities.Select(p => new BlogPostSummaryDto
             {
                 Id = p.Id,
@@ -461,10 +504,11 @@ namespace CentroCultural.Application.Services
                 Views = p.Views,
                 CreatedAt = p.CreatedAt,
                 PublishedAt = p.PublishedAt,
-                AuthorName = "Author", // TODO: Implement author name lookup
+                AuthorName = ResolveAuthorName(p, authorNames),
                 FeaturedImagePath = p.Elements?
                     .Where(e => e.ElementType == "image" && e.OrderNumber == 0)
-                    .FirstOrDefault()?.FilePath
+                    .FirstOrDefault()?.FilePath,
+                Status = p.Status
             }).ToList();
 
             return posts;
@@ -528,7 +572,7 @@ namespace CentroCultural.Application.Services
             return slug;
         }
 
-        private BlogPostDto MapToBlogPostDto(BlogPost post)
+        private BlogPostDto MapToBlogPostDto(BlogPost post, string? authorNameOverride = null)
         {
             var tags = new List<string>();
             if (!string.IsNullOrEmpty(post.Tags))
@@ -559,9 +603,10 @@ namespace CentroCultural.Application.Services
                 UpdatedAt = post.UpdatedAt,
                 PublishedAt = post.PublishedAt,
                 AuthorId = post.AuthorId,
-                AuthorName = "Author", // TODO: Implement author name lookup
+                AuthorName = ResolveAuthorName(post, authorNameOverride),
                 CategoryId = post.CategoryId,
                 Tags = tags,
+                Status = post.Status,
                 Elements = post.Elements.OrderBy(e => e.OrderNumber).Select(e => new BlogPostElementDto
                 {
                     Id = e.Id,
@@ -579,6 +624,128 @@ namespace CentroCultural.Application.Services
                     UpdatedAt = e.UpdatedAt
                 }).ToList()
             };
+        }
+
+        private string ResolveAuthorName(BlogPost post, IDictionary<int, string> authorNames)
+        {
+            if (post.Author != null)
+            {
+                var displayName = BuildAuthorDisplayName(post.Author.NombreUsuario, post.Author.Nombre, post.Author.Apellido);
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            return ResolveAuthorName(post.AuthorId, authorNames);
+        }
+
+        private string ResolveAuthorName(BlogPost post, string? authorNameOverride)
+        {
+            if (!string.IsNullOrWhiteSpace(authorNameOverride))
+            {
+                return authorNameOverride.Trim();
+            }
+
+            if (post.Author != null)
+            {
+                var displayName = BuildAuthorDisplayName(post.Author.NombreUsuario, post.Author.Nombre, post.Author.Apellido);
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            return ResolveAuthorName(post.AuthorId, new Dictionary<int, string>());
+        }
+
+        private async Task<Dictionary<int, string>> GetAuthorNamesAsync(IEnumerable<int> authorIds)
+        {
+            var distinctIds = authorIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            var authorNames = new Dictionary<int, string>();
+
+            if (!distinctIds.Any())
+            {
+                return authorNames;
+            }
+
+            var authors = await _context.Usuario
+                .AsNoTracking()
+                .Where(u => distinctIds.Contains(u.IdUsuario))
+                .Select(u => new { u.IdUsuario, u.NombreUsuario, u.Nombre, u.Apellido })
+                .ToListAsync();
+
+            foreach (var author in authors)
+            {
+                authorNames[author.IdUsuario] = BuildAuthorDisplayName(author.NombreUsuario, author.Nombre, author.Apellido);
+            }
+
+            return authorNames;
+        }
+
+        private async Task<string> GetAuthorNameAsync(int authorId)
+        {
+            if (authorId <= 0)
+            {
+                return "Autor";
+            }
+
+            var names = await GetAuthorNamesAsync(new[] { authorId });
+            return ResolveAuthorName(authorId, names);
+        }
+
+        private string ResolveAuthorName(int authorId, IDictionary<int, string> authorNames)
+        {
+            if (authorId <= 0)
+            {
+                return "Autor";
+            }
+
+            if (authorNames.TryGetValue(authorId, out var name) && !string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+
+            var fallbackAuthor = _context.Usuario
+                .AsNoTracking()
+                .Where(u => u.IdUsuario == authorId)
+                .Select(u => new { u.NombreUsuario, u.Nombre, u.Apellido })
+                .FirstOrDefault();
+
+            if (fallbackAuthor != null)
+            {
+                var displayName = BuildAuthorDisplayName(fallbackAuthor.NombreUsuario, fallbackAuthor.Nombre, fallbackAuthor.Apellido);
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            return "Autor";
+        }
+
+        private static string BuildAuthorDisplayName(string? username, string? firstName, string? lastName)
+        {
+            var nameParts = new[] { firstName, lastName }
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Select(part => part!.Trim())
+                .ToArray();
+
+            if (nameParts.Length > 0)
+            {
+                return string.Join(" ", nameParts);
+            }
+
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                return username.Trim();
+            }
+
+            return string.Empty;
         }
 
         // File cleanup methods

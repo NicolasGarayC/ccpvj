@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
 	import type { LibraryItemDto } from '$lib/services/digitalLibraryService';
 
@@ -31,31 +32,16 @@
 
 	async function handleView() {
 		try {
-			// Incrementar contador de vistas
-			await digitalLibraryService.incrementViewCount(item.id);
-
-			// Abrir el archivo para visualización
-			const fileUrl = item.filePath.startsWith('/media/') ? item.filePath : `/media${item.filePath}`;
-
-			// Según el tipo de archivo, abrir de diferentes maneras
-			if (item.fileType === 'image') {
-				// Para imágenes, abrir en nueva ventana
-				window.open(fileUrl, '_blank');
-			} else if (item.fileType === 'video' || item.fileType === 'audio') {
-				// Para videos y audio, abrir en nueva ventana
-				window.open(fileUrl, '_blank');
-			} else if (item.fileType === 'document' || item.mimeType === 'application/pdf') {
-				// Para documentos/PDFs, abrir en nueva ventana
-				window.open(fileUrl, '_blank');
-			} else {
-				// Para otros tipos, abrir en nueva ventana
-				window.open(fileUrl, '_blank');
+			if (typeof window !== 'undefined') {
+				window.sessionStorage.setItem('library:lastViewedId', String(item.id));
 			}
 
-			// Disparar evento para recargar stats
+			await digitalLibraryService.incrementViewCount(item.id);
 			dispatch('view');
 		} catch (error) {
-			console.error('Error viewing file:', error);
+			console.error('Error registrando vista del recurso:', error);
+		} finally {
+			goto(`/library/${item.id}`);
 		}
 	}
 

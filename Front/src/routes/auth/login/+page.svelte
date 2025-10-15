@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { t, translate } from '$lib/i18n';
 
 	let username = '';
 	let password = '';
@@ -20,13 +21,13 @@
 		// Check if coming from session expiration
 		const message = $page.url.searchParams.get('message');
 		if (message === 'session-expired') {
-			sessionExpiredMessage = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+			sessionExpiredMessage = translate('login.sessionExpired');
 		}
 	});
 
 	async function handleLogin() {
 		if (!username || !password) {
-			error = 'Por favor ingresa usuario y contraseña';
+			error = translate('login.errorMissingCredentials');
 			return;
 		}
 
@@ -40,11 +41,11 @@
 				// Login successful, redirect to home page
 				goto('/');
 			} else {
-				error = result.message || 'Error al iniciar sesión';
+				error = result.message || translate('login.errorGeneric');
 			}
 		} catch (err) {
 			console.error('Login error:', err);
-			error = 'Error de conexión. Intenta nuevamente.';
+			error = translate('login.errorConnection');
 		} finally {
 			isLoading = false;
 		}
@@ -58,14 +59,14 @@
 </script>
 
 <svelte:head>
-	<title>Iniciar Sesión - Centro Cultural</title>
+	<title>{$t('login.title')} - {$t('centroTitle')}</title>
 </svelte:head>
 
 <div class="login-container">
 	<div class="login-card">
 		<div class="login-header">
-			<h1>Iniciar Sesión</h1>
-			<p>Centro Cultural CCPVJ</p>
+			<h1>{$t('login.title')}</h1>
+			<p>{$t('login.subtitle')}</p>
 		</div>
 
 		<form on:submit|preventDefault={handleLogin} class="login-form">
@@ -76,13 +77,13 @@
 			{/if}
 
 			<div class="form-group">
-				<label for="username">Usuario</label>
+				<label for="username">{$t('login.usernameLabel')}</label>
 				<input
 					id="username"
 					type="text"
 					bind:value={username}
 					on:keypress={handleKeyPress}
-					placeholder="Ingresa tu usuario"
+					placeholder={$t('login.usernamePlaceholder')}
 					disabled={isLoading}
 					autocomplete="username"
 					required
@@ -90,13 +91,13 @@
 			</div>
 
 			<div class="form-group">
-				<label for="password">Contraseña</label>
+				<label for="password">{$t('login.passwordLabel')}</label>
 				<input
 					id="password"
 					type="password"
 					bind:value={password}
 					on:keypress={handleKeyPress}
-					placeholder="Ingresa tu contraseña"
+					placeholder={$t('login.passwordPlaceholder')}
 					disabled={isLoading}
 					autocomplete="current-password"
 					required
@@ -112,15 +113,15 @@
 			<button type="submit" class="login-button" disabled={isLoading}>
 				{#if isLoading}
 					<span class="loading-spinner"></span>
-					Iniciando sesión...
+					{$t('login.submitting')}
 				{:else}
-					Iniciar Sesión
+					{$t('login.submit')}
 				{/if}
 			</button>
 		</form>
 
 		<div class="login-footer">
-			<p>¿Problemas para acceder? Contacta al administrador</p>
+			<p>{$t('login.supportMessage')}</p>
 		</div>
 	</div>
 </div>

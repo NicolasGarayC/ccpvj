@@ -31,6 +31,7 @@ namespace CentroCultural.Application.DTOs
         public string Description { get; set; } = string.Empty;
         public bool IsFeatured { get; set; } = false;
         public string? ImagePath { get; set; }
+        public string? EducatorName { get; set; }
     }
 
     public class UpdateMaterialApoyoDto
@@ -39,6 +40,7 @@ namespace CentroCultural.Application.DTOs
         public string Description { get; set; } = string.Empty;
         public bool IsFeatured { get; set; }
         public string? ImagePath { get; set; }
+        public string? EducatorName { get; set; }
     }
 
     public class MaterialApoyoSummaryDto

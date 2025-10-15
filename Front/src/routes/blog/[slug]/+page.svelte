@@ -61,6 +61,55 @@
     return getUntrackedMediaUrl(cleanPath);
   }
 
+  function stripProtocol(path: string): string {
+    return path.replace(/^https?:\/\/[^/]+/i, '');
+  }
+
+  function normalizeMediaPath(path: string | null | undefined): string | null {
+    if (!path) return null;
+    const withoutQuery = path.split('?')[0].split('#')[0];
+    const noProtocol = stripProtocol(withoutQuery);
+    return noProtocol
+      .replace(/^\/+/, '')
+      .replace(/^media\//i, '')
+      .replace(/^back\/data\/media\//i, '')
+      .trim() || null;
+  }
+
+  function extractMediaInfo(path: string | null | undefined) {
+    const normalized = normalizeMediaPath(path);
+    if (!normalized) return null;
+    const segments = normalized.split('/');
+    const fileName = segments[segments.length - 1] || null;
+    return {
+      normalized,
+      fileName
+    };
+  }
+
+  $: featuredMediaInfo = extractMediaInfo(post?.featuredMedia);
+
+  function isSameAsFeatured(filePath: string | null | undefined): boolean {
+    if (!filePath || !featuredMediaInfo) return false;
+    const candidate = extractMediaInfo(filePath);
+    if (!candidate) return false;
+
+    if (candidate.normalized === featuredMediaInfo.normalized) return true;
+    if (
+      candidate.normalized &&
+      featuredMediaInfo.normalized &&
+      (candidate.normalized.endsWith(featuredMediaInfo.normalized) ||
+        featuredMediaInfo.normalized.endsWith(candidate.normalized))
+    ) {
+      return true;
+    }
+    return candidate.fileName !== null && candidate.fileName === featuredMediaInfo.fileName;
+  }
+
+  $: featuredInline =
+    Boolean(featuredMediaInfo) &&
+    elements.some((el) => el.elementType === 'image' && isSameAsFeatured(el.filePath));
+
   function isVideo(mediaPath: string) {
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
     return videoExtensions.some(ext => mediaPath.toLowerCase().endsWith(ext));
@@ -153,7 +202,7 @@
       </header>
 
       <!-- Featured Media -->
-      {#if post.featuredMedia}
+      {#if post.featuredMedia && !featuredInline}
         <div class="mb-8 rounded-lg overflow-hidden shadow-lg">
           {#if isVideo(post.featuredMedia)}
             <video

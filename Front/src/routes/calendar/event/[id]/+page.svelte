@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { calendarService, type EventDetail, type EventSummary } from '$lib/services/calendar/calendarService';
@@ -14,11 +14,13 @@
 	let error = '';
 	let event: EventDetail | null = null;
 	let relatedEvents: EventSummary[] = [];
-	
+
 	// ✅ Estado de autorización
 	let isAuthenticated = false;
 	let canEditEvent = false;
 	let currentUser: any = null;
+	let shareFeedback: { message: string; kind: 'success' | 'error' } | null = null;
+	let shareFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Cargar evento y datos relacionados
 	onMount(async () => {
@@ -151,6 +153,58 @@
 	function isPast(date: Date): boolean {
 		return new Date(date) < new Date();
 	}
+
+	function setShareFeedback(message: string, kind: 'success' | 'error') {
+		shareFeedback = { message, kind };
+		if (shareFeedbackTimeout) {
+			clearTimeout(shareFeedbackTimeout);
+		}
+		shareFeedbackTimeout = setTimeout(() => {
+			shareFeedback = null;
+			shareFeedbackTimeout = null;
+		}, 3500);
+	}
+
+	async function shareEvent() {
+		if (!event) return;
+
+		const shareData = {
+			title: event.title,
+			text: event.description ?? event.title,
+			url: window.location.href
+		};
+
+		try {
+			if (navigator.share) {
+				await navigator.share(shareData);
+				setShareFeedback('Enlace compartido correctamente.', 'success');
+				return;
+			}
+		} catch (err) {
+			if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') {
+				return;
+			}
+			console.warn('Fallo el uso de navigator.share, intentando copiar portapapeles.', err);
+		}
+
+		try {
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				await navigator.clipboard.writeText(shareData.url);
+				setShareFeedback('Enlace copiado al portapapeles.', 'success');
+			} else {
+				setShareFeedback('Tu navegador no permite copiar automáticamente. Copia el enlace manualmente.', 'error');
+			}
+		} catch (err) {
+			console.error('Error al copiar enlace:', err);
+			setShareFeedback('No se pudo copiar el enlace. Copia la URL manualmente.', 'error');
+		}
+	}
+
+	onDestroy(() => {
+		if (shareFeedbackTimeout) {
+			clearTimeout(shareFeedbackTimeout);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -458,7 +512,7 @@
 
 								<!-- Compartir -->
 								<button
-									on:click={() => navigator.clipboard.writeText(window.location.href)}
+									on:click={shareEvent}
 									class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -466,6 +520,11 @@
 									</svg>
 									<span>Compartir</span>
 								</button>
+								{#if shareFeedback}
+									<p class={`text-sm mt-2 ${shareFeedback.kind === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+										{shareFeedback.message}
+									</p>
+								{/if}
 							</div>
 						</div>
 

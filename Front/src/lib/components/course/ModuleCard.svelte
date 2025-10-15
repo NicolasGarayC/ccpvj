@@ -67,11 +67,13 @@
 
 	<div class="module-actions">
 		<button
-			class="btn btn-outline btn-sm"
+			class="btn btn-primary btn-sm highlight"
 			on:click={handleView}
-			title="Ver contenidos del módulo"
+			title="Explorar las actividades de este módulo"
 		>
-			Ver Contenidos
+			<span class="emoji">📚</span>
+			<span class="label">Ver</span>
+			<span class="chevron">→</span>
 		</button>
 		
 		{#if showActions}
@@ -224,12 +226,45 @@
 	.module-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
 		flex-shrink: 0;
 		flex-wrap: nowrap;
-		max-width: 250px;
-		min-width: 200px;
+		max-width: 200px;
+		min-width: 140px;
 		justify-content: flex-end;
+	}
+
+	.module-actions .btn-primary.highlight {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.9rem;
+		border-radius: 999px;
+		background: linear-gradient(135deg, #6366f1, #8b5cf6);
+		color: #fff;
+		font-weight: 600;
+		box-shadow: 0 12px 20px rgba(99, 102, 241, 0.25);
+		border: none;
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.module-actions .btn-primary.highlight .emoji {
+		font-size: 1.1rem;
+	}
+
+	.module-actions .btn-primary.highlight .label {
+		font-size: 0.9rem;
+		letter-spacing: 0.3px;
+	}
+
+	.module-actions .btn-primary.highlight .chevron {
+		font-size: 1rem;
+		opacity: 0.9;
+	}
+
+	.module-actions .btn-primary.highlight:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 16px 24px rgba(99, 102, 241, 0.35);
 	}
 
 	.btn-sm {

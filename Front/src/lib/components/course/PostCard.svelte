@@ -209,11 +209,13 @@
 
 	<div class="post-actions">
 		<button
-			class="btn btn-outline btn-sm"
+			class="btn btn-primary btn-sm highlight"
 			on:click={handleView}
-			title="Ver post completo"
+			title="Explorar el detalle del post"
 		>
-			Ver Detalles
+			<span class="emoji">🔍</span>
+			<span class="label">Ver Detalle</span>
+			<span class="chevron">→</span>
 		</button>
 
 		{#if showActions}
@@ -537,9 +539,42 @@
 	.post-actions {
 		display: flex;
 		align-items: flex-start;
-		gap: 0.5rem;
+		gap: 0.75rem;
 		flex-shrink: 0;
 		flex-direction: column;
+	}
+
+	.post-actions .btn-primary.highlight {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.55rem 1.1rem;
+		border-radius: 999px;
+		background: linear-gradient(135deg, #ec4899, #8b5cf6);
+		color: #fff;
+		font-weight: 600;
+		box-shadow: 0 12px 20px rgba(236, 72, 153, 0.25);
+		border: none;
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.post-actions .btn-primary.highlight .emoji {
+		font-size: 1.1rem;
+	}
+
+	.post-actions .btn-primary.highlight .label {
+		font-size: 0.9rem;
+		letter-spacing: 0.3px;
+	}
+
+	.post-actions .btn-primary.highlight .chevron {
+		font-size: 1rem;
+		opacity: 0.9;
+	}
+
+	.post-actions .btn-primary.highlight:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 18px 26px rgba(236, 72, 153, 0.35);
 	}
 
 	.btn {

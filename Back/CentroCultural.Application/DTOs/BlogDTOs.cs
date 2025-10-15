@@ -63,6 +63,7 @@ namespace CentroCultural.Application.DTOs
         public string? CategoryId { get; set; }
         public string? CategoryName { get; set; }
         public List<string> Tags { get; set; } = new List<string>();
+        public string Status { get; set; } = "draft";
         public List<BlogPostElementDto> Elements { get; set; } = new List<BlogPostElementDto>();
     }
 
@@ -81,6 +82,7 @@ namespace CentroCultural.Application.DTOs
         public string? CategoryName { get; set; }
         public string? CategoryColor { get; set; }
         public string? FeaturedImagePath { get; set; }
+        public string Status { get; set; } = "draft";
     }
 
     public class CreateBlogPostDto
@@ -95,6 +97,7 @@ namespace CentroCultural.Application.DTOs
         public string? CategoryId { get; set; }
         public List<string> Tags { get; set; } = new List<string>();
         public List<BlogPostElementDto> Elements { get; set; } = new List<BlogPostElementDto>();
+        public string Status { get; set; } = "draft";
     }
 
     public class UpdateBlogPostDto
@@ -109,6 +112,7 @@ namespace CentroCultural.Application.DTOs
         public string? CategoryId { get; set; }
         public List<string> Tags { get; set; } = new List<string>();
         public List<BlogPostElementDto> Elements { get; set; } = new List<BlogPostElementDto>();
+        public string Status { get; set; } = "draft";
     }
 
     public class BlogCategoryDto

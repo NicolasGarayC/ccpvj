@@ -356,6 +356,8 @@
 
 	.search-container {
 		position: relative;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.search-input {
@@ -394,17 +396,14 @@
 	}
 
 	.dropdown {
-		position: absolute;
-		top: calc(100% + 0.25rem);
-		left: 0;
-		right: 0;
+		position: relative;
+		margin-top: 0.75rem;
 		background: white;
 		border: 1px solid #d1d5db;
 		border-radius: 6px;
-		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-		max-height: 300px;
+		box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+		max-height: 240px;
 		overflow-y: auto;
-		z-index: 10;
 	}
 
 	.empty-state {

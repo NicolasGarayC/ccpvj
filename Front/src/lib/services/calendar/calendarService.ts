@@ -1,4 +1,5 @@
 import { jwtService } from '../auth/jwtService';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
 // Local type definitions to replace schema imports
 export interface Event {
@@ -135,7 +136,7 @@ export interface EventTypeStats {
 }
 
 class CalendarService {
-  private baseURL = 'http://localhost:5251/api';
+  private baseURL = BACKEND_API_URL;
 
   private async getRequestOptions(options: RequestInit = {}): Promise<RequestInit> {
     const token = jwtService.getToken();

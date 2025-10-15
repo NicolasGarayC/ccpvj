@@ -110,9 +110,7 @@
       } else {
         const createPayload = {
           ...basePost,
-          publishDate: new Date().toISOString(),
-          authorId: Number(currentUser?.id ?? 0),
-          authorName: currentUser?.role ?? 'Autor'
+          publishDate: new Date().toISOString()
         };
 
         result = await blogHttpService.createPost(createPayload);

@@ -1,13 +1,14 @@
 ﻿<script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
 	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
 	import { browser } from '$app/environment';
 	import { t, getLocale, setLocale, locale } from '$lib/i18n'; // Sistema i18n único
 	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
 	import { analyticsService } from '$lib/services/analytics/analyticsService.js';
+	import { authModalStore } from '$lib/stores/authStore';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -17,6 +18,8 @@
 
 	// Estado del menú móvil
 	let mobileMenuOpen = false;
+	let mainContentRef: HTMLElement | null = null;
+	let mobileMenuContainerRef: HTMLElement | null = null;
 
 	// Calcular si es encargado (administrador puede crear contenido)
 	$: isEducator =
@@ -25,6 +28,96 @@
 	// Calcular si puede gestionar usuarios (solo administradores)
 	$: canManageUsers =
 		isLoggedIn && user?.role === 'administrador';
+
+	const INACTIVITY_LIMIT_MS = 3 * 60 * 1000;
+	const ACTIVITY_THROTTLE_MS = 1000;
+	const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+	let inactivityTimeout: ReturnType<typeof setTimeout> | null = null;
+	let activityListenersRegistered = false;
+	let lastActivityTimestamp = 0;
+	const activityListenerOptions: AddEventListenerOptions = { passive: true };
+
+	function clearInactivityTimer() {
+		if (inactivityTimeout) {
+			clearTimeout(inactivityTimeout);
+			inactivityTimeout = null;
+		}
+	}
+
+	function handleUserActivity() {
+		if (!jwtService.isAuthenticated()) {
+			stopActivityTracking();
+			return;
+		}
+
+		const now = performance.now();
+		if (now - lastActivityTimestamp < ACTIVITY_THROTTLE_MS) {
+			return;
+		}
+		lastActivityTimestamp = now;
+
+		resetInactivityTimer();
+	}
+
+	function resetInactivityTimer() {
+		if (!browser || !jwtService.isAuthenticated()) {
+			clearInactivityTimer();
+			return;
+		}
+		clearInactivityTimer();
+		inactivityTimeout = window.setTimeout(handleInactivityLogout, INACTIVITY_LIMIT_MS);
+	}
+
+	function startActivityTracking() {
+		if (!browser) return;
+		if (!isLoggedIn) {
+			stopActivityTracking();
+			return;
+		}
+
+		if (!activityListenersRegistered) {
+			activityEvents.forEach((eventName) => {
+				document.addEventListener(eventName, handleUserActivity, activityListenerOptions);
+			});
+			activityListenersRegistered = true;
+		}
+
+		resetInactivityTimer();
+	}
+
+	function stopActivityTracking() {
+		if (!browser) {
+			clearInactivityTimer();
+			return;
+		}
+
+		if (activityListenersRegistered) {
+			activityEvents.forEach((eventName) => {
+				document.removeEventListener(eventName, handleUserActivity, false);
+			});
+			activityListenersRegistered = false;
+		}
+
+		clearInactivityTimer();
+		lastActivityTimestamp = 0;
+	}
+
+	async function handleInactivityLogout() {
+		if (!jwtService.isAuthenticated()) {
+			stopActivityTracking();
+			return;
+		}
+
+		try {
+			await jwtService.logout();
+		} catch (error) {
+			console.error('Error during inactivity logout:', error);
+		} finally {
+			stopActivityTracking();
+			authModalStore.showSessionExpired();
+			await updateAuthState();
+		}
+	}
 
 	// Función para actualizar el estado de autenticación
 	async function updateAuthState() {
@@ -59,10 +152,10 @@
 	}
 
 	// Inicialización del componente
-	onMount(() => {
+	onMount(async () => {
 		// Solo actualizar el estado de autenticación si NO estamos en la página de login
 		if ($page.route.id !== '/auth/login') {
-			updateAuthState();
+			await updateAuthState();
 		} else {
 			// Si estamos en login, solo verificar estado local
 			isLoggedIn = jwtService.isAuthenticated();
@@ -73,6 +166,9 @@
 
 		// Solo ejecutar en el navegador
 		if (browser) {
+			if (isLoggedIn) {
+				startActivityTracking();
+			}
 			// Rastrear visita inicial de la página
 			trackPageVisit($page.url.pathname);
 		}
@@ -90,6 +186,14 @@
 		updateAuthState();
 	}
 
+	$: if (browser) {
+		if (isLoggedIn) {
+			startActivityTracking();
+		} else {
+			stopActivityTracking();
+		}
+	}
+
 	async function handleLogout(e: Event) {
 		e.preventDefault();
 		try {
@@ -98,6 +202,35 @@
 			window.location.href = '/';
 		} catch (error) {
 			console.error('Error during logout:', error);
+		}
+	}
+
+	function handleGlobalClick(event: MouseEvent) {
+		if (!browser || !mobileMenuOpen || !mainContentRef) {
+			return;
+		}
+
+		const target = event.target as Node | null;
+		if (!target) {
+			return;
+		}
+
+		if (mobileMenuContainerRef && mobileMenuContainerRef.contains(target)) {
+			return;
+		}
+
+		if (mainContentRef.contains(target)) {
+			mobileMenuOpen = false;
+		}
+	}
+
+	function handleGlobalKeydown(event: KeyboardEvent) {
+		if (!mobileMenuOpen) {
+			return;
+		}
+
+		if (event.key === 'Escape') {
+			mobileMenuOpen = false;
 		}
 	}
 
@@ -111,7 +244,13 @@
 		const newLocale = current === 'es' ? 'en' : 'es';
 		setLocale(newLocale);
 	}
+
+	onDestroy(() => {
+		stopActivityTracking();
+	});
 </script>
+
+<svelte:window on:click={handleGlobalClick} on:keydown={handleGlobalKeydown} />
 
 <div class="flex min-h-screen flex-col">
 	<!-- Header moderno y juvenil -->
@@ -135,7 +274,7 @@
 					</div>
 					<div>
 						<h1 class="text-2xl font-black text-white tracking-tight">Centro Cultural</h1>
-						<p class="text-xs text-white/80 font-medium">Víctor Jara</p>
+						<p class="text-xs text-white/80 font-medium">Popular Víctor Jara</p>
 					</div>
 				</a>
 
@@ -273,7 +412,10 @@
 
 	<!-- Mobile menu dropdown -->
 	{#if mobileMenuOpen}
-		<div class="lg:hidden bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 border-t border-white/20">
+		<div
+			class="lg:hidden bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 border-t border-white/20"
+			bind:this={mobileMenuContainerRef}
+		>
 			<div class="container mx-auto px-4 py-4">
 				<nav class="space-y-2">
 					<!-- Inicio -->
@@ -372,16 +514,7 @@
 	{/if}
 
 	<!-- Contenido principal -->
-	<main
-		class="flex-grow"
-		on:click={() => mobileMenuOpen = false}
-		on:keydown={(e) => {
-			if (e.key === 'Escape' && mobileMenuOpen) {
-				mobileMenuOpen = false;
-			}
-		}}
-		role="main"
-	>
+	<main class="flex-grow" bind:this={mainContentRef}>
 		<slot />
 	</main>
 
@@ -406,7 +539,7 @@
 					</div>
 					<div>
 						<h3 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-							Centro Cultural Víctor Jara
+							Centro Cultural Popular Víctor Jara
 						</h3>
 					</div>
 				</div>
@@ -416,7 +549,7 @@
 				
 				<!-- Copyright -->
 				<p class="text-white/70 font-medium">
-					&copy; {new Date().getFullYear()} Centro Cultural Víctor Jara
+					&copy; {new Date().getFullYear()} Centro Cultural Popular Víctor Jara
 				</p>
 				<p class="text-white/50 text-sm mt-1">
 					✨ {$t('footer.tagline')} ✨

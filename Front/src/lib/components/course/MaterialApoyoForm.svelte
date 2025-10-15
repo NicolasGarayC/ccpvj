@@ -18,12 +18,14 @@
 		title: course?.title || '',
 		description: course?.description || '',
 		isFeatured: course?.isFeatured || false,
-		imagePath: course?.imagePath || ''
+		imagePath: course?.imagePath || '',
+		educatorName: course?.educatorName || ''
 	};
 
-	let formErrors: Record<string, string> = {};
-	let submitting = false;
-	let isUploadingMedia = false;
+let formErrors: Record<string, string> = {};
+let submitting = false;
+let isUploadingMedia = false;
+let coverUploadInfo: { progress: number; fileName: string } | null = null;
 
 
 	function validateForm(): boolean {
@@ -69,7 +71,8 @@
 					title: formData.title.trim(),
 					description: formData.description.trim(),
 					isFeatured: formData.isFeatured,
-					imagePath: formData.imagePath || undefined
+					imagePath: formData.imagePath || undefined,
+					educatorName: formData.educatorName.trim() || undefined
 				};
 
 				await materialApoyoService.updateMaterialApoyo(course.id, updateData);
@@ -79,7 +82,8 @@
 					title: formData.title.trim(),
 					description: formData.description.trim(),
 					isFeatured: formData.isFeatured,
-					imagePath: formData.imagePath || undefined
+					imagePath: formData.imagePath || undefined,
+					educatorName: formData.educatorName.trim() || undefined
 				};
 
 				// Use the pre-generated ID if we uploaded an image
@@ -100,12 +104,14 @@
 
 	function handleUploadStart() {
 		isUploadingMedia = true;
+		coverUploadInfo = { progress: 0, fileName: '' };
 	}
 
 	function handleImageUpload(event: CustomEvent<UploadResult>) {
 		const result = event.detail;
 		formData.imagePath = result.relativePath;
 		isUploadingMedia = false;
+		coverUploadInfo = null;
 
 		// Auto-save when image is uploaded if editing
 		if (isEditing && course) {
@@ -116,6 +122,7 @@
 	function handleImageRemove() {
 		formData.imagePath = '';
 		isUploadingMedia = false;
+		coverUploadInfo = null;
 
 		// Auto-save removal if editing
 		if (isEditing && course) {
@@ -127,7 +134,16 @@
 		const error = event.detail;
 		formErrors.imagePath = error;
 		isUploadingMedia = false;
+		coverUploadInfo = null;
 		console.error('Course image upload error:', error);
+	}
+
+	function handleUploadProgress(event: CustomEvent<{ progress: number; fileName: string; mediaType: string; size: number }>) {
+		const { progress, fileName } = event.detail;
+		coverUploadInfo = {
+			progress,
+			fileName: fileName || coverUploadInfo?.fileName || ''
+		};
 	}
 
 	async function autoSaveImagePath(imagePath: string) {
@@ -136,7 +152,8 @@
 				title: formData.title.trim(),
 				description: formData.description.trim(),
 				isFeatured: formData.isFeatured,
-				imagePath: imagePath || undefined
+				imagePath: imagePath || undefined,
+				educatorName: formData.educatorName.trim() || undefined
 			};
 
 			await materialApoyoService.updateMaterialApoyo(course!.id, updateData);
@@ -197,6 +214,24 @@
 		</div>
 
 		<div class="form-group">
+			<label for="educatorName">
+				Nombre del encargado
+			</label>
+			<input
+				id="educatorName"
+				type="text"
+				bind:value={formData.educatorName}
+				class="input"
+				placeholder="Ingresa el nombre del encargado del proyecto"
+				maxlength="100"
+				disabled={submitting || loading}
+			/>
+			<p class="help-text">
+				Nombre de la persona responsable de este proyecto (opcional).
+			</p>
+		</div>
+
+		<div class="form-group">
 			<ContextualMediaUploader
 				context="material-apoyo"
 				mediaType="image"
@@ -208,9 +243,22 @@
 				on:uploadSuccess={handleImageUpload}
 				on:uploadError={handleUploadError}
 				on:mediaRemoved={handleImageRemove}
+				on:uploadProgress={handleUploadProgress}
 			/>
 			{#if formErrors.imagePath}
 				<span class="error-message">{formErrors.imagePath}</span>
+			{/if}
+
+			{#if isUploadingMedia && coverUploadInfo}
+				<div class="inline-upload-status">
+					<span class="status-text">
+						Subiendo {coverUploadInfo.fileName || 'imagen'}...
+						<strong>{Math.round(coverUploadInfo.progress)}%</strong>
+					</span>
+					<div class="status-progress">
+						<div class="status-progress-fill" style={`width: ${Math.round(coverUploadInfo.progress)}%;`}></div>
+					</div>
+				</div>
 			{/if}
 		</div>
 
@@ -341,6 +389,41 @@
 		margin-top: 0.5rem;
 		margin-bottom: 0;
 		line-height: 1.4;
+	}
+
+	.inline-upload-status {
+		margin-top: 0.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		background: var(--color-primary-lightest, rgba(129, 140, 248, 0.1));
+		border: 1px solid var(--color-primary, #6366f1);
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+	}
+
+	.inline-upload-status .status-text {
+		font-size: 0.85rem;
+		color: var(--color-text-primary);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.inline-upload-status .status-progress {
+		position: relative;
+		height: 6px;
+		background: rgba(99, 102, 241, 0.2);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.inline-upload-status .status-progress-fill {
+		height: 100%;
+		background: linear-gradient(90deg, var(--color-primary, #6366f1), #a855f7);
+		border-radius: inherit;
+		transition: width 0.2s ease;
 	}
 
 	.error-message {

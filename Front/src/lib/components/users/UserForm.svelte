@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { t } from '$lib/i18n';
 	import type { CreateUserData, UpdateUserData, User, Role } from '$lib/services/users/userManagementService';
 	import { userManagementService } from '$lib/services/users/userManagementService';
 
@@ -57,7 +58,7 @@
 			usernameAvailable = await userManagementService.checkUsernameAvailability(formData.username, excludeId);
 			
 			if (!usernameAvailable) {
-				errors.username = 'Este nombre de usuario ya está en uso';
+				errors.username = 'users.form.errors.usernameTaken';
 			} else {
 				delete errors.username;
 			}
@@ -74,49 +75,49 @@
 
 		// Username
 		if (!formData.username.trim()) {
-			errors.username = 'El nombre de usuario es obligatorio';
+			errors.username = 'users.form.errors.usernameRequired';
 		} else if (formData.username.length < 3) {
-			errors.username = 'El nombre de usuario debe tener al menos 3 caracteres';
+			errors.username = 'users.form.errors.usernameTooShort';
 		} else if (!usernameAvailable) {
-			errors.username = 'Este nombre de usuario ya está en uso';
+			errors.username = 'users.form.errors.usernameTaken';
 		}
 
 		// Password (solo requerido para nuevos usuarios)
 		if (!isEdit) {
 			if (!formData.password) {
-				errors.password = 'La contraseña es obligatoria';
+				errors.password = 'users.form.errors.passwordRequired';
 			} else if (formData.password.length < 6) {
-				errors.password = 'La contraseña debe tener al menos 6 caracteres';
+				errors.password = 'users.form.errors.passwordTooShort';
 			}
 
 			if (formData.password !== formData.confirmPassword) {
-				errors.confirmPassword = 'Las contraseñas no coinciden';
+				errors.confirmPassword = 'users.form.errors.passwordMismatch';
 			}
 		} else {
 			// En edición, validar solo si se quiere cambiar la contraseña
 			if (formData.newPassword) {
 				if (formData.newPassword.length < 6) {
-					errors.newPassword = 'La contraseña debe tener al menos 6 caracteres';
+					errors.newPassword = 'users.form.errors.passwordTooShort';
 				}
 				if (formData.newPassword !== formData.confirmPassword) {
-					errors.confirmPassword = 'Las contraseñas no coinciden';
+					errors.confirmPassword = 'users.form.errors.passwordMismatch';
 				}
 			}
 		}
 
 		// Nombre
 		if (!formData.nombre.trim()) {
-			errors.nombre = 'El nombre es obligatorio';
+			errors.nombre = 'users.form.errors.nameRequired';
 		}
 
 		// Apellido
 		if (!formData.apellido.trim()) {
-			errors.apellido = 'El apellido es obligatorio';
+			errors.apellido = 'users.form.errors.lastNameRequired';
 		}
 
 		// Rol
 		if (!formData.role) {
-			errors.role = 'Debe seleccionar un rol';
+			errors.role = 'users.form.errors.roleRequired';
 		}
 
 		return Object.keys(errors).length === 0;
@@ -194,7 +195,7 @@
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
 	<div class="px-6 py-4 border-b border-gray-200">
 		<h2 class="text-xl font-semibold text-gray-900">
-			{isEdit ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+			{isEdit ? $t('dashboard.editUser') : $t('dashboard.createUser')}
 		</h2>
 	</div>
 
@@ -204,7 +205,7 @@
 			<!-- Nombre de usuario -->
 			<div class="md:col-span-2">
 				<label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-					Nombre de Usuario <span class="text-red-500">*</span>
+					{$t('users.form.username.label')} <span class="text-red-500">*</span>
 				</label>
 				<div class="relative">
 					<input
@@ -212,7 +213,7 @@
 						type="text"
 						bind:value={formData.username}
 						on:blur={validateUsername}
-						placeholder="Ej: juan.perez"
+						placeholder={$t('users.form.username.placeholder')}
 						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 							{errors.username ? 'border-red-500' : ''}
 							{usernameChecking ? 'pr-10' : ''}
@@ -233,62 +234,62 @@
 					{/if}
 				</div>
 				{#if errors.username}
-					<p class="mt-1 text-sm text-red-600">{errors.username}</p>
+					<p class="mt-1 text-sm text-red-600">{$t(errors.username)}</p>
 				{:else if formData.username && usernameAvailable && !usernameChecking}
-					<p class="mt-1 text-sm text-green-600">Nombre de usuario disponible</p>
+					<p class="mt-1 text-sm text-green-600">{$t('users.form.username.available')}</p>
 				{/if}
 			</div>
 
 			<!-- Nombre -->
 			<div>
 				<label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
-					Nombre <span class="text-red-500">*</span>
+					{$t('users.form.name.label')} <span class="text-red-500">*</span>
 				</label>
 				<input
 					id="nombre"
 					type="text"
 					bind:value={formData.nombre}
-					placeholder="Ej: Juan"
+					placeholder={$t('users.form.name.placeholder')}
 					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 						{errors.nombre ? 'border-red-500' : ''}"
 					required
 					disabled={isSubmitting}
 				/>
 				{#if errors.nombre}
-					<p class="mt-1 text-sm text-red-600">{errors.nombre}</p>
+					<p class="mt-1 text-sm text-red-600">{$t(errors.nombre)}</p>
 				{/if}
 			</div>
 
 			<!-- Apellido -->
 			<div>
 				<label for="apellido" class="block text-sm font-medium text-gray-700 mb-2">
-					Apellido <span class="text-red-500">*</span>
+					{$t('users.form.lastName.label')} <span class="text-red-500">*</span>
 				</label>
 				<input
 					id="apellido"
 					type="text"
 					bind:value={formData.apellido}
-					placeholder="Ej: Pérez"
+					placeholder={$t('users.form.lastName.placeholder')}
 					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 						{errors.apellido ? 'border-red-500' : ''}"
 					required
 					disabled={isSubmitting}
 				/>
 				{#if errors.apellido}
-					<p class="mt-1 text-sm text-red-600">{errors.apellido}</p>
+					<p class="mt-1 text-sm text-red-600">{$t(errors.apellido)}</p>
 				{/if}
 			</div>
 
 			<!-- Teléfono -->
 			<div class="md:col-span-2">
 				<label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">
-					Teléfono
+					{$t('users.form.phone.label')}
 				</label>
 				<input
 					id="telefono"
 					type="tel"
 					bind:value={formData.telefono}
-					placeholder="Ej: +57 300 123 4567"
+					placeholder={$t('users.form.phone.placeholder')}
 					class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					disabled={isSubmitting}
 				/>
@@ -298,7 +299,7 @@
 		<!-- Contraseña -->
 		<div class="border border-gray-200 rounded-lg p-4">
 			<h3 class="text-lg font-medium text-gray-900 mb-4">
-				{isEdit ? 'Cambiar Contraseña' : 'Contraseña'}
+				{isEdit ? $t('users.form.password.sectionTitleEdit') : $t('users.form.password.sectionTitleCreate')}
 			</h3>
 
 			{#if isEdit}
@@ -309,7 +310,7 @@
 							bind:checked={showPassword}
 							class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 						/>
-						<span class="ml-2 text-sm text-gray-700">Cambiar contraseña</span>
+						<span class="ml-2 text-sm text-gray-700">{$t('users.form.password.toggleChange')}</span>
 					</label>
 				</div>
 			{:else}
@@ -321,7 +322,7 @@
 					<!-- Nueva contraseña -->
 					<div>
 						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-							{isEdit ? 'Nueva Contraseña' : 'Contraseña'}
+							{isEdit ? $t('users.form.password.labelEdit') : $t('users.form.password.labelCreate')}
 							{#if !isEdit}<span class="text-red-500">*</span>{/if}
 						</label>
 						<div class="relative">
@@ -330,7 +331,7 @@
 									id="password"
 									type="password"
 									bind:value={formData.newPassword}
-									placeholder="Mínimo 6 caracteres"
+									placeholder={$t('users.form.password.placeholder')}
 									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 										{errors.newPassword ? 'border-red-500' : ''}"
 									disabled={isSubmitting}
@@ -341,7 +342,7 @@
 									id="password"
 									type="password"
 									bind:value={formData.password}
-									placeholder="Mínimo 6 caracteres"
+									placeholder={$t('users.form.password.placeholder')}
 									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 										{errors.password ? 'border-red-500' : ''}"
 									required
@@ -353,7 +354,7 @@
 								type="button"
 								on:click={generateRandomPassword}
 								class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-								title="Generar contraseña aleatoria"
+								title={$t('users.form.password.generate')}
 							>
 								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -361,30 +362,30 @@
 							</button>
 						</div>
 						{#if isEdit && errors.newPassword}
-							<p class="mt-1 text-sm text-red-600">{errors.newPassword}</p>
+							<p class="mt-1 text-sm text-red-600">{$t(errors.newPassword)}</p>
 						{:else if !isEdit && errors.password}
-							<p class="mt-1 text-sm text-red-600">{errors.password}</p>
+							<p class="mt-1 text-sm text-red-600">{$t(errors.password)}</p>
 						{/if}
 					</div>
 
 					<!-- Confirmar contraseña -->
 					<div>
 						<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
-							Confirmar Contraseña
+							{$t('users.form.password.confirmLabel')}
 							{#if !isEdit}<span class="text-red-500">*</span>{/if}
 						</label>
 						<input
 							id="confirmPassword"
 							type="password"
 							bind:value={formData.confirmPassword}
-							placeholder="Repetir contraseña"
+							placeholder={$t('users.form.password.confirmPlaceholder')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
 								{errors.confirmPassword ? 'border-red-500' : ''}"
 							required={!isEdit || showPassword}
 							disabled={isSubmitting}
 						/>
 						{#if errors.confirmPassword}
-							<p class="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+							<p class="mt-1 text-sm text-red-600">{$t(errors.confirmPassword)}</p>
 						{/if}
 					</div>
 				</div>
@@ -393,13 +394,13 @@
 
 		<!-- Rol y estado -->
 		<div class="border border-gray-200 rounded-lg p-4">
-			<h3 class="text-lg font-medium text-gray-900 mb-4">Permisos y Estado</h3>
+			<h3 class="text-lg font-medium text-gray-900 mb-4">{$t('users.form.permissions.title')}</h3>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<!-- Rol -->
 				<div>
 					<label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-						Rol <span class="text-red-500">*</span>
+						{$t('users.form.role.label')} <span class="text-red-500">*</span>
 					</label>
 					<select
 						id="role"
@@ -414,14 +415,14 @@
 						{/each}
 					</select>
 					{#if errors.role}
-						<p class="mt-1 text-sm text-red-600">{errors.role}</p>
+						<p class="mt-1 text-sm text-red-600">{$t(errors.role)}</p>
 					{/if}
 				</div>
 
 				<!-- Estado (solo en edición) -->
 				{#if isEdit}
 					<div>
-						<label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+						<label class="block text-sm font-medium text-gray-700 mb-2">{$t('users.form.status.label')}</label>
 						<div class="flex items-center space-x-4">
 							<label class="flex items-center">
 								<input
@@ -431,7 +432,7 @@
 									class="text-blue-600 focus:ring-blue-500"
 									disabled={isSubmitting}
 								/>
-								<span class="ml-2 text-sm text-gray-700">Activo</span>
+								<span class="ml-2 text-sm text-gray-700">{$t('users.form.status.active')}</span>
 							</label>
 							<label class="flex items-center">
 								<input
@@ -441,7 +442,7 @@
 									class="text-red-600 focus:ring-red-500"
 									disabled={isSubmitting}
 								/>
-								<span class="ml-2 text-sm text-gray-700">Inactivo</span>
+								<span class="ml-2 text-sm text-gray-700">{$t('users.form.status.inactive')}</span>
 							</label>
 						</div>
 					</div>
@@ -458,7 +459,7 @@
 				class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
 				disabled={isSubmitting}
 			>
-				Cancelar
+				{$t('users.form.cancel')}
 			</button>
 			
 			<button
@@ -471,9 +472,9 @@
 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 						<path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 					</svg>
-					{isEdit ? 'Actualizando...' : 'Creando...'}
+					{isEdit ? $t('users.form.submittingUpdate') : $t('users.form.submittingCreate')}
 				{:else}
-					<span>{isEdit ? 'Actualizar' : 'Crear'} Usuario</span>
+					<span>{isEdit ? $t('users.form.submitUpdate') : $t('users.form.submitCreate')}</span>
 				{/if}
 			</button>
 		</div>

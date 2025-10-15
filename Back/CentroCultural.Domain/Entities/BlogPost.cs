@@ -57,8 +57,14 @@ namespace CentroCultural.Domain.Entities
         [Column("tags")]
         public string? Tags { get; set; } // JSON array of tags
 
+        [Column("status")]
+        [MaxLength(50)]
+        public string Status { get; set; } = "draft";
+
         // Navigation properties
         public virtual ICollection<BlogPostElement> Elements { get; set; } = new List<BlogPostElement>();
+        [ForeignKey("AuthorId")]
+        public virtual Usuario? Author { get; set; }
 
         // Relaciones con eventos
         public virtual ICollection<BlogPostEvent> EventRelations { get; set; } = new List<BlogPostEvent>();
