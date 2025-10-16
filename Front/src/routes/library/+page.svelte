@@ -29,7 +29,7 @@
 	let sortBy = 'created_at';
 	let sortOrder: 'asc' | 'desc' = 'desc';
 	let currentPage = 1;
-	let itemsPerPage = 12;
+	let itemsPerPage = 6; // Limitado a 6 para evitar delay con videos pesados
 
 	onMount(async () => {
 		// Verificar permisos de usuario
@@ -94,6 +94,8 @@
 	function handlePageChange(page: number) {
 		currentPage = page;
 		loadLibraryData();
+		// Scroll suave al inicio del grid de recursos
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
 	async function handleDownload(item: LibraryItemDto) {

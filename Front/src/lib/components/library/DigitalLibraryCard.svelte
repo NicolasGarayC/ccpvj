@@ -100,12 +100,12 @@
 
 {#if viewMode === 'grid'}
 	<!-- Vista de tarjeta -->
-	<div class="group relative bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-gray-100 hover:border-indigo-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 overflow-hidden">
+	<div class="group relative bg-gradient-to-br from-white/95 to-gray-50/95 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-gray-100 hover:border-indigo-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 overflow-hidden flex flex-col">
 		<!-- Elementos decorativos -->
 		<div class="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br {getFileTypeColor(item.fileType)} opacity-10 rounded-full group-hover:opacity-20 transition-opacity duration-300"></div>
 		<div class="absolute bottom-4 left-4 w-8 h-8 bg-indigo-200/20 rounded-full group-hover:bg-indigo-300/30 transition-all duration-300"></div>
 
-		<div class="relative z-10 p-6">
+		<div class="relative z-10 p-6 flex flex-col flex-1">
 			<!-- Header con tipo de archivo y acciones -->
 			<div class="flex items-start justify-between mb-4">
 				<div class="flex items-center gap-3">
@@ -200,66 +200,69 @@
 				</div>
 			{/if}
 
-			<!-- Estadísticas -->
-			<div class="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
-				<div class="flex items-center gap-4 text-sm text-gray-500">
-					<div class="flex items-center gap-1">
-						<span>👁️</span>
-						<span>{item.viewCount}</span>
+			<!-- Sección fija al final: Estadísticas, Botones y Colecciones -->
+			<div class="mt-auto">
+				<!-- Estadísticas -->
+				<div class="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
+					<div class="flex items-center gap-4 text-sm text-gray-500">
+						<div class="flex items-center gap-1">
+							<span>👁️</span>
+							<span>{item.viewCount}</span>
+						</div>
+						<div class="flex items-center gap-1">
+							<span>⬇️</span>
+							<span>{item.downloadCount}</span>
+						</div>
 					</div>
-					<div class="flex items-center gap-1">
-						<span>⬇️</span>
-						<span>{item.downloadCount}</span>
+					<div class="text-xs text-gray-400">
+						{formatDate(item.createdAt)}
 					</div>
 				</div>
-				<div class="text-xs text-gray-400">
-					{formatDate(item.createdAt)}
-				</div>
-			</div>
 
-			<!-- Acciones -->
-			<div class="flex gap-3">
-				<button
-					on:click={handleView}
-					class="flex-1 group/btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold"
-				>
-					<span class="text-sm group-hover/btn:scale-110 transition-transform duration-300">👁️</span>
-					Ver
-				</button>
+				<!-- Acciones -->
+				<div class="flex gap-3">
+					<button
+						on:click={handleView}
+						class="flex-1 group/btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-3 rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold"
+					>
+						<span class="text-sm group-hover/btn:scale-110 transition-transform duration-300">👁️</span>
+						Ver
+					</button>
 
-				<button
-					on:click={handleDownload}
-					disabled={isLoading}
-					class="flex-1 group/btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-				>
-					{#if isLoading}
-						<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-					{:else}
-						<span class="text-sm group-hover/btn:scale-110 transition-transform duration-300">⬇️</span>
-						Descargar
-					{/if}
-				</button>
-			</div>
-
-			<!-- Colecciones -->
-			{#if item.collections && item.collections.length > 0}
-				<div class="mt-4 pt-4 border-t border-gray-100">
-					<div class="text-xs text-gray-500 mb-2 font-bold flex items-center gap-1">
-						<span>📚</span>
-						Colecciones:
-					</div>
-					<div class="flex flex-wrap gap-1">
-						{#each item.collections.slice(0, 2) as collection}
-							<span class="inline-block bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-2 py-1 rounded-lg text-xs font-semibold">
-								{collection.name}
-							</span>
-						{/each}
-						{#if item.collections.length > 2}
-							<span class="text-xs text-gray-500 font-medium py-1">+{item.collections.length - 2}</span>
+					<button
+						on:click={handleDownload}
+						disabled={isLoading}
+						class="flex-1 group/btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{#if isLoading}
+							<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+						{:else}
+							<span class="text-sm group-hover/btn:scale-110 transition-transform duration-300">⬇️</span>
+							Descargar
 						{/if}
-					</div>
+					</button>
 				</div>
-			{/if}
+
+				<!-- Colecciones -->
+				{#if item.collections && item.collections.length > 0}
+					<div class="mt-4 pt-4 border-t border-gray-100">
+						<div class="text-xs text-gray-500 mb-2 font-bold flex items-center gap-1">
+							<span>📚</span>
+							Colecciones:
+						</div>
+						<div class="flex flex-wrap gap-1">
+							{#each item.collections.slice(0, 2) as collection}
+								<span class="inline-block bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-2 py-1 rounded-lg text-xs font-semibold">
+									{collection.name}
+								</span>
+							{/each}
+							{#if item.collections.length > 2}
+								<span class="text-xs text-gray-500 font-medium py-1">+{item.collections.length - 2}</span>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 {:else}

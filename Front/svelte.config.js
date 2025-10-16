@@ -8,7 +8,10 @@ const config = {
 	// for more information about preprocessors
 	preprocess: [vitePreprocess(), mdsvex()],
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			// Increase body size limit for large file uploads (20GB)
+			maxBodySize: '21474836480' // 20GB in bytes
+		})
 	},
 	extensions: ['.svelte', '.svx'],
 };

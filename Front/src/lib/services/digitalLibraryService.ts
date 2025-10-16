@@ -462,17 +462,17 @@ class DigitalLibraryService {
         const config = {
             image: {
                 types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
-                maxSize: 100 * 1024 * 1024, // 100MB para imágenes de alta calidad
+                maxSize: 1024 * 1024 * 1024, // 1GB para imágenes de alta calidad
                 displayName: 'imagen'
             },
             video: {
                 types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv', 'video/flv', 'video/wmv'],
-                maxSize: 5 * 1024 * 1024 * 1024, // 5GB para películas completas
+                maxSize: 20 * 1024 * 1024 * 1024, // 20GB para películas completas
                 displayName: 'video'
             },
             audio: {
                 types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/flac', 'audio/aac', 'audio/wma'],
-                maxSize: 500 * 1024 * 1024, // 500MB para audio de alta calidad
+                maxSize: 20 * 1024 * 1024 * 1024, // 20GB para audio de alta calidad
                 displayName: 'audio'
             },
             document: {

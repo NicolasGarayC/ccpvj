@@ -6,6 +6,8 @@
 	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
 	import { blogService } from '$lib/services/blog/blogService';
 	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
+	import type { LibraryItemDto } from '$lib/services/digitalLibraryService';
 	import { jwtService } from '$lib/services/auth/jwtService.js';
 	import { analyticsService } from '$lib/services/analytics/analyticsService';
 import type { BlogPost } from '$lib/types/api';
@@ -27,6 +29,7 @@ import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types
 	let latestBlogPosts: BlogPost[] = [];
 let featuredCourses: MaterialApoyoSummaryDto[] = [];
 let allCourses: MaterialApoyoSummaryDto[] = [];
+	let libraryItems: LibraryItemDto[] = [];
 	let totalModulesCount = 0;
 	let totalVisitors = 0;
 
@@ -70,6 +73,15 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 
 			// Calcular total de módulos
 			totalModulesCount = allCourses.reduce((sum, course) => sum + (course.moduleCount || 0), 0);
+
+			// Cargar items de la biblioteca para la sección Educational Materials
+			try {
+				const libraryResult = await digitalLibraryService.getItems({ pageSize: 4, page: 1 });
+				libraryItems = libraryResult.items || [];
+			} catch (err) {
+				console.error('Error cargando biblioteca:', err);
+				libraryItems = [];
+			}
 
 			// Cargar estadísticas de visitantes (el endpoint ahora es público)
 			try {
@@ -343,10 +355,10 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 			</p>
 		</div>
 
-		<!-- Grid de materias súper cool -->
-		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {allCourses.length === 1 ? 'justify-center' : ''}">
-			{#if allCourses.length > 0}
-				{#each allCourses.slice(0, 8) as course, index}
+		<!-- Grid de materiales de biblioteca súper cool -->
+		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {libraryItems.length === 1 ? 'justify-center' : ''}">
+			{#if libraryItems.length > 0}
+				{#each libraryItems.slice(0, 4) as item, index}
 					{@const colorScheme = courseColors[index % courseColors.length]}
 					<div class="group relative w-full max-w-xs mx-auto transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
 						 style="animation-delay: {index * 0.2}s;">
@@ -365,27 +377,27 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 								<!-- Icono grande central -->
 								<div class="text-center mb-6">
 									<div class="inline-block w-20 h-20 rounded-full bg-gradient-to-r {colorScheme.color} flex items-center justify-center text-3xl text-white shadow-lg transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-										<i class="{colorScheme.icon}"></i>
+										{digitalLibraryService.getFileTypeIcon(item.fileType)}
 									</div>
 								</div>
 
 								<!-- Título -->
 								<h3 class="text-xl font-bold text-center mb-3 text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2">
-									{course.title}
+									{item.title}
 								</h3>
 
 								<!-- Descripción genial -->
 								<div class="text-center mb-6">
 									<div class="inline-block bg-gradient-to-r {colorScheme.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
-										{course.moduleCount || 0} {course.moduleCount === 1 ? $t('module') : $t('modules')}
+										{digitalLibraryService.formatFileSize(item.fileSize)}
 									</div>
 								</div>
 
 								<!-- Botón de acceso épico -->
 								<div class="text-center">
-									<a href={`/material-apoyo/${course.id}`}
+									<a href={`/library/${item.id}`}
 									   class="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r {colorScheme.color} text-white font-bold text-sm rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
-										<span class="relative z-10">{$t('accessMaterials')}</span>
+										<span class="relative z-10">{$t('viewResource') || 'Ver Recurso'}</span>
 										<div class="text-lg animate-bounce group-hover/btn:translate-x-1 transition-transform duration-300">🎯</div>
 									</a>
 								</div>
@@ -410,10 +422,10 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 				<div class="col-span-full text-center py-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-dashed border-purple-300">
 					<div class="text-8xl mb-6 animate-bounce">📚</div>
 					<h3 class="text-2xl font-bold text-purple-800 mb-4">
-						{$t('noCoursesYet')}
+						{$t('noLibraryItemsYet') || 'No hay recursos todavía'}
 					</h3>
 					<p class="text-purple-600 max-w-md mx-auto">
-						{$t('noCoursesMessage')}
+						{$t('noLibraryItemsMessage') || 'Pronto agregaremos recursos educativos a la biblioteca'}
 					</p>
 				</div>
 			{/if}
