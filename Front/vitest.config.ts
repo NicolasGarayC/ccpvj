@@ -26,7 +26,8 @@ export default mergeConfig(
 						name: 'server',
 						environment: 'node',
 						include: ['src/**/*.{test,spec}.{js,ts}'],
-						exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+						exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+						setupFiles: ['./vitest-setup-server.ts']
 					}
 				}
 			]

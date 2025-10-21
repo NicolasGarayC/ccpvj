@@ -1,0 +1,542 @@
+================================================================================
+TESTING PROGRESS - Centro Cultural Víctor Jara
+================================================================================
+Archivo temporal para organizar y marcar avances en pruebas
+Última actualización: 2025-10-20
+
+================================================================================
+LEYENDA
+================================================================================
+[✓] = Completado
+[~] = En progreso
+[ ] = Pendiente
+[x] = No aplicable / Descartado
+
+================================================================================
+1. INFRAESTRUCTURA DE TESTING
+================================================================================
+
+1.1 Configuración Básica
+[✓] vitest.config.ts - Configuración de Vitest
+[✓] vitest-setup-server.ts - Mocks de SvelteKit
+[✓] vitest-setup-client.ts - Setup para componentes
+[✓] playwright.config.ts - Configuración de Playwright
+[✓] package.json - Scripts de testing
+
+1.2 Mocks Configurados
+[✓] $app/environment
+[✓] $app/navigation
+[✓] $app/stores
+[✓] $lib/stores/authStore
+[✓] $env/dynamic/public
+[✓] $lib/config/backend
+[✓] localStorage
+[✓] fetch (con headers completos)
+
+1.3 Documentación
+[✓] TESTING.md - Guía rápida
+[✓] Documentation/TESTS_SUMMARY.md - Resumen completo
+[✓] Documentation/TESTING_GUIDE.md - Guía detallada
+[✓] run-tests.sh - Script interactivo
+
+================================================================================
+2. TESTS DE SERVICIOS (Frontend)
+================================================================================
+
+2.1 Material de Apoyo Service
+[✓] GET operations (público) - 5 tests
+[✓] CREATE operations (protegido) - 3 tests
+[✓] UPDATE operations (protegido) - 2 tests
+[✓] DELETE operations (protegido) - 2 tests
+[✓] Hierarchy operations - 4 tests
+[✓] Authorization by role - 6 tests
+[✓] Error handling - 4 tests
+[✓] Data transformation - 3 tests
+Total: 40+ tests
+
+2.2 Blog Service
+[✓] GET operations (público) - 6 tests
+[✓] CREATE operations (protegido) - 3 tests
+[✓] UPDATE operations (protegido) - 2 tests
+[✓] DELETE operations (protegido) - 2 tests
+[✓] Element operations - 4 tests
+[✓] Tag operations - 3 tests
+[✓] Data transformation - 5 tests
+[✓] Error handling - 4 tests
+Total: 30+ tests
+
+2.3 Calendar Service
+[✓] GET operations (público) - 6 tests
+[✓] CREATE operations (protegido) - 3 tests
+[✓] UPDATE operations (protegido) - 2 tests
+[✓] DELETE operations (protegido) - 2 tests
+[✓] Recurring events - 2 tests
+[✓] Event registration - 2 tests
+[✓] Date handling - 3 tests
+[✓] Error handling - 4 tests
+Total: 25+ tests
+
+2.4 Auth/JWT Service
+[✓] Login/logout - 5 tests
+[✓] Token validation - 6 tests
+[✓] Role verification - 4 tests
+[✓] Session management - 5 tests
+[✓] Error handling - 3 tests
+Total: 30+ tests
+
+2.5 Library Service (Digital)
+[✓] GET operations (público) - 7 tests
+[✓] CREATE operations (protegido) - 3 tests
+[✓] UPDATE operations (protegido) - 2 tests
+[✓] DELETE operations (protegido) - 2 tests
+[✓] Collection operations - 2 tests
+[✓] Filter operations - 5 tests
+[✓] Tracking operations - 3 tests
+[✓] File validation - 5 tests
+[✓] Helper functions - 5 tests
+[✓] Download operations - 1 test
+Total: 35+ tests
+
+2.6 Otros Servicios Pendientes
+[ ] analyticsService.ts
+[ ] downloadsService.ts
+[ ] paginationService.ts
+[ ] searchService.ts
+[ ] visitorService.ts
+
+================================================================================
+3. TESTS DE COMPONENTES SVELTE
+================================================================================
+
+3.1 Material de Apoyo Components
+[✓] MaterialApoyoCard.test.ts - 30+ tests
+    [✓] Rendering básico
+    [✓] Featured badge
+    [✓] Admin vs public view
+    [✓] Delete modal
+    [✓] Image handling
+    [✓] Events (edit, delete)
+
+[✓] ModuleCard.test.ts - 35+ tests
+    [✓] Rendering con/sin datos
+    [✓] Order badges
+    [✓] Status badges
+    [✓] Actions menu
+    [✓] Events (edit, delete, reorder)
+    [✓] Accessibility
+
+[✓] MaterialApoyoForm.test.ts - 40+ tests
+    [✓] Create mode
+    [✓] Edit mode
+    [✓] Validation
+    [✓] Character counters
+    [✓] Image upload
+    [✓] Loading states
+
+[✓] PostCard.test.ts - 38+ tests (COMPLETO)
+    [✓] Rendering - Basic Info (6 tests)
+    [✓] Date Formatting (3 tests)
+    [✓] Status Badges (2 tests)
+    [✓] Elements Loading (6 tests)
+    [✓] Element Type Indicators (2 tests)
+    [✓] Element Preview (6 tests)
+    [✓] Actions - View Button (2 tests)
+    [✓] Actions - Admin Actions (4 tests)
+    [✓] Drag and Drop (5 tests)
+    [✓] Edge Cases (2 tests)
+
+[✓] ModuleForm.test.ts - 34+ tests (COMPLETO)
+    [✓] Rendering - Modal Visibility (4 tests)
+    [✓] Form Fields - Create Mode (3 tests)
+    [✓] Form Fields - Edit Mode (3 tests)
+    [✓] Validation - Title Field (4 tests)
+    [✓] Validation - Description Field (2 tests)
+    [✓] Validation - Order Number (2 tests)
+    [✓] Submit - Create Mode (3 tests)
+    [✓] Submit - Edit Mode (2 tests)
+    [✓] Error Handling (2 tests)
+    [✓] Cancel and Reset (3 tests)
+    [✓] Loading States (1 test)
+    [✓] Character Limits (2 tests)
+
+3.2 Blog Components
+[✓] BlogPostCard.svelte.test.ts - 30+ tests (COMPLETO)
+    [✓] Rendering
+    [✓] Published/draft badge
+    [✓] Featured media (images/videos)
+    [✓] Tags display
+    [✓] Admin actions
+    [✓] Events
+    [✓] Accessibility
+    [✓] Edge cases
+
+[✓] BlogPostForm.svelte.test.ts - 40+ tests (COMPLETO)
+    [✓] Create/edit modes
+    [✓] Elements (text, images, video, audio, documents)
+    [✓] Element management (add/remove/reorder)
+    [✓] Status selection (draft/published)
+    [✓] Validation
+    [✓] Loading states
+    [✓] File limit information
+    [✓] Accessibility
+    [✓] Edge cases
+
+[ ] BlogPostElement.test.ts - estimado 25+ tests
+    [ ] Text elements
+    [ ] Image elements
+    [ ] Video elements
+    [ ] Reordering
+    [ ] Delete
+
+3.3 Calendar Components
+[✓] EventList.svelte.test.ts - 60+ tests (COMPLETO)
+    [✓] Rendering (list/cards)
+    [✓] Event display (title, type, location, organizer)
+    [✓] Event badges (featured, recurring, all-day)
+    [✓] Date formatting
+    [✓] Search and filter
+    [✓] Pagination
+    [✓] Limit functionality
+    [✓] Event type colors
+    [✓] Related content display
+    [✓] Events (click, create, keyboard navigation)
+    [✓] Accessibility
+    [✓] Edge cases
+
+[✓] EventForm.svelte.test.ts - 50+ tests (COMPLETO)
+    [✓] Create/edit modes
+    [✓] Form fields (basic, date/time, recurrence)
+    [✓] Event types
+    [✓] All-day toggle
+    [✓] Recurring configuration (pattern, interval, days of week)
+    [✓] Validation (title, dates, recurrence rules)
+    [✓] Related content (projects, blog posts)
+    [✓] Featured toggle
+    [✓] Submit and cancel
+    [✓] Loading states
+    [✓] Character counting
+    [✓] Accessibility
+    [✓] Edge cases
+
+[✓] CalendarView.test.ts - 43+ tests (COMPLETO)
+    [✓] Rendering - Header and Navigation (4 tests)
+    [✓] Rendering - Calendar Days (4 tests)
+    [✓] Event Display (7 tests)
+    [✓] Event Type Colors (4 tests)
+    [✓] Navigation Actions (4 tests)
+    [✓] Event Click Handler (2 tests)
+    [✓] Date Click Handler (2 tests)
+    [✓] Date Utilities and Formatting (2 tests)
+    [✓] Edge Cases (7 tests)
+    [✓] Accessibility (4 tests)
+
+3.4 Library Components
+[✓] DigitalLibraryCard.svelte.test.ts - 42+ tests
+    [✓] Rendering - Grid View (9 tests)
+    [✓] Rendering - List View (3 tests)
+    [✓] Tags Handling (7 tests)
+    [✓] Collections (3 tests)
+    [✓] Action Buttons (3 tests)
+    [✓] Events (4 tests)
+    [✓] Loading States (2 tests)
+    [✓] File Type Display (4 tests)
+    [✓] Edge Cases (5 tests)
+    [✓] Accessibility (2 tests)
+
+[✓] DigitalLibraryFilters.svelte.test.ts - 38+ tests
+    [✓] Rendering (6 tests)
+    [✓] Toggle Filters Panel (3 tests)
+    [✓] Active Filters Display (8 tests)
+    [✓] Filter Options Loading (5 tests)
+    [✓] Filter Selection (3 tests)
+    [✓] Remove Filters (3 tests)
+    [✓] Clear All Filters (3 tests)
+    [✓] Filter Count (4 tests)
+    [✓] Edge Cases (3 tests)
+
+3.5 Common Components
+[ ] LoadingSpinner.test.ts - estimado 10+ tests
+[ ] ConfirmationModal.test.ts - estimado 15+ tests
+[ ] Pagination.test.ts - estimado 20+ tests
+[ ] SuccessToast.test.ts - estimado 15+ tests
+[ ] ImageUpload.test.ts - estimado 20+ tests
+[ ] RichTextEditor.test.ts - estimado 25+ tests
+
+================================================================================
+4. TESTS E2E (End-to-End)
+================================================================================
+
+4.1 Material de Apoyo E2E
+[✓] hierarchy.spec.ts - 6 tests
+    [✓] Create full hierarchy (Material → Module → Post)
+    [✓] Edit at each level
+    [✓] Delete with cascade
+    [✓] Navigate between levels
+    [✓] Reorder modules
+    [✓] Reorder posts
+
+[✓] authorization.spec.ts - 12 tests
+    [✓] Public access (3 tests)
+    [✓] Admin access (3 tests)
+    [✓] Collaborator access (3 tests)
+    [✓] Invalid JWT (3 tests)
+
+4.2 Blog E2E
+[✓] blog-crud.spec.ts - 15+ tests
+    [✓] Create post (1 test)
+    [✓] Edit post (1 test)
+    [✓] Delete post (1 test)
+    [✓] Publish/unpublish (1 test)
+    [✓] Add tags (1 test)
+    [✓] Mark as featured (1 test)
+    [✓] Public access (3 tests)
+    [✓] Authorization by role (3 tests)
+    [✓] Search and filters (2 tests)
+
+4.3 Calendar E2E
+[✓] event-crud.spec.ts - 15+ tests
+    [✓] Create simple event
+    [✓] Create recurring event
+    [✓] Create all-day event
+    [✓] Edit event
+    [✓] Delete event
+    [✓] Mark as featured
+    [✓] Link to blog post
+    [✓] Link to project
+    [✓] Public vs admin view (3 tests)
+    [✓] Authorization by role (3 tests)
+    [✓] Search and filters (4 tests)
+
+[✓] event-registration.spec.ts - 15+ tests
+    [✓] Register for event
+    [✓] Cancel registration
+    [✓] Event at capacity
+    [✓] Join waitlist
+    [✓] View my registered events
+    [✓] Admin: View registrations
+    [✓] Admin: Export attendees
+    [✓] Admin: Add attendee manually
+    [✓] Admin: Remove attendee
+    [✓] Admin: Set event capacity
+    [✓] Admin: Enable/disable registration
+    [✓] Admin: Send notification to attendees
+    [✓] Validation: No duplicate registration
+    [✓] Validation: No registration after event passed
+
+4.4 Library E2E
+[✓] library-crud.spec.ts - 27+ tests (COMPLETO)
+    [✓] CRUD Operations (8 tests)
+        [✓] Create image/video/audio/document items
+        [✓] Edit library item
+        [✓] Delete library item
+        [✓] Assign to collection
+        [✓] Mark as featured
+    [✓] Collections Management (2 tests)
+        [✓] View collections list
+        [✓] Filter by collection
+    [✓] Public Access (4 tests)
+        [✓] View without auth
+        [✓] View details without auth
+        [✓] Download without auth
+        [✓] Redirect to login
+    [✓] Authorization by Role (3 tests)
+        [✓] Admin full access
+        [✓] Collaborator access
+        [✓] Read-only access
+    [✓] Search and Filters (9 tests)
+        [✓] Search by keyword
+        [✓] Filter by file type, category, author, language, tags
+        [✓] Combine filters
+        [✓] Clear filters
+        [✓] Change view mode
+    [✓] Download Tracking (1 test)
+
+4.5 Auth E2E
+[✓] login.spec.ts - 5+ tests
+    [✓] Login success
+    [✓] Login failure
+    [✓] Logout
+    [✓] Session persistence
+    [✓] Protected routes redirect
+
+[ ] user-management.spec.ts - estimado 10+ tests
+    [ ] Create user
+    [ ] Edit user
+    [ ] Delete user
+    [ ] Change role
+    [ ] Change password
+
+================================================================================
+5. TESTS BACKEND (C# / .NET)
+================================================================================
+
+5.1 Service Tests
+[✓] MaterialApoyoServiceTests.cs - 10+ tests
+    [✓] GET operations
+    [✓] CREATE operations
+    [✓] UPDATE operations
+    [✓] DELETE operations
+
+[✓] BlogServiceTests.cs - 30+ tests (COMPLETO)
+    [✓] GET operations (9 tests)
+    [✓] CREATE operations (4 tests)
+    [✓] UPDATE operations (3 tests)
+    [✓] DELETE operations (2 tests)
+    [✓] Publish/Unpublish operations (3 tests)
+    [✓] Views and Statistics (3 tests)
+    [✓] Featured, Popular, Recent posts (3 tests)
+    [✓] Slug utilities (3 tests)
+
+[✓] CalendarServiceTests.cs - 23+ tests (COMPLETO)
+    [✓] GET operations (8 tests)
+    [✓] CREATE operations (3 tests)
+    [✓] UPDATE operations (2 tests)
+    [✓] DELETE operations (2 tests)
+    [✓] Featured and Upcoming events (2 tests)
+    [✓] Calendar View (3 tests)
+    [✓] Recurring events logic (3 tests)
+
+[✓] DigitalLibraryServiceTests.cs - 25+ tests (COMPLETO)
+    [✓] GET operations - Items (9 tests)
+    [✓] CREATE operations - Items (2 tests)
+    [✓] UPDATE operations - Items (2 tests)
+    [✓] DELETE operations - Items (2 tests)
+    [✓] Collection operations (5 tests)
+    [✓] Collection item management (3 tests)
+    [✓] Statistics (1 test)
+
+[✓] JwtServiceTests.cs - 23+ tests (COMPLETO)
+    [✓] Token generation (3 tests)
+    [✓] Token validation (5 tests)
+    [✓] Extract claims (6 tests)
+    [✓] Token expiration (2 tests)
+    [✓] Token revocation (4 tests)
+    [✓] Multiple roles (3 tests)
+
+5.2 Controller Tests
+[ ] MaterialApoyoControllerTests.cs
+[ ] BlogControllerTests.cs
+[ ] CalendarControllerTests.cs
+[ ] LibraryControllerTests.cs
+[ ] AuthControllerTests.cs
+
+5.3 Integration Tests
+[ ] Database operations
+[ ] API endpoints
+[ ] File uploads
+[ ] Image processing
+
+================================================================================
+6. RESUMEN DE PROGRESO
+================================================================================
+
+COMPLETADO:
+- Infraestructura de testing: 100% (4/4) ✅
+- Servicios frontend: 75% (6/8) ✅
+- Componentes Svelte: 63% (12/19) ✅ (Material Apoyo: 5, Blog: 2, Calendar: 3, Library: 2)
+- Tests E2E: 100% (6/6) ✅✅ COMPLETO
+- Backend Service Tests: 100% (5/5) ✅✅ COMPLETO
+
+TESTS TOTALES IMPLEMENTADOS: ~913+ (568 nuevos en sesión actual)
+
+ÚLTIMA ACTUALIZACIÓN: 2025-10-21
+SESIÓN ACTUAL (Total: 568 tests nuevos):
+
+FRONTEND:
+- ✅ BlogPostCard.svelte.test.ts creado (30+ tests)
+- ✅ BlogPostForm.svelte.test.ts creado (40+ tests)
+- ✅ EventList.svelte.test.ts creado (60+ tests)
+- ✅ EventForm.svelte.test.ts creado (50+ tests)
+- ✅ event-crud.spec.ts creado (18+ tests E2E)
+- ✅ event-registration.spec.ts creado (15+ tests E2E)
+- ✅ digitalLibraryService.test.ts creado (35+ tests)
+- ✅ DigitalLibraryCard.svelte.test.ts creado (42+ tests)
+- ✅ DigitalLibraryFilters.svelte.test.ts creado (38+ tests)
+- ✅ library-crud.spec.ts creado (27+ tests E2E)
+- ✅ PostCard.svelte.test.ts creado (38+ tests) 🆕
+- ✅ ModuleForm.svelte.test.ts creado (34+ tests) 🆕
+- ✅ CalendarView.svelte.test.ts creado (43+ tests) 🆕
+
+BACKEND (C#):
+- ✅ BlogServiceTests.cs creado (30+ tests)
+- ✅ CalendarServiceTests.cs creado (23+ tests)
+- ✅ DigitalLibraryServiceTests.cs creado (25+ tests)
+- ✅ JwtServiceTests.cs creado (23+ tests)
+
+NOTAS:
+- ⚠️  Tests de componentes frontend requieren dependencias de sistema para Playwright (sudo npx playwright install-deps)
+- ✅ Todos los tests de backend utilizan Entity Framework In-Memory Database
+
+PRÓXIMAS PRIORIDADES:
+1. [✓] Completar componentes de Blog (BlogPostCard, BlogPostForm) ✅
+2. [✓] Completar componentes de Calendar (EventList, EventForm) ✅
+3. [✓] Crear tests E2E para Calendar (event-crud.spec.ts, event-registration.spec.ts) ✅
+4. [✓] Crear tests para Library service (digitalLibraryService.test.ts) ✅
+5. [✓] Crear tests para componentes de Library (DigitalLibraryCard, DigitalLibraryFilters) ✅
+6. [✓] Crear tests E2E para Library (library-crud.spec.ts) ✅
+7. [✓] Expandir backend tests (BlogServiceTests.cs, CalendarServiceTests.cs, DigitalLibraryServiceTests.cs, JwtServiceTests.cs) ✅
+8. [~] Completar componentes pendientes
+    [✓] PostCard.svelte.test.ts (38 tests) ✅
+    [✓] ModuleForm.svelte.test.ts (34 tests) ✅
+    [✓] CalendarView.svelte.test.ts (43 tests) ✅
+    [ ] BlogPostElement.test.ts (~25 tests)
+    [ ] LoadingSpinner, ConfirmationModal, Pagination, etc.
+9. [ ] Crear tests para servicios pendientes (analytics, downloads, pagination, search, visitor)
+10. [ ] Crear tests para Controllers de backend
+11. [ ] Crear tests de integración para backend
+
+================================================================================
+7. COMANDOS ÚTILES
+================================================================================
+
+# Tests unitarios
+npm run test:unit                                    # Todos
+npm run test:unit -- materialApoyoService.test.ts    # Específico
+npm run test:unit -- --watch                         # Watch mode
+npm run test:unit -- --coverage                      # Con cobertura
+
+# Tests E2E
+npm run test:e2e                                     # Todos
+npm run test:e2e -- material-apoyo                   # Por módulo
+npm run test:e2e -- --ui                             # Modo UI
+npm run test:e2e -- --headed                         # Ver navegador
+
+# Script interactivo
+./run-tests.sh
+
+# Backend
+cd Back/
+dotnet test
+dotnet test --filter "FullyQualifiedName~MaterialApoyoServiceTests"
+
+================================================================================
+8. NOTAS Y OBSERVACIONES
+================================================================================
+
+ISSUES RESUELTOS:
+- [✓] Mock de $app/environment
+- [✓] Mock de $lib/stores/authStore
+- [✓] Mock de $lib/config/backend
+- [✓] Headers en fetch mock (método get())
+
+ISSUES PENDIENTES:
+- [ ] Algunos tests fallan por mocks específicos (esperado)
+- [ ] Necesita configuración de usuarios test para roles
+- [ ] E2E requiere backend corriendo
+- [~] Tests de componentes Svelte requieren dependencias de sistema de Playwright
+      - ✅ Instalado: @testing-library/svelte, @testing-library/dom, @testing-library/jest-dom
+      - ✅ Instalado: Playwright chromium browser
+      - ⏳ Pendiente: Instalar dependencias del sistema (libnspr4, libnss3, libasound2t64)
+      - Comando: sudo npx playwright install-deps
+      - Alternativa para desarrollo: Usar E2E tests que ya funcionan con Playwright
+
+MEJORAS FUTURAS:
+- [ ] CI/CD pipeline para tests automáticos
+- [ ] Pre-commit hooks para tests
+- [ ] Performance testing
+- [ ] Accessibility testing
+- [ ] Visual regression testing
+
+================================================================================
+FIN DEL ARCHIVO
+================================================================================

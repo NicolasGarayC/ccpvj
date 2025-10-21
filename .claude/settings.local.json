@@ -78,7 +78,14 @@
       "Bash(pkill -9 dotnet)",
       "Bash(dotnet ef dbcontext info)",
       "Bash(dotnet build --no-incremental)",
-      "Bash(dotnet build --no-incremental Back/)"
+      "Bash(dotnet build --no-incremental Back/)",
+      "Bash(lsof:*)",
+      "Bash(npm run test:unit:*)",
+      "Bash(cat:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(chmod:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright install chromium)"
     ],
     "deny": [],
     "ask": []
