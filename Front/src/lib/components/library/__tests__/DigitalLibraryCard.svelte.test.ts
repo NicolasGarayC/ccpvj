@@ -544,7 +544,7 @@ describe('DigitalLibraryCard', () => {
 			expect(screen.getAllByTitle('Eliminar')[0]).toBeInTheDocument();
 		});
 
-		it('should show disabled state visually', () => {
+		it('should show disabled state visually', async () => {
 			const { digitalLibraryService } = await import('$lib/services/digitalLibraryService');
 
 			(digitalLibraryService.downloadFile as any).mockImplementationOnce(

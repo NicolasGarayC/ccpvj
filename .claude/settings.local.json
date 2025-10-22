@@ -85,7 +85,11 @@
       "Bash(npm run test:e2e:*)",
       "Bash(chmod:*)",
       "Bash(npm install:*)",
-      "Bash(npx playwright install chromium)"
+      "Bash(npx playwright install chromium)",
+      "Bash(dotnet test:*)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

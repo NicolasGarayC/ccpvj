@@ -1476,12 +1476,16 @@ export function getLocale(): Locale {
 }
 
 /**
- * Cambia el idioma
+ * Cambia el idioma y recarga la página
+ * La recarga es necesaria para que los componentes con traducciones no reactivas
+ * se actualicen correctamente al nuevo idioma
  */
 export function setLocale(newLocale: Locale): void {
   locale.set(newLocale);
   if (browser) {
     localStorage.setItem(STORAGE_KEY, newLocale);
+    // Recargar página para aplicar el nuevo idioma en componentes
+    window.location.reload();
   }
 }
 

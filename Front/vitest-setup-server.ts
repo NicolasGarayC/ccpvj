@@ -34,7 +34,8 @@ vi.mock('$lib/stores/authStore', () => ({
 	authModalStore: {
 		subscribe: vi.fn(),
 		set: vi.fn(),
-		update: vi.fn()
+		update: vi.fn(),
+		show: vi.fn()
 	}
 }));
 
