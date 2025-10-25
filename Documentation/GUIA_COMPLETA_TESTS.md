@@ -152,7 +152,7 @@ Si cambias el código y rompes algo, **la prueba fallará automáticamente** y t
 
 | Servicio | Archivo de Test | Tests | Ubicación |
 |----------|----------------|-------|-----------|
-| Material de Apoyo | materialApoyoService.test.ts | 40+ | `Front/src/lib/services/__tests__/` |
+| Material de Apoyo | materialApoyoService.test.ts | 40+ | `Front/src/lib/application/services/material-apoyo/__tests__/` |
 | Blog | blogService.test.ts | 30+ | |
 | Calendar | calendarService.test.ts | 25+ | |
 | Auth/JWT | authService.test.ts | 30+ | |
@@ -252,7 +252,7 @@ npm run test:unit -- --coverage
 
 **Salida esperada:**
 ```
- ✓ src/lib/services/__tests__/blogService.test.ts (30)
+✓ src/lib/application/services/blog/__tests__/BlogService.test.ts (30)
    ✓ GET operations (6)
    ✓ CREATE operations (3)
    ✓ UPDATE operations (2)
@@ -384,7 +384,7 @@ Correcta. - Error:     0, Correcto:    30, Omitido:     0, Total:    30, Duraci�
 **Frontend:**
 ```
 ✓ src/lib/components/blog/__tests__/BlogPostCard.svelte.test.ts (30)
-✓ src/lib/services/__tests__/blogService.test.ts (35)
+✓ src/lib/application/services/blog/__tests__/BlogService.test.ts (35)
 
 Test Files  2 passed (2)
      Tests  65 passed (65)
@@ -403,7 +403,7 @@ Correcta. - Error:     0, Correcto:    30, Omitido:     0, Total:    30
 
 **Frontend:**
 ```
-✗ src/lib/services/__tests__/blogService.test.ts (30)
+✗ src/lib/application/services/blog/__tests__/BlogService.test.ts (30)
   ✗ should create blog post
     AssertionError: expected 404 to equal 201
 
@@ -805,10 +805,10 @@ npm run test:unit -- --coverage
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import BlogPostCard from '../BlogPostCard.svelte';
-import { blogService } from '$lib/services/blogService';
+import { blogService } from '$lib/application/services/blog/BlogService';
 
 // 2. MOCKS - Simular dependencias externas
-vi.mock('$lib/services/blogService', () => ({
+vi.mock('$lib/application/services/blog/BlogService', () => ({
   blogService: {
     getAllBlogPosts: vi.fn(),
     createBlogPost: vi.fn()
@@ -1321,7 +1321,7 @@ npm run test:unit -- blog                      # Todos los tests de blog
 
 # Tests específicos por ruta
 npm run test:unit -- src/lib/components/blog/__tests__/BlogPostCard.svelte.test.ts
-npm run test:unit -- src/lib/services/__tests__/blogService.test.ts
+npm run test:unit -- src/lib/application/services/blog/__tests__/BlogService.test.ts
 
 # Tests E2E - Flujos completos (requiere backend corriendo)
 npm run test:e2e                               # Todos los E2E (~100 tests)
@@ -1396,7 +1396,7 @@ cd Front
 npm run test:unit -- src/lib/components
 
 # Frontend - Solo servicios
-npm run test:unit -- src/lib/services
+npm run test:unit -- src/lib/application/services
 
 # Frontend - E2E (requiere backend)
 npm run test:e2e

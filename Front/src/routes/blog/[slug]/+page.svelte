@@ -2,11 +2,11 @@
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { blogService } from '$lib/services/blog/blogService';
-  import { blogPostElementService } from '$lib/services/blog/blogPostElementService';
-  import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
+  import { blogService } from '$lib/application/services/blog/blogService';
+  import { blogPostElementService } from '$lib/application/services/blog/blogPostElementService';
+  import { calendarService, type EventSummary } from '$lib/application/services/calendar/CalendarService';
   import type { BlogPost } from '$lib/types/api';
-  import type { BlogPostElement } from '$lib/services/blog/blogPostElementService';
+  import type { BlogPostElement } from '$lib/application/services/blog/blogPostElementService';
   import { getBlogMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
 
   import { t } from '$lib/i18n';

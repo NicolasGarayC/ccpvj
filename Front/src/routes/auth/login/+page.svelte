@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
 	import { t, translate } from '$lib/i18n';
 
 	let username = '';

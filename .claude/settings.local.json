@@ -89,7 +89,11 @@
       "Bash(dotnet test:*)",
       "WebSearch",
       "Bash(grep:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)",
+      "Bash(npm run check:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

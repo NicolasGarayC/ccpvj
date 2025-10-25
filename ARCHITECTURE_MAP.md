@@ -342,7 +342,6 @@ Front/
 │       │   │   └── jwtService.ts           # Servicio JWT
 │       │   ├── blog/
 │       │   │   ├── blogService.ts
-│       │   │   ├── blogHttpService.ts
 │       │   │   └── blogPostElementService.ts
 │       │   ├── analytics/
 │       │   │   └── analyticsService.ts
@@ -402,7 +401,6 @@ Front/
 | **JwtService** | `auth/jwtService.ts` | Autenticación JWT, manejo de tokens |
 | **BaseHttpService** | `base/baseHttpService.ts` | Servicio HTTP base con interceptors |
 | **BlogService** | `blog/blogService.ts` | Lógica de blog |
-| **BlogHttpService** | `blog/blogHttpService.ts` | HTTP requests de blog |
 | **BlogPostElementService** | `blog/blogPostElementService.ts` | Elementos de blog |
 | **MaterialApoyoService** | `materialApoyoService.ts` | Material educativo |
 | **ModulePostService** | `modulePostService.ts` | Posts de módulos |

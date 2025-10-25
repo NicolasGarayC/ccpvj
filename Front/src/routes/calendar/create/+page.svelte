@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import EventForm from '$lib/components/calendar/EventForm.svelte';
-	import { calendarService, type CreateEventData } from '$lib/services/calendar/calendarService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import { blogService } from '$lib/services/blog/blogService';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
+	import EventForm from '$lib/presentation/components/calendar/EventForm.svelte';
+	import { calendarService, type CreateEventData } from '$lib/application/services/calendar/CalendarService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+import { blogService } from '$lib/application/services/blog/blogService';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
 	import { t, translate, type MessageKey } from '$lib/i18n';
 
 	const translateKey = (key: MessageKey, fallback: string): string => {

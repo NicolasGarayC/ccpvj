@@ -1,16 +1,16 @@
 ﻿<script lang="ts">
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
-	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import DigitalLibraryCard from '$lib/components/library/DigitalLibraryCard.svelte';
-	import DigitalLibraryFilters from '$lib/components/library/DigitalLibraryFilters.svelte';
+	import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+	import DigitalLibraryCard from '$lib/presentation/components/library/DigitalLibraryCard.svelte';
+	import DigitalLibraryFilters from '$lib/presentation/components/library/DigitalLibraryFilters.svelte';
 	import type {
 		LibraryItemDto,
 		LibrarySearchDto,
 		LibraryStatsDto,
 		LibraryItemPagedResultDto
-	} from '$lib/services/digitalLibraryService';
+	} from '$lib/application/services/library/DigitalLibraryService';
 
 	// Estado de la aplicación
 	let pagedResult: LibraryItemPagedResultDto | null = null;

@@ -2,12 +2,12 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-import { materialApoyoService } from '$lib/services/materialApoyoService';
+import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
 import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import ModuleList from '$lib/components/course/ModuleList.svelte';
-	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
-	import ModuleForm from '$lib/components/course/ModuleForm.svelte';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+	import ModuleList from '$lib/presentation/components/course/ModuleList.svelte';
+	import MediaUploader from '$lib/presentation/components/blog/MediaUploader.svelte';
+	import ModuleForm from '$lib/presentation/components/course/ModuleForm.svelte';
 
 	let course: MaterialApoyoDetailDto | null = null;
 	let loading = true;

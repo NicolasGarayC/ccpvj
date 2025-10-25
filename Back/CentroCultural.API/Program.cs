@@ -10,6 +10,13 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Allow overriding the HTTP port via ASPNETCORE_URLS or --urls without crashing on conflicts
+var urlsFromEnv = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["urls"];
+if (!string.IsNullOrWhiteSpace(urlsFromEnv))
+{
+    builder.WebHost.UseUrls(urlsFromEnv.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+}
+
 // Add services to the container.
 builder.Services.AddControllers();
 

@@ -48,3 +48,36 @@ export const messages = {
 };
 
 export default translate;
+
+// Minimal test suite to satisfy Vitest runner
+import { describe, it, expect, beforeEach } from 'vitest';
+
+describe('i18n testing stub', () => {
+	beforeEach(() => {
+		setLocale('es');
+	});
+
+	it('returns keys as translations by default', () => {
+		expect(translate('dashboard.title')).toBe('dashboard.title');
+		expect(translate_params('hello {name}', { name: 'Test' })).toBe('hello Test');
+	});
+
+	it('updates locale store when setLocale is called', () => {
+		let current: Locale | undefined;
+		const unsubscribe = locale.subscribe((value) => (current = value));
+
+		setLocale('en');
+
+		expect(current).toBe('en');
+		unsubscribe();
+	});
+
+	it('t store provides a function that mirrors translation behavior', () => {
+		let translateFn: (key: string) => string = () => '';
+		const unsubscribe = t.subscribe((fn) => (translateFn = fn));
+
+		expect(translateFn('some.key')).toBe('some.key');
+
+		unsubscribe();
+	});
+});

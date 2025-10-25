@@ -1,15 +1,15 @@
 ﻿<script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import BlogPostCard from '$lib/components/blog/BlogPostCard.svelte';
-	import FeatureCard from '$lib/components/common/FeatureCard.svelte';
-	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
-	import { blogService } from '$lib/services/blog/blogService';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
-	import type { LibraryItemDto } from '$lib/services/digitalLibraryService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import { analyticsService } from '$lib/services/analytics/analyticsService';
+	import BlogPostCard from '$lib/presentation/components/blog/BlogPostCard.svelte';
+	import FeatureCard from '$lib/presentation/components/common/FeatureCard.svelte';
+	import UpcomingEventsWidget from '$lib/presentation/components/calendar/UpcomingEventsWidget.svelte';
+import { blogService } from '$lib/application/services/blog/blogService';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+	import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
+	import type { LibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+	import { analyticsService } from '$lib/application/services/analytics/AnalyticsService';
 import type { BlogPost } from '$lib/types/api';
 import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
 

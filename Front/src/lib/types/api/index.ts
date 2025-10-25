@@ -13,4 +13,4 @@ export * from './blog.types';
 export * from './common.types';
 
 // Re-export base service types
-export type { ApiError } from '$lib/services/base/baseHttpService';
+export type { ApiError } from '$lib/infrastructure/http/BaseHttpClient';

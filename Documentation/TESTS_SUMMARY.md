@@ -18,7 +18,7 @@
 ### 🎓 Material de Apoyo (COMPLETO)
 
 **Tests Unitarios de Servicios**:
-- ✅ `Front/src/lib/services/__tests__/materialApoyoService.test.ts` (40+ tests)
+- ✅ `Front/src/lib/application/services/material-apoyo/__tests__/materialApoyoService.test.ts` (40+ tests)
   - GET operations (público)
   - CREATE/UPDATE/DELETE operations (JWT protected)
   - Jerarquía: Material → Módulo → Post
@@ -43,7 +43,7 @@
 ### 📝 Blog (COMPLETO)
 
 **Tests Unitarios de Servicios**:
-- ✅ `Front/src/lib/services/blog/__tests__/blogService.test.ts` (30+ tests)
+- ✅ `Front/src/lib/application/services/blog/__tests__/BlogService.test.ts` (30+ tests)
   - GET posts (público)
   - CREATE/UPDATE/DELETE posts (protegido)
   - Transformación de datos (elementos, tags, fechas)
@@ -61,7 +61,7 @@
 ### 📅 Calendar/Events (COMPLETO)
 
 **Tests Unitarios de Servicios**:
-- ✅ `Front/src/lib/services/calendar/__tests__/calendarService.test.ts` (25+ tests)
+- ✅ `Front/src/lib/application/services/calendar/__tests__/calendarService.test.ts` (25+ tests)
   - GET events (público)
   - CREATE/UPDATE/DELETE events (protegido)
   - Eventos recurrentes
@@ -274,7 +274,7 @@ Back/
    - `e2e/calendar/event-registration.spec.ts`
 
 3. **Crear Tests para Library Service**:
-   - `src/lib/services/__tests__/digitalLibraryService.test.ts`
+   - `src/lib/application/services/library/__tests__/DigitalLibraryService.test.ts`
    - `e2e/library/library-crud.spec.ts`
 
 ### Prioridad Media

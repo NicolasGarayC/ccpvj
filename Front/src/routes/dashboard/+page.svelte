@@ -1,7 +1,7 @@
 ﻿<script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
+  import { jwtService, type JwtUser } from '$lib/application/services/auth/JwtService.js';
   import { t } from '$lib/i18n';
 
   let user: JwtUser | null = null;

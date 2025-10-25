@@ -129,7 +129,7 @@ Front/src/lib/
 ### Ejemplo: Test de Servicio
 
 ```typescript
-// Front/src/lib/services/auth/__tests__/jwtService.test.ts
+// Front/src/lib/application/services/auth/__tests__/jwtService.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { jwtService } from '../jwtService';
 
@@ -192,6 +192,36 @@ describe('BlogPostCard', () => {
   });
 });
 ```
+
+### Patrón Svelte 5 (render + mocks)
+
+La configuración en `Front/vitest-setup-client.ts` intercepta `@testing-library/svelte` para restaurar `component.$on` en entornos Svelte 5 y expone utilidades de traducción de `i18n`. Al escribir nuevos tests:
+
+- Importa `render` directamente de `@testing-library/svelte`; el wrapper ya adjunta `$on`, por lo que no se necesitan polyfills manuales.
+- Configura traducciones puntuales con `import { __setTranslations } from '$lib/i18n'` antes de cada test y restáuralas con `__resetTranslations()` en `afterEach` si no reutilizas el hook global.
+- Cuando simules componentes hijos, usa mocks funcionales que devuelvan `{ $set, $on, $destroy }` para evitar el error `Class constructor ... cannot be invoked without 'new'`.
+
+Ejemplo de mock compatible:
+
+```typescript
+vi.mock('$lib/presentation/components/common/FeatureCard.svelte', () => ({
+  default: vi.fn((options = { props: {} }) => {
+    let currentProps = options.props;
+    return {
+      $set(newProps: Record<string, unknown>) {
+        currentProps = { ...currentProps, ...newProps };
+      },
+      $on: vi.fn(),
+      $destroy: vi.fn(),
+      get props() {
+        return currentProps;
+      }
+    };
+  })
+}));
+```
+
+Para servicios y stores, apunta a la nueva estructura modular (`$lib/{application,domain,infrastructure,presentation}`) y evita usar rutas legacy como `$lib/services/**`.
 
 ### Comandos
 
@@ -995,11 +1025,11 @@ Material de Apoyo (Proyecto)
 
 ### 1. Tests Unitarios del Servicio
 
-**Archivo**: `Front/src/lib/services/__tests__/materialApoyoService.test.ts`
+**Archivo**: `Front/src/lib/application/services/material-apoyo/__tests__/materialApoyoService.test.ts`
 
 ```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { materialApoyoService } from '../materialApoyoService';
+import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
 
 describe('Material de Apoyo - GET (Público)', () => {
   beforeEach(() => {

@@ -3,9 +3,9 @@
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { t, tParams } from '$lib/i18n';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { analyticsService } from '$lib/services/analytics/analyticsService.js';
-  import type { TopResource } from '$lib/services/analytics/analyticsService.js';
+  import { jwtService } from '$lib/application/services/auth/JwtService.js';
+  import { analyticsService } from '$lib/application/services/analytics/AnalyticsService.js';
+  import type { TopResource } from '$lib/application/services/analytics/AnalyticsService.js';
 
   let loading = true;
   let stats = {

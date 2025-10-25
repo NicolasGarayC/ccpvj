@@ -332,8 +332,7 @@ import { deleteMediaFile, deleteMediaFiles, replaceMediaFile } from '$lib/server
 - `Front/.env` - Database URL config
 
 ### Services (Problematic)
-- `Front/src/lib/services/courseService.ts` - Course API calls (fail)
-- `Front/src/lib/services/authService.js` - Auth service (buggy)
+- Los servicios de frontend viven ahora bajo `Front/src/lib/application/services/**` (material-apoyo, calendar, blog, library, etc.). Revisa cada módulo dentro de esta carpeta según el feature a depurar.
 
 ### APIs (Need Debugging)
 - `Front/src/routes/api/courses/+server.ts` - Main course API

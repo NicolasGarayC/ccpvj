@@ -3,12 +3,12 @@
 	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
-	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
+	import { jwtService, type JwtUser } from '$lib/application/services/auth/JwtService.js';
 	import { browser } from '$app/environment';
 	import { t, getLocale, setLocale, locale } from '$lib/i18n'; // Sistema i18n único
-	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
-	import { analyticsService } from '$lib/services/analytics/analyticsService.js';
-	import { authModalStore } from '$lib/stores/authStore';
+	import SessionExpiredModal from '$lib/presentation/components/auth/SessionExpiredModal.svelte';
+	import { analyticsService } from '$lib/application/services/analytics/AnalyticsService.js';
+	import { authModalStore } from '$lib/presentation/stores/authStore';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -32,7 +32,7 @@
 	const INACTIVITY_LIMIT_MS = 3 * 60 * 1000;
 	const ACTIVITY_THROTTLE_MS = 1000;
 	const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
-	let inactivityTimeout: ReturnType<typeof setTimeout> | null = null;
+let inactivityTimeout: number | null = null;
 	let activityListenersRegistered = false;
 	let lastActivityTimestamp = 0;
 	const activityListenerOptions: AddEventListenerOptions = { passive: true };

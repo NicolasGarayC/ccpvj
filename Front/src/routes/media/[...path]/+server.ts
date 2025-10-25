@@ -4,13 +4,13 @@ import { existsSync, statSync } from 'fs';
 import path from 'path';
 import { error } from '@sveltejs/kit';
 import { BACKEND_BASE_URL } from '$lib/config/backend';
+import { getMediaDir } from '$lib/server/utils/media-paths';
 
 // API base URL for analytics tracking
 const API_BASE_URL = BACKEND_BASE_URL;
 
-// Use process.cwd() to get current working directory, then navigate to Back/Data/media
-// When running from Front/ directory, go up one level to root, then to Back/Data/media
-const MEDIA_DIR = path.resolve(process.cwd(), '../Back/Data/media');
+// Media directory - configurable via MEDIA_DIR environment variable
+const MEDIA_DIR = getMediaDir();
 
 // MIME type mapping
 const MIME_TYPES: Record<string, string> = {

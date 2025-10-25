@@ -2,10 +2,10 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
-  import UserList from '$lib/components/users/UserList.svelte';
-  import UserForm from '$lib/components/users/UserForm.svelte';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { userManagementService, type User, type Role } from '$lib/services/users/userManagementService';
+  import UserList from '$lib/presentation/components/users/UserList.svelte';
+  import UserForm from '$lib/presentation/components/users/UserForm.svelte';
+  import { jwtService } from '$lib/application/services/auth/JwtService.js';
+  import { userManagementService, type User, type Role } from '$lib/application/services/users/UserManagementService';
   import { t } from '$lib/i18n';
 
   let canManageUsers = false;

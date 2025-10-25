@@ -2,8 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { t } from '$lib/i18n';
-	import { digitalLibraryService, type LibraryItemDto } from '$lib/services/digitalLibraryService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { digitalLibraryService, type LibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
 
 	export let params: { id: string };
 

@@ -95,7 +95,7 @@ sudo chown -R $USER:$USER /var/www/centro-cultural
 cd /var/www/centro-cultural
 
 # Copiar base de datos existente (si existe)
-cp Data/ccpvj.db /var/www/centro-cultural/data/ 2>/dev/null || echo "No se encontró BD existente, se creará una nueva"
+cp /home/user/ccpvj/Data/ccpvj.db /var/www/centro-cultural/data/ 2>/dev/null || echo "No se encontró BD existente, se creará una nueva"
 
 # Si no existe, crear una nueva base de datos SQLite
 touch /var/www/centro-cultural/data/ccpvj.db
@@ -220,7 +220,7 @@ npm run build
 
 ```bash
 # Crear configuración de Nginx
-sudo cat > /etc/nginx/sites-available/centro-cultural << 'EOF'
+sudo tee /etc/nginx/sites-available/centro-cultural > /dev/null << 'EOF'
 server {
     listen 80;
     server_name tu-dominio.com;  # Reemplaza con tu dominio o IP

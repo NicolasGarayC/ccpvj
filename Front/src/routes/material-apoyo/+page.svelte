@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { materialApoyoService } from '$lib/services/materialApoyoService';
+  import { jwtService } from '$lib/application/services/auth/JwtService.js';
+  import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
   import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
-  import type { MaterialApoyoSearchParams } from '$lib/services/materialApoyoService';
-  import MaterialApoyoCard from '$lib/components/material-apoyo/MaterialApoyoCard.svelte';
+  import type { MaterialApoyoSearchParams } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+  import MaterialApoyoCard from '$lib/presentation/components/material-apoyo/MaterialApoyoCard.svelte';
   import { t } from '$lib/i18n';
 
   // Estado de la aplicación

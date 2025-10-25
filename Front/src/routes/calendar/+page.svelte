@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { t, locale } from '$lib/i18n';
-	import CalendarView from '$lib/components/calendar/CalendarView.svelte';
-	import EventList from '$lib/components/calendar/EventList.svelte';
-	import { calendarService, type EventSummary, type CalendarView as CalendarViewType, type EventDetail } from '$lib/services/calendar/calendarService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import CalendarView from '$lib/presentation/components/calendar/CalendarView.svelte';
+	import EventList from '$lib/presentation/components/calendar/EventList.svelte';
+	import { calendarService, type EventSummary, type CalendarView as CalendarViewType, type EventDetail } from '$lib/application/services/calendar/CalendarService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
 
 	// Get current locale for date formatting
 	$: currentLocale = $locale === 'es' ? 'es-ES' : 'en-US';
@@ -216,7 +216,10 @@ function expandRecurringEvent(
 			relatedCourseTitle: event.relatedCourseTitle,
 			relatedBlogPostId: event.relatedBlogPostId,
 			relatedBlogPostTitle: event.relatedBlogPostTitle,
-			relatedBlogPostSlug: event.relatedBlogPostSlug
+			relatedBlogPostSlug: event.relatedBlogPostSlug,
+			currentAttendees: event.currentAttendees,
+			requiresRegistration: event.requiresRegistration,
+			registrationDeadline: event.registrationDeadline ? new Date(event.registrationDeadline) : undefined
 		});
 	};
 

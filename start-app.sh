@@ -40,8 +40,14 @@ fi
 # Normalizar URL del backend público (sin barras finales)
 PUBLIC_BACKEND_BASE_URL="$(printf '%s' "$PUBLIC_BACKEND_BASE_URL" | sed 's:/*$::')"
 
+# Configurar directorio de medios si no está definido
+if [ -z "${MEDIA_DIR:-}" ]; then
+    export MEDIA_DIR="$BACKEND_DIR/Data/media"
+fi
+
 # Configuración de variables de entorno por defecto
 export PUBLIC_BACKEND_BASE_URL
+export MEDIA_DIR
 
 echo -e "${GREEN}=====================================================================${NC}"
 echo -e "${GREEN}  Centro Cultural Víctor Jara - Inicio Automático${NC}"
@@ -102,9 +108,9 @@ start_services() {
     cd "$BACKEND_DIR"
     ASPNETCORE_URLS="http://localhost:5251" pm2 start "dotnet bin/Release/net8.0/Back.dll" --name centro-cultural-backend > /dev/null 2>&1
 
-    # Iniciar frontend
+    # Iniciar frontend con variables de entorno
     cd "$FRONTEND_DIR"
-    pm2 start build/index.js --name centro-cultural-frontend > /dev/null 2>&1
+    MEDIA_DIR="$MEDIA_DIR" pm2 start build/index.js --name centro-cultural-frontend > /dev/null 2>&1
 
     echo -e "${GREEN}✓ Servicios iniciados correctamente${NC}"
 }
@@ -125,6 +131,8 @@ show_status() {
     echo -e "\n${GREEN}Aplicación disponible en:${NC}"
     echo -e "  - http://localhost"
     echo -e "  - http://192.168.68.101"
+    echo -e "\n${YELLOW}Directorio de medios:${NC}"
+    echo -e "  $MEDIA_DIR"
     echo -e "\n${YELLOW}Comandos útiles:${NC}"
     echo -e "  pm2 logs                    - Ver logs de todas las aplicaciones"
     echo -e "  pm2 restart all             - Reiniciar todas las aplicaciones"

@@ -48,6 +48,7 @@ export interface MaterialApoyoSummaryDto {
 	isActive: boolean;
 	createdAt: number;
 	imagePath?: string;
+	postCount?: number;
 }
 
 export interface ModuleDto {

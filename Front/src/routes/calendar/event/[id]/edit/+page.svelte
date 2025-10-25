@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { calendarService, type EventDetail, type UpdateEventData } from '$lib/services/calendar/calendarService';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import { blogService } from '$lib/services/blog/blogService';
-	import { jwtService } from '$lib/services/auth/jwtService';
-	import EventForm from '$lib/components/calendar/EventForm.svelte';
+	import { calendarService, type EventDetail, type UpdateEventData } from '$lib/application/services/calendar/CalendarService';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+import { blogService } from '$lib/application/services/blog/blogService';
+	import { jwtService } from '$lib/application/services/auth/JwtService';
+	import EventForm from '$lib/presentation/components/calendar/EventForm.svelte';
 
 	// Props desde la URL
 	let eventId: string = '';
@@ -126,7 +126,7 @@
 				relatedBlogPostId: updatedData.relatedBlogPostId || undefined
 			};
 
-			await calendarService.updateEvent(updateData);
+			await calendarService.updateEvent(eventId, updateData);
 
 			// Navegar de vuelta al detalle del evento
 			goto(`/calendar/event/${eventId}`);

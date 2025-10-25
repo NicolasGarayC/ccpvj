@@ -22,7 +22,6 @@ Servicios en subcarpetas organizadas:
 - services/auth/jwtService.ts
 - services/base/baseHttpService.ts
 - services/blog/blogService.ts
-- services/blog/blogHttpService.ts
 - services/blog/blogPostElementService.ts
 - services/calendar/calendarService.ts
 - services/users/userManagementService.ts
@@ -145,6 +144,7 @@ Front/src/lib/
 │   │   ├── material-apoyo/
 │   │   ├── upload/
 │   │   └── users/
+│   ├── assets/                       # Recursos estáticos y medios de la UI
 │   └── stores/                       # Estado global (Svelte stores)
 │       ├── authStore.ts
 │       └── themeStore.ts
@@ -159,8 +159,12 @@ Front/src/lib/
     ├── constants/                    # Constantes
     │   ├── apiRoutes.ts
     │   └── config.ts
-    └── config/                       # Configuración
-        └── backend.ts
+    ├── config/                       # Configuración
+    │   └── backend.ts
+    ├── i18n/                         # Internacionalización (Paraglide, etc.)
+    │   └── paraglide/
+    └── session/                      # Eventos/abstracciones compartidas de sesión
+        └── sessionEvents.ts
 ```
 
 ---
@@ -200,6 +204,38 @@ npm run dev
 git checkout -b refactor/frontend-architecture
 ```
 
+#### [ ] Paso 0.5: Unificar Servicios HTTP con `BaseHttpService`
+- Revisa cada archivo en `Front/src/lib/services/**` y asegúrate de que extienda `BaseHttpService`.  
+- Refactoriza servicios con `fetch` directo (`digitalLibraryService.ts`, `contextualUploadService.ts`, etc.) para heredar de `BaseHttpService`.  
+- Ejecuta los tests unitarios específicos de cada servicio tras el cambio.
+
+```bash
+# Ayuda para identificar servicios sin la clase base
+rg "class .*Service" Front/src/lib/services -g "*.ts" | grep -v "extends BaseHttpService"
+```
+
+#### [ ] Paso 0.6: Desacoplar `jwtService` del modal de presentación
+- Crea un módulo en `Front/src/lib/shared/session/sessionEvents.ts` (o nombre similar) que exponga eventos/callbacks para expiración y cierre de sesión.  
+- Actualiza `jwtService` para importar de `shared/session/sessionEvents` en lugar de depender de `authModalStore`.  
+- Modifica los stores de presentación (`authModalStore`, componentes relacionados) para escuchar los eventos y abrir/cerrar el modal.  
+- Vuelve a ejecutar los tests de autenticación.
+
+#### [ ] Paso 0.7: Preparar aliases en SvelteKit, TS y Vitest
+- Agrega los nuevos alias (`$lib/domain`, `$lib/application`, `$lib/infrastructure`, `$lib/presentation`, `$lib/shared`) en `svelte.config.js` (`kit.alias`).  
+- Replica los alias en `tsconfig.json` (o `jsconfig.json`) y en `vitest.config.ts` (`resolve.alias`).  
+- Verifica que `npm run lint`, `npm run check` y `npm run test:unit -- --run` siguen funcionando con la nueva configuración.
+
+#### [ ] Paso 0.8: Planificar assets e internacionalización
+- Define si `assets/` se moverá a `presentation/assets` (recomendado) o a `shared/assets`.  
+- Planifica el traslado de `paraglide/` completo a `shared/i18n/paraglide` y toma nota de imports que deban actualizarse.  
+- Registra cualquier carpeta adicional (ej. `static/`, `project.inlang/`) que requiera ajustes posteriores.
+
+#### [ ] Paso 0.9: Checklist de preparación completada
+- [ ] Todos los servicios usan `BaseHttpService` o tienen PR listo para hacerlo.  
+- [ ] `jwtService` ya no importa nada desde `presentation/*`.  
+- [ ] Alias configurados y pruebas básicas verdes.  
+- [ ] Decisión documentada sobre destino de `assets/` y `paraglide/`.
+
 ---
 
 ### FASE 1: CREAR NUEVA ESTRUCTURA (Sin Mover Archivos Aún)
@@ -232,12 +268,14 @@ mkdir -p application/services/users
 mkdir -p infrastructure/http
 mkdir -p infrastructure/api
 mkdir -p infrastructure/server/utils
+mkdir -p infrastructure/server/utils/__tests__
 ```
 
 #### [ ] Paso 1.4: Crear Carpetas de Capa de Presentación
 ```bash
 mkdir -p presentation/components
 mkdir -p presentation/stores
+mkdir -p presentation/assets
 ```
 
 #### [ ] Paso 1.5: Crear Carpetas Compartidas
@@ -247,6 +285,8 @@ mkdir -p shared/types/common
 mkdir -p shared/utils
 mkdir -p shared/constants
 mkdir -p shared/config
+mkdir -p shared/i18n/paraglide
+mkdir -p shared/session
 ```
 
 **Verificar estructura creada:**
@@ -334,10 +374,8 @@ grep -r "blogPostElementService" Front/src --include="*.svelte" --include="*.ts"
 
 **Reemplazar imports y verificar.**
 
-##### [ ] Paso 2.1.8: Mover BlogHttpService
-```bash
-mv services/blog/blogHttpService.ts application/services/blog/
-```
+##### [x] Paso 2.1.8: Consolidar BlogHttpService
+- Archivo legacy eliminado; `blogService` vive ahora en `application/services/blog/blogService.ts`.
 
 ##### [ ] Paso 2.1.9: Actualizar Imports de BlogHttpService
 **Buscar y reemplazar imports.**
@@ -504,6 +542,9 @@ mv services/auth/__tests__/jwtService.test.ts application/services/auth/__tests_
 ##### [ ] Paso 2.5.2: Actualizar Imports de JwtService
 **Buscar y reemplazar.**
 
+- Asegúrate de que `JwtService` importe `sessionEvents` desde `$lib/shared/session/sessionEvents`.  
+- Verifica que no queden referencias a `$lib/stores/authStore` dentro del servicio.
+
 ##### [ ] Paso 2.5.3: Ejecutar Tests de Auth
 ```bash
 npm run test:unit -- jwt
@@ -630,13 +671,17 @@ mv server/utils/* infrastructure/server/utils/
 - `mediaCleanup.ts`
 - Otros archivos en `server/utils/`
 
-#### [ ] Paso 3.5: Ejecutar TODOS los Tests
+#### [ ] Paso 3.5: Sincronizar Configuración de Tests
+- Ajusta rutas en `vitest.config.ts`, `vitest-setup-*.ts` y cualquier mock que apunte a `server/utils`.  
+- Si hay pruebas específicas para utilidades de servidor, actualiza sus imports y ejecútalas.
+
+#### [ ] Paso 3.6: Ejecutar TODOS los Tests
 ```bash
 npm run test:unit -- --run
 ```
 **Resultado esperado:** ✅ Todos los tests pasan
 
-#### [ ] Paso 3.6: Commit - Infraestructura
+#### [ ] Paso 3.7: Commit - Infraestructura
 ```bash
 git add .
 git commit -m "refactor: mover infraestructura a infrastructure/"
@@ -668,12 +713,21 @@ import Component from '$lib/presentation/components/...';
 
 **Nota:** Esto afectará MUCHOS archivos. Hacerlo con cuidado.
 
-#### [ ] Paso 4.3: Mover Stores
+#### [ ] Paso 4.3: Mover Assets
+```bash
+mv assets/* presentation/assets/
+```
+
+#### [ ] Paso 4.4: Actualizar Imports de Assets
+- Reemplaza referencias a `$lib/assets/...` o rutas relativas por `$lib/presentation/assets/...` o rutas relativas desde los componentes.
+- Revisa scripts de build o configuraciones que copien assets para asegurarte de que apuntan al nuevo directorio.
+
+#### [ ] Paso 4.5: Mover Stores
 ```bash
 mv stores/* presentation/stores/
 ```
 
-#### [ ] Paso 4.4: Actualizar Imports de Stores
+#### [ ] Paso 4.6: Actualizar Imports de Stores
 **Buscar:**
 ```bash
 grep -r "\$lib/stores/" Front/src --include="*.svelte" --include="*.ts"
@@ -688,12 +742,14 @@ import { store } from '$lib/stores/...';
 import { store } from '$lib/presentation/stores/...';
 ```
 
-#### [ ] Paso 4.5: Ejecutar TODOS los Tests
+- Actualiza `authModalStore` (ahora en `presentation/stores`) para que se suscriba a los eventos definidos en `$lib/shared/session/sessionEvents`.
+
+#### [ ] Paso 4.7: Ejecutar TODOS los Tests
 ```bash
 npm run test:unit -- --run
 ```
 
-#### [ ] Paso 4.6: Verificar TODA la App Funciona
+#### [ ] Paso 4.8: Verificar TODA la App Funciona
 ```bash
 npm run dev
 ```
@@ -703,7 +759,7 @@ npm run dev
 - [ ] Login funciona
 - [ ] CRUD en todos los módulos funciona
 
-#### [ ] Paso 4.7: Commit - Presentación
+#### [ ] Paso 4.9: Commit - Presentación
 ```bash
 git add .
 git commit -m "refactor: mover presentación a presentation/"
@@ -751,12 +807,25 @@ import { ... } from '$lib/config/backend';
 import { ... } from '$lib/shared/config/backend';
 ```
 
-#### [ ] Paso 5.7: Ejecutar TODOS los Tests
+#### [ ] Paso 5.7: Mover Internacionalización (Paraglide)
+```bash
+mv paraglide shared/i18n/
+```
+
+#### [ ] Paso 5.8: Actualizar Imports de i18n
+- Cambia cualquier referencia a `$lib/paraglide/...` por `$lib/shared/i18n/paraglide/...`.  
+- Ajusta scripts (`project.inlang`, jobs de build) para usar la nueva ruta.
+
+#### [ ] Paso 5.9: Sincronizar utilidades compartidas de sesión
+- Mueve o crea `shared/session/sessionEvents.ts` y asegura que `jwtService` y los stores de presentación importen desde allí.  
+- Actualiza los tests para reflejar la nueva ruta de los mocks.
+
+#### [ ] Paso 5.10: Ejecutar TODOS los Tests
 ```bash
 npm run test:unit -- --run
 ```
 
-#### [ ] Paso 5.8: Commit - Shared
+#### [ ] Paso 5.11: Commit - Shared
 ```bash
 git add .
 git commit -m "refactor: mover shared a shared/"
@@ -775,6 +844,8 @@ ls -la stores/
 ls -la types/
 ls -la utils/
 ls -la config/
+[ -d assets ] && ls -la assets/
+[ -d paraglide ] && ls -la paraglide/
 
 # Si están vacías, eliminar
 rmdir services/base
@@ -789,6 +860,8 @@ rmdir stores
 rmdir types
 rmdir utils
 rmdir config
+[ -d assets ] && rmdir assets
+[ -d paraglide ] && rmdir paraglide
 rmdir server
 ```
 
@@ -799,6 +872,8 @@ grep -r "\$lib/services/" Front/src --include="*.svelte" --include="*.ts" | grep
 grep -r "\$lib/components/" Front/src --include="*.svelte" --include="*.ts" | grep -v "presentation/components"
 grep -r "\$lib/stores/" Front/src --include="*.svelte" --include="*.ts" | grep -v "presentation/stores"
 grep -r "\$lib/types/" Front/src --include="*.svelte" --include="*.ts" | grep -v "shared/types"
+grep -r "\$lib/assets/" Front/src --include="*.svelte" --include="*.ts" | grep -v "presentation/assets"
+grep -r "\$lib/paraglide/" Front/src --include="*.svelte" --include="*.ts" | grep -v "shared/i18n/paraglide"
 ```
 
 **Si encuentra algo:** Corregir manualmente.
@@ -927,8 +1002,10 @@ git push origin desarrollo
 - [ ] `Front/src/lib/domain/` existe y tiene contenido
 - [ ] `Front/src/lib/application/` existe y tiene todos los servicios
 - [ ] `Front/src/lib/infrastructure/` existe y tiene http/server
-- [ ] `Front/src/lib/presentation/` existe y tiene components/stores
+- [ ] `Front/src/lib/presentation/` existe y tiene components/stores/assets
 - [ ] `Front/src/lib/shared/` existe y tiene types/utils/config
+- [ ] `Front/src/lib/shared/i18n/` contiene Paraglide y recursos de traducción
+- [ ] `Front/src/lib/shared/session/` contiene eventos/utilidades sin dependencias de UI
 - [ ] Carpetas antiguas (`services/`, `components/`, etc.) eliminadas
 
 ### Tests

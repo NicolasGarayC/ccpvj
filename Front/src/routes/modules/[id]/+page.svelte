@@ -2,15 +2,15 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-import { materialApoyoService } from '$lib/services/materialApoyoService';
+import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
 import type { ModuleDto } from '$lib/types/api/materialApoyo.types';
-	import { modulePostService, type PostDetail } from '$lib/services/modulePostService';
-	import PostList from '$lib/components/course/PostList.svelte';
-	import PostViewer from '$lib/components/course/PostViewer.svelte';
-	import PostForm from '$lib/components/course/PostForm.svelte';
-	import LoadingSpinner from '$lib/components/common/LoadingSpinner.svelte';
-	import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
-	import SuccessToast from '$lib/components/common/SuccessToast.svelte';
+import { modulePostService, type PostDetail } from '$lib/application/services/material-apoyo/ModulePostService';
+	import PostList from '$lib/presentation/components/course/PostList.svelte';
+	import PostViewer from '$lib/presentation/components/course/PostViewer.svelte';
+	import PostForm from '$lib/presentation/components/course/PostForm.svelte';
+	import LoadingSpinner from '$lib/presentation/components/common/LoadingSpinner.svelte';
+	import ConfirmationModal from '$lib/presentation/components/common/ConfirmationModal.svelte';
+	import SuccessToast from '$lib/presentation/components/common/SuccessToast.svelte';
 
 const moduleId = $page.params.id as string;
 

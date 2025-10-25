@@ -1,11 +1,11 @@
 ﻿<script lang="ts">
   import { onMount } from 'svelte';
-  import BlogPostList from '$lib/components/blog/BlogPostList.svelte';
-  import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
-  import SuccessToast from '$lib/components/common/SuccessToast.svelte';
+  import BlogPostList from '$lib/presentation/components/blog/BlogPostList.svelte';
+  import ConfirmationModal from '$lib/presentation/components/common/ConfirmationModal.svelte';
+  import SuccessToast from '$lib/presentation/components/common/SuccessToast.svelte';
   import type { BlogPost } from '$lib/types/api';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { blogHttpService } from '$lib/services/blog/blogHttpService';
+  import { jwtService } from '$lib/application/services/auth/JwtService.js';
+  import { blogService } from '$lib/application/services/blog/blogService';
   import { t } from '$lib/i18n';
 
   // Variables para permisos de usuario
@@ -27,8 +27,7 @@
     // Verificar autenticación y permisos
     isAuthenticated = jwtService.isAuthenticated();
     if (isAuthenticated) {
-      const user = jwtService.getUser();
-      canManageArticles = user?.role === 'colaborador' || user?.role === 'administrador';
+      canManageArticles = jwtService.canManageContent();
     }
   });
 
@@ -42,7 +41,7 @@
     if (!deletingPost) return;
 
 	try {
-		await blogHttpService.deletePost(String(deletingPost.id));
+		await blogService.deletePost(String(deletingPost.id));
 
       showDeleteModal = false;
 
