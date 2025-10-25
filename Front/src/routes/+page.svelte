@@ -100,10 +100,6 @@ let allCourses: MaterialApoyoSummaryDto[] = [];
 <svelte:head>
 	<title>{$t('centroTitle') || 'Centro Cultural Popular Víctor Jara'}</title>
 	<meta name="description" content={$t('centroDescription') || 'Centro Cultural Popular Víctor Jara - Red Comunitaria de Aprendizaje'} />
-	<link
-		rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-	/>
 </svelte:head>
 
 <!-- Hero Section Juvenil -->
