@@ -60,10 +60,9 @@ import { blogService } from '$lib/application/services/blog/blogService';
 			}
 
 			// Verificar si el usuario puede editar este evento
-			if (currentUser) {
-				canEditEvent = currentUser.role === 'Administrador' ||
-							  (event.organizerId === currentUser.id);
-			}
+			const isAdmin = jwtService.isAdmin();
+			const isOrganizer = currentUser && event.organizerId === String(currentUser.id);
+			canEditEvent = isAdmin || isOrganizer;
 
 			if (!canEditEvent) {
 				error = 'No tienes permisos para editar este evento';
