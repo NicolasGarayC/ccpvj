@@ -3,11 +3,14 @@ import { readFile } from 'fs/promises';
 import { existsSync, statSync } from 'fs';
 import path from 'path';
 import { error } from '@sveltejs/kit';
-import { API_BASE_URL } from '$lib/config';
+import { BACKEND_BASE_URL } from '$lib/config/backend';
+import { getMediaDir } from '$lib/server/utils/media-paths';
 
-// Use process.cwd() to get current working directory, then navigate to Back/Data/media
-// When running from Front/ directory, go up one level to root, then to Back/Data/media
-const MEDIA_DIR = path.resolve(process.cwd(), '../Back/Data/media');
+// API base URL for analytics tracking
+const API_BASE_URL = BACKEND_BASE_URL;
+
+// Media directory - configurable via MEDIA_DIR environment variable
+const MEDIA_DIR = getMediaDir();
 
 // MIME type mapping
 const MIME_TYPES: Record<string, string> = {
@@ -143,7 +146,7 @@ export const GET: RequestHandler = async ({ params, url, request, getClientAddre
             headers['Accept-Ranges'] = 'bytes';
         }
 
-        return new Response(fileBuffer, {
+        return new Response(new Uint8Array(fileBuffer), {
             headers
         });
 

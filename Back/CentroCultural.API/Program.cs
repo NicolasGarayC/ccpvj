@@ -1,37 +1,107 @@
 using Microsoft.EntityFrameworkCore;
 using CentroCultural.Infrastructure.Configuration;
 using CentroCultural.Infrastructure.Data;
-using CentroCultural.Application.Interfaces;
 using CentroCultural.Application.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using CentroCultural.Infrastructure.Services;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Allow overriding the HTTP port via ASPNETCORE_URLS or --urls without crashing on conflicts
+var urlsFromEnv = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["urls"];
+if (!string.IsNullOrWhiteSpace(urlsFromEnv))
+{
+    builder.WebHost.UseUrls(urlsFromEnv.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+}
 
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Resolve SQLite connection string to an absolute path regardless of the working directory
+string ResolveSqliteConnectionString(string? rawConnectionString, string contentRootPath)
+{
+    if (string.IsNullOrWhiteSpace(rawConnectionString))
+    {
+        throw new InvalidOperationException("DefaultConnection string is missing or empty.");
+    }
+
+    static string? ResolveSqlitePath(string relativePath, string contentRoot)
+    {
+        if (Path.IsPathRooted(relativePath))
+        {
+            return relativePath;
+        }
+
+        // Candidate roots to try
+        var candidateRoots = new[]
+        {
+            contentRoot,
+            AppContext.BaseDirectory,
+            Directory.GetCurrentDirectory(),
+            Path.Combine(contentRoot, ".."), // solution root when running from Back/
+            Path.Combine(AppContext.BaseDirectory, "..", "..") // when executed from bin/Debug/net8.0
+        };
+
+        foreach (var root in candidateRoots)
+        {
+            if (string.IsNullOrWhiteSpace(root))
+                continue;
+
+            var candidate = Path.GetFullPath(Path.Combine(root, relativePath));
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        // Fallback: resolve relative to content root even if file doesn't exist yet
+        return Path.GetFullPath(Path.Combine(contentRoot, relativePath));
+    }
+
+    const string dataSourceKey = "Data Source=";
+    var parts = rawConnectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    for (int i = 0; i < parts.Length; i++)
+    {
+        if (parts[i].StartsWith(dataSourceKey, StringComparison.OrdinalIgnoreCase))
+        {
+            var relativePath = parts[i].Substring(dataSourceKey.Length).Trim();
+            var resolvedPath = ResolveSqlitePath(relativePath, contentRootPath);
+            if (!string.IsNullOrWhiteSpace(resolvedPath))
+            {
+                parts[i] = $"{dataSourceKey}{resolvedPath}";
+            }
+            break;
+        }
+    }
+
+    return string.Join(';', parts);
+}
+
+var resolvedConnectionString = ResolveSqliteConnectionString(
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    builder.Environment.ContentRootPath);
+
+// Update configuration so services reading it later get the resolved version
+builder.Configuration["ConnectionStrings:DefaultConnection"] = resolvedConnectionString;
+Console.WriteLine($"[Startup] SQLite connection resolved to: {resolvedConnectionString}");
+
 // Configuración por capas
-builder.Services.AddInfrastructureServices(
-    builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
+builder.Services.AddInfrastructureServices(resolvedConnectionString);
 builder.Services.AddApplicationServices();
 
-// CORS - Update to allow SvelteKit on multiple ports
+// CORS - allow SvelteKit dev servers on loopback (localhost / 127.0.0.1) and common ports
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSvelteKit", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:5175",
-                "http://localhost:5176"
-              ) // SvelteKit dev server - multiple ports
-              .AllowAnyMethod()
+        policy.SetIsOriginAllowed(origin =>
+                Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback)
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
               .AllowAnyHeader()
-              .AllowCredentials(); // Important for cookies
+              .AllowCredentials();
     });
 });
 
@@ -97,6 +167,8 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(60);
 });
 
+var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", false);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -117,8 +189,41 @@ using (var scope = app.Services.CreateScope())
     context.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON");
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles(); // Para servir archivos estáticos
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+else
+{
+    app.Logger.LogDebug("HTTPS redirection disabled (EnableHttpsRedirection=false).");
+}
+
+var webRootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+if (Directory.Exists(webRootPath))
+{
+    app.Logger.LogDebug("Serving static assets from {WebRootPath}", webRootPath);
+    app.UseStaticFiles(); // Para servir archivos estáticos del frontend legacy
+}
+else
+{
+    app.Logger.LogDebug("Skipping static files middleware because directory was not found at {WebRootPath}", webRootPath);
+}
+
+var mediaRootPath = Path.Combine(app.Environment.ContentRootPath, "Data", "media");
+if (Directory.Exists(mediaRootPath))
+{
+    app.Logger.LogDebug("Serving media files from {MediaRootPath}", mediaRootPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(mediaRootPath),
+        RequestPath = "/media",
+        ServeUnknownFileTypes = true
+    });
+}
+else
+{
+    app.Logger.LogWarning("Media directory not found at {MediaRootPath}. Uploads will not be served.", mediaRootPath);
+}
 app.UseCors("AllowSvelteKit");
 app.UseAuthentication();
 app.UseAuthorization();

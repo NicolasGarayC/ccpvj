@@ -1,11 +1,11 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { onMount } from 'svelte';
-  import BlogPostList from '$lib/components/blog/BlogPostList.svelte';
-  import ConfirmationModal from '$lib/components/common/ConfirmationModal.svelte';
-  import SuccessToast from '$lib/components/common/SuccessToast.svelte';
-  import type { BlogPost } from '$lib/data/models/interfaces';
-  import { jwtService } from '$lib/services/auth/jwtService.js';
-  import { blogHttpService } from '$lib/services/blog/blogHttpService';
+  import BlogPostList from '$lib/presentation/components/blog/BlogPostList.svelte';
+  import ConfirmationModal from '$lib/presentation/components/common/ConfirmationModal.svelte';
+  import SuccessToast from '$lib/presentation/components/common/SuccessToast.svelte';
+  import type { BlogPost } from '$lib/types/api';
+  import { jwtService } from '$lib/application/services/auth/JwtService.js';
+  import { blogService } from '$lib/application/services/blog/blogService';
   import { t } from '$lib/i18n';
 
   // Variables para permisos de usuario
@@ -27,8 +27,7 @@
     // Verificar autenticación y permisos
     isAuthenticated = jwtService.isAuthenticated();
     if (isAuthenticated) {
-      const user = jwtService.getUser();
-      canManageArticles = user?.role === 'colaborador' || user?.role === 'administrador';
+      canManageArticles = jwtService.canManageContent();
     }
   });
 
@@ -41,8 +40,8 @@
   async function confirmDeletePost() {
     if (!deletingPost) return;
 
-    try {
-      await blogHttpService.deletePost(deletingPost.id);
+	try {
+		await blogService.deletePost(String(deletingPost.id));
 
       showDeleteModal = false;
 
@@ -88,8 +87,8 @@
 </script>
 
 <svelte:head>
-  <title>{t('newsAndAnnouncements') || 'Noticias y Anuncios'} | {t('centroTitle') || 'Centro Cultural'}</title>
-  <meta name="description" content={t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Víctor Jara'} />
+  <title>{$t('newsAndAnnouncements') || 'Noticias y Anuncios'} | {$t('centroTitle') || 'Centro Cultural'}</title>
+  <meta name="description" content={$t('blogDescription') || 'Mantente informado con las últimas noticias y anuncios del Centro Cultural Popular Víctor Jara'} />
 </svelte:head>
 
 <div class="blog-page">
@@ -98,10 +97,10 @@
     <div class="header-content">
       <h1 class="page-title">
         <span class="icon">📰</span>
-        <span class="gradient-text">{t('newsAndAnnouncements') || 'Noticias y Anuncios'}</span>
+        <span class="gradient-text">{$t('newsAndAnnouncements') || 'Noticias y Anuncios'}</span>
       </h1>
       <p class="page-description">
-        {t('stayUpdated') || 'Mantente informado sobre las últimas actividades, proyectos y eventos de nuestra comunidad educativa.'}
+        {$t('stayUpdated') || 'Mantente informado sobre las últimas actividades, proyectos y eventos de nuestra comunidad educativa.'}
       </p>
     </div>
   </div>

@@ -27,6 +27,7 @@ export interface CreateMaterialApoyoDto {
 	description: string;
 	isFeatured?: boolean;
 	imagePath?: string;
+	educatorName?: string;
 }
 
 export interface UpdateMaterialApoyoDto {
@@ -34,6 +35,7 @@ export interface UpdateMaterialApoyoDto {
 	description: string;
 	isFeatured: boolean;
 	imagePath?: string;
+	educatorName?: string;
 }
 
 export interface MaterialApoyoSummaryDto {
@@ -46,6 +48,7 @@ export interface MaterialApoyoSummaryDto {
 	isActive: boolean;
 	createdAt: number;
 	imagePath?: string;
+	postCount?: number;
 }
 
 export interface ModuleDto {

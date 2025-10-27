@@ -28,6 +28,11 @@ export interface BlogPost {
   authorName?: string;
   tags?: string[];
   isPublished?: boolean;
+  categoryId?: string;
+  categoryName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  viewCount?: number;
 }
 
 export interface Course {

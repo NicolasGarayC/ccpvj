@@ -3,8 +3,8 @@ import type { RequestHandler } from './$types';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { getMediaDir } from '$lib/server/utils/media-paths';
 
-const UPLOAD_DIR = 'Data/media/image';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ALLOWED_TYPES = [
@@ -43,9 +43,12 @@ export const POST: RequestHandler = async ({ request }) => {
             }, { status: 400 });
         }
 
-        // Ensure upload directory exists
-        if (!existsSync(UPLOAD_DIR)) {
-            await mkdir(UPLOAD_DIR, { recursive: true });
+        // Get media directory and ensure upload subdirectory exists
+        const mediaDir = getMediaDir();
+        const uploadDir = path.join(mediaDir, 'image');
+
+        if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
         }
 
         // Generate unique filename
@@ -53,7 +56,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const extension = path.extname(file.name);
         const baseName = elementId ? `element_${elementId}_${timestamp}` : `image_${timestamp}`;
         const filename = `${baseName}${extension}`;
-        const filepath = path.join(UPLOAD_DIR, filename);
+        const filepath = path.join(uploadDir, filename);
 
         // Save file
         const arrayBuffer = await file.arrayBuffer();

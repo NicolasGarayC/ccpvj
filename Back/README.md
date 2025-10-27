@@ -18,7 +18,7 @@ Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural 
 
 #### **3. Base de Datos**
 - ✅ **Foreign Keys**: `PRAGMA foreign_keys = ON` funcionando
-- ✅ **Consistencia**: Esquemas unificados entre Drizzle y Entity Framework
+- ✅ **Consistencia**: Esquemas unificados con el frontend (snake_case) y Entity Framework
 - ✅ **Tipos de datos**: Unix timestamps (long) vs DateTime correctamente manejados
 
 ## 🏗️ Arquitectura

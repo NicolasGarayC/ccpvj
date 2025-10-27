@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
-	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
-	import type { CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
-	import { contextualUploadService } from '$lib/services/contextualUploadService';
+	import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
+	import type { CreateLibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
+	import { contextualUploadService } from '$lib/application/services/upload/ContextualUploadService';
 
 	// Estado del formulario
 	// Campo separado para el input de tags como string
@@ -28,6 +28,7 @@
 	};
 
 	let selectedFile: File | null = null;
+	const fileInputId = 'library-upload-file';
 	let isUploading = false;
 	let uploadProgress = 0;
 	let loading = false;
@@ -406,14 +407,15 @@
 
 					<div class="space-y-6">
 						<!-- Upload de archivo -->
-						<div>
-							<label class="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+		<div>
+			<label class="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2" for={fileInputId}>
 								<span>📎</span>
 								Seleccionar Archivo *
 							</label>
 
 							<div class="relative">
-								<input
+				<input
+					id={fileInputId}
 									type="file"
 									on:change={handleFileChange}
 									accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.avi,.mov,.mp3,.wav,.ogg,.m4a"

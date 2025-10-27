@@ -1,58 +1,59 @@
 # 🗄️ Centro Cultural Víctor Jara - Esquema de Base de Datos
 
-## Estado Actual: **LIMPIO Y FUNCIONAL** ✅
+> **Última Actualización**: Octubre 2025
+> **Estado**: ✅ **LIMPIO Y FUNCIONAL**
 
-### 📊 **Información General**
-- **Base de Datos**: SQLite (`D:/ccpvj/Data/ccpvj.db`)
-- **ORM Backend**: Entity Framework Core (.NET 9)
+## 📊 Información General
+
+- **Motor**: SQLite 3
+- **Archivo**: `Data/ccpvj.db`
+- **ORM Backend**: Entity Framework Core (.NET 8)
 - **Foreign Keys**: **HABILITADAS** con `PRAGMA foreign_keys = ON`
 - **Convención**: snake_case en BD, PascalCase en entidades C#
 - **Timestamps**: Unix timestamps (INTEGER) en todas las tablas
-- **Analytics**: Sistema de métricas implementado (Octubre 2025)
+- **Integridad**: Verificada (`PRAGMA integrity_check`)
 
-### 🧹 **Limpieza Realizada (Octubre 2025)**
+## 📈 Resumen de Tablas
 
-#### **Tablas Eliminadas**
-- ❌ MediaEntity - Sistema de medios obsoleto
-- ❌ MediaFile - Reemplazado por paths contextuales
-- ❌ UploadStatus - Sistema de subidas obsoleto
-- ❌ session - Sesiones legacy
-- ❌ BlogPost_backup, BlogPostEvent_backup, Event_backup - Backups temporales
-- ❌ WorkItem - Sistema de trabajo eliminado
-
-#### **Servicios y Código Limpiado**
-- ✅ Eliminados endpoints no utilizados del frontend
-- ✅ Removidas interfaces sin implementación (IMediaService, IBlogEventRelationService, etc.)
-- ✅ Limpiados registros huérfanos en post_element (22 registros eliminados)
-- ✅ Corregidas foreign keys rotas en course table
-
-#### **Resultado**
-- **Antes**: 21 tablas (7 obsoletas/backups)
-- **Ahora**: 16 tablas funcionales (14 originales + 2 analytics)
-- **Analytics**: Sistema de métricas agregado (Octubre 2025)
-- **Integridad**: `PRAGMA integrity_check` - OK
-- **Foreign Keys**: `PRAGMA foreign_key_check` - Sin errores
+| Categoría | Cantidad | Tablas |
+|-----------|----------|--------|
+| **Autenticación** | 2 | Rol, Usuario |
+| **Material Educativo** | 4 | material_apoyo, modulo, module_post, post_element |
+| **Blog** | 3 | blog_post, blog_post_element, blog_post_event |
+| **Eventos** | 1 | event |
+| **Biblioteca** | 3 | library_item, library_collection, library_item_collection |
+| **Analytics** | 2 | visitor_tracking, download_tracking |
+| **TOTAL** | **15 tablas** | **Sistema completamente funcional** |
 
 ---
 
-## 🏗️ **Estructura de Tablas (16 tablas)**
+## 🏗️ Esquemas de Tablas
 
-### 👤 **Sistema de Autenticación**
+### 👤 Sistema de Autenticación (2 tablas)
 
-#### `Rol` - Tabla de Roles
+#### `Rol` - Roles del Sistema
+
 ```sql
-CREATE TABLE IF NOT EXISTS "Rol" (
+CREATE TABLE "Rol" (
     "IdRol" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "NombreRol" TEXT NOT NULL,
     "Descripcion" TEXT
 );
 ```
-**Roles disponibles**: `asistente`, `colaborador`, `administrador` (minúsculas)
-**Registros**: 3 roles definidos
 
-#### `Usuario` - Tabla Principal de Usuarios
+**Datos seeded**:
+- IdRol 1: "Asistente" - Solo lectura
+- IdRol 2: "Colaborador" - Crear/editar contenido propio
+- IdRol 3: "Administrador" - Acceso completo
+
+**Entidad**: `CentroCultural.Domain.Entities.Rol`
+
+---
+
+#### `Usuario` - Usuarios del Sistema
+
 ```sql
-CREATE TABLE IF NOT EXISTS "Usuario" (
+CREATE TABLE "Usuario" (
     "IdUsuario" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "NombreUsuario" TEXT NOT NULL UNIQUE,
     "Contrasena" TEXT NOT NULL,
@@ -66,17 +67,29 @@ CREATE TABLE IF NOT EXISTS "Usuario" (
     "FechaActualizacion" TEXT,
     FOREIGN KEY ("IdRol") REFERENCES "Rol" ("IdRol")
 );
+
+CREATE INDEX idx_usuario_nombre ON Usuario(NombreUsuario);
+CREATE INDEX idx_usuario_rol ON Usuario(IdRol);
+CREATE INDEX idx_usuario_activo ON Usuario(EsActivo);
 ```
-**Registros**: 2+ usuarios activos
-**Entidad Backend**: `CentroCultural.Domain.Entities.Usuario`
+
+**Entidad**: `CentroCultural.Domain.Entities.Usuario`
+
+**Campos**:
+- `IdUsuario`: ID autoincremental
+- `NombreUsuario`: Único, usado para login
+- `Contrasena`: Hash de contraseña (almacenado en texto plano actualmente)
+- `IdRol`: FK a tabla Rol (default: 3 = Asistente)
+- `EsActivo`: Estado del usuario (1 = activo, 0 = inactivo)
 
 ---
 
-### 📚 **Sistema Educativo (Cursos)**
+### 📚 Sistema Educativo (Material de Apoyo) - 4 tablas
 
-#### `course` - Cursos Educativos
+#### `material_apoyo` - Material Educativo Principal
+
 ```sql
-CREATE TABLE IF NOT EXISTS "course" (
+CREATE TABLE material_apoyo (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -85,40 +98,62 @@ CREATE TABLE IF NOT EXISTS "course" (
     is_featured INTEGER DEFAULT 0 NOT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER,
-    educator_id INTEGER NOT NULL
+    educator_id TEXT NOT NULL,
+    educator_name TEXT
 );
 
--- Índices
-CREATE INDEX idx_course_educator ON course(educator_id);
-CREATE INDEX idx_course_active ON course(is_active);
-CREATE INDEX idx_course_featured ON course(is_featured);
+CREATE INDEX idx_material_apoyo_educator ON material_apoyo(educator_id);
+CREATE INDEX idx_material_apoyo_active ON material_apoyo(is_active);
+CREATE INDEX idx_material_apoyo_featured ON material_apoyo(is_featured);
+CREATE INDEX idx_material_apoyo_created ON material_apoyo(created_at);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.Course`
-**Servicio**: `CentroCultural.Application.Services.CourseService`
-**Mapeo**: `[Table("course")]` con atributos `[Column]`
 
-#### `module` - Módulos de Cursos
+**Entidad**: `CentroCultural.Domain.Entities.MaterialApoyo`
+
+**Campos**:
+- `id`: UUID como TEXT PRIMARY KEY
+- `title`: Título del material educativo
+- `description`: Descripción del material
+- `image_path`: Ruta del banner/imagen principal
+- `is_active`: Estado (1 = activo, 0 = inactivo)
+- `is_featured`: Destacado (1 = sí, 0 = no)
+- `created_at`, `updated_at`: Unix timestamps
+- `educator_id`: ID del educador (puede ser TEXT o INTEGER)
+- `educator_name`: Nombre del educador (agregado recientemente)
+
+---
+
+#### `modulo` - Módulos de Material Educativo
+
 ```sql
-CREATE TABLE module (
+CREATE TABLE modulo (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     order_number INTEGER NOT NULL,
     is_active INTEGER DEFAULT 1 NOT NULL,
-    course_id TEXT NOT NULL,
+    material_apoyo_id TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     updated_at INTEGER,
-    FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE CASCADE
+    FOREIGN KEY (material_apoyo_id) REFERENCES material_apoyo(id) ON DELETE CASCADE
 );
 
--- Índices
-CREATE INDEX idx_module_course_new ON module(course_id);
-CREATE INDEX idx_module_order_new ON module(course_id, order_number);
+CREATE INDEX idx_modulo_material_apoyo ON modulo(material_apoyo_id);
+CREATE INDEX idx_modulo_order ON modulo(material_apoyo_id, order_number);
+CREATE INDEX idx_modulo_active ON modulo(is_active);
+CREATE INDEX idx_modulo_created ON modulo(created_at);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.Module`
-**Relación**: Cada módulo pertenece a un curso
+
+**Entidad**: `CentroCultural.Domain.Entities.Modulo`
+
+**Relación**: Cada módulo pertenece a un material de apoyo
+
+**DELETE CASCADE**: Al eliminar material_apoyo, se eliminan todos sus módulos
+
+---
 
 #### `module_post` - Posts/Contenido de Módulos
+
 ```sql
 CREATE TABLE module_post (
     id TEXT PRIMARY KEY,
@@ -133,53 +168,70 @@ CREATE TABLE module_post (
     module_id TEXT NOT NULL,
     author_id INTEGER NOT NULL DEFAULT 1,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-    updated_at INTEGER
+    updated_at INTEGER,
+    FOREIGN KEY (module_id) REFERENCES modulo(id) ON DELETE CASCADE,
+    FOREIGN KEY (author_id) REFERENCES Usuario(IdUsuario)
 );
 
--- Índices
 CREATE INDEX idx_module_post_module ON module_post(module_id);
 CREATE INDEX idx_module_post_author ON module_post(author_id);
 CREATE INDEX idx_module_post_order ON module_post(module_id, order_number);
 CREATE INDEX idx_module_post_active ON module_post(is_active);
 CREATE INDEX idx_module_post_created ON module_post(created_at);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.ModulePost`
-**Multimedia**: Soporta imagen, video y audio contextuales
+
+**Entidad**: `CentroCultural.Domain.Entities.ModulePost`
+
+**Multimedia contextual**: Soporta imagen, video y audio
+
+**DELETE CASCADE**: Al eliminar módulo, se eliminan todos sus posts
+
+---
 
 #### `post_element` - Elementos Modulares de Posts
+
 ```sql
 CREATE TABLE post_element (
     id TEXT PRIMARY KEY,
     post_id TEXT NOT NULL,
     element_type TEXT NOT NULL, -- 'title', 'text', 'image', 'video', 'audio'
-    content TEXT, -- Para título y texto
-    file_path TEXT, -- Para archivos multimedia
-    file_name TEXT, -- Nombre original del archivo
-    file_size INTEGER, -- Tamaño del archivo en bytes
-    mime_type TEXT, -- Tipo MIME del archivo
-    order_number INTEGER NOT NULL, -- Orden dentro del post
-    metadata TEXT, -- JSON para datos adicionales (alt text, caption, etc.)
+    content TEXT,
+    file_path TEXT,
+    file_name TEXT,
+    file_size INTEGER,
+    mime_type TEXT,
+    order_number INTEGER NOT NULL,
+    metadata TEXT, -- JSON
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at INTEGER NOT NULL,
     updated_at INTEGER,
     FOREIGN KEY (post_id) REFERENCES module_post(id) ON DELETE CASCADE
 );
 
--- Índices
 CREATE INDEX idx_post_element_post_id ON post_element(post_id);
 CREATE INDEX idx_post_element_type ON post_element(element_type);
 CREATE INDEX idx_post_element_order ON post_element(post_id, order_number);
 CREATE INDEX idx_post_element_active ON post_element(is_active);
+CREATE INDEX idx_post_element_created ON post_element(created_at);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.PostElement`
-**Servicio**: `CentroCultural.Application.Services.PostElementService`
-**Propósito**: Sistema modular para componer posts con múltiples elementos ordenados
+
+**Entidad**: `CentroCultural.Domain.Entities.PostElement`
+
+**Tipos de elementos**:
+- `title`: Título/encabezado
+- `text`: Texto/párrafo
+- `image`: Imagen (file_path)
+- `video`: Video (file_path)
+- `audio`: Audio (file_path)
+
+**DELETE CASCADE**: Al eliminar post, se eliminan todos sus elementos
 
 ---
 
-### 📝 **Sistema Blog**
+### 📝 Sistema de Blog (3 tablas)
 
 #### `blog_post` - Posts del Blog
+
 ```sql
 CREATE TABLE blog_post (
     id TEXT PRIMARY KEY,
@@ -196,99 +248,70 @@ CREATE TABLE blog_post (
     published_at INTEGER,
     author_id INTEGER NOT NULL DEFAULT 1,
     category_id TEXT,
-    tags TEXT
+    tags TEXT, -- JSON array
+    status TEXT DEFAULT 'draft',
+    FOREIGN KEY (author_id) REFERENCES Usuario(IdUsuario)
 );
 
--- Índices
-CREATE INDEX IX_blog_post_author ON blog_post(author_id);
-CREATE INDEX IX_blog_post_category ON blog_post(category_id);
-CREATE INDEX IX_blog_post_published ON blog_post(is_published);
-CREATE INDEX IX_blog_post_slug ON blog_post(slug);
-CREATE INDEX IX_blog_post_featured ON blog_post(is_featured);
-CREATE INDEX IX_blog_post_created ON blog_post(created_at);
-CREATE INDEX IX_blog_post_active ON blog_post(is_active);
+CREATE UNIQUE INDEX idx_blog_post_slug ON blog_post(slug);
+CREATE INDEX idx_blog_post_author ON blog_post(author_id);
+CREATE INDEX idx_blog_post_published ON blog_post(is_published);
+CREATE INDEX idx_blog_post_featured ON blog_post(is_featured);
+CREATE INDEX idx_blog_post_active ON blog_post(is_active);
+CREATE INDEX idx_blog_post_created ON blog_post(created_at);
+CREATE INDEX idx_blog_post_views ON blog_post(views);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.BlogPost`
+
+**Entidad**: `CentroCultural.Domain.Entities.BlogPost`
+
 **Servicio**: `CentroCultural.Application.Services.BlogService`
-**Sistema Modular**: Usa blog_post_element para contenido
+
+**Campos clave**:
+- `slug`: URL amigable única
+- `is_published`: 0 = draft, 1 = publicado
+- `views`: Contador de visualizaciones
+- `tags`: Array JSON de tags
+- `status`: 'draft', 'published', 'archived'
+
+---
 
 #### `blog_post_element` - Elementos Modulares del Blog
+
 ```sql
 CREATE TABLE blog_post_element (
     id TEXT PRIMARY KEY,
     blog_post_id TEXT NOT NULL,
-    element_type TEXT NOT NULL, -- title, text, image, video, audio, document
-    content TEXT, -- For title and text content
-    file_path TEXT, -- For multimedia files
-    file_name TEXT, -- Original file name
-    file_size INTEGER, -- File size in bytes
-    mime_type TEXT, -- MIME type
+    element_type TEXT NOT NULL, -- 'title', 'text', 'image', 'video', 'audio', 'document'
+    content TEXT,
+    file_path TEXT,
+    file_name TEXT,
+    file_size INTEGER,
+    mime_type TEXT,
     order_number INTEGER NOT NULL DEFAULT 0,
-    metadata TEXT, -- JSON for additional data (alt text, caption, etc.)
+    metadata TEXT, -- JSON
     is_active INTEGER NOT NULL DEFAULT 1,
-    created_at INTEGER NOT NULL, -- Unix timestamp
-    updated_at INTEGER, -- Unix timestamp
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER,
     FOREIGN KEY (blog_post_id) REFERENCES blog_post(id) ON DELETE CASCADE
 );
 
--- Índices
-CREATE INDEX IX_blog_post_element_blog_post_id ON blog_post_element(blog_post_id);
-CREATE INDEX IX_blog_post_element_element_type ON blog_post_element(element_type);
-CREATE INDEX IX_blog_post_element_order_number ON blog_post_element(order_number);
-CREATE INDEX IX_blog_post_element_is_active ON blog_post_element(is_active);
-CREATE INDEX IX_blog_post_element_created_at ON blog_post_element(created_at);
+CREATE INDEX idx_blog_post_element_blog_post_id ON blog_post_element(blog_post_id);
+CREATE INDEX idx_blog_post_element_type ON blog_post_element(element_type);
+CREATE INDEX idx_blog_post_element_order ON blog_post_element(blog_post_id, order_number);
+CREATE INDEX idx_blog_post_element_active ON blog_post_element(is_active);
+CREATE INDEX idx_blog_post_element_created ON blog_post_element(created_at);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.BlogPostElement`
+
+**Entidad**: `CentroCultural.Domain.Entities.BlogPostElement`
+
 **Servicio**: `CentroCultural.Application.Services.BlogPostElementService`
-**Tipos de elementos**: title, text, image, video, audio, document
+
+**DELETE CASCADE**: Al eliminar blog post, se eliminan todos sus elementos
 
 ---
 
-### 📅 **Sistema de Eventos y Calendario**
+#### `blog_post_event` - Relaciones Blog-Eventos (N:M)
 
-#### `event` - Eventos Culturales
-```sql
-CREATE TABLE event (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
-    start_date_time INTEGER NOT NULL,
-    end_date_time INTEGER,
-    is_all_day INTEGER NOT NULL DEFAULT 0,
-    location TEXT,
-    event_type TEXT NOT NULL DEFAULT 'General',
-    is_active INTEGER NOT NULL DEFAULT 1,
-    is_featured INTEGER NOT NULL DEFAULT 0,
-    max_attendees INTEGER,
-    current_attendees INTEGER NOT NULL DEFAULT 0,
-    requires_registration INTEGER NOT NULL DEFAULT 0,
-    registration_deadline INTEGER,
-    image_path TEXT,
-    pdf_path TEXT,
-    is_recurring INTEGER NOT NULL DEFAULT 0,
-    recurrence_pattern TEXT,
-    recurrence_interval INTEGER DEFAULT 1,
-    recurrence_end_date INTEGER,
-    recurrence_days_of_week TEXT,
-    related_course_id TEXT,
-    related_blog_post_id TEXT,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER,
-    organizer_id TEXT NOT NULL
-);
-
--- Índices
-CREATE INDEX idx_event_organizer ON event(organizer_id);
-CREATE INDEX idx_event_start_time ON event(start_date_time);
-CREATE INDEX idx_event_active ON event(is_active);
-CREATE INDEX idx_event_type ON event(event_type);
-CREATE INDEX idx_event_featured ON event(is_featured);
-```
-**Entidad Backend**: `CentroCultural.Domain.Entities.Event`
-**Servicio**: `CentroCultural.Application.Services.CalendarService`
-**Características**: Eventos recurrentes, inscripciones, multimedia
-
-#### `blog_post_event` - Relaciones Blog-Eventos
 ```sql
 CREATE TABLE blog_post_event (
     id TEXT PRIMARY KEY,
@@ -306,22 +329,73 @@ CREATE TABLE blog_post_event (
     UNIQUE(blog_post_id, event_id)
 );
 
--- Índices
-CREATE INDEX IX_blog_post_event_blog_post_id ON blog_post_event(blog_post_id);
-CREATE INDEX IX_blog_post_event_event_id ON blog_post_event(event_id);
-CREATE INDEX IX_blog_post_event_relation_type ON blog_post_event(relation_type);
-CREATE INDEX IX_blog_post_event_is_active ON blog_post_event(is_active);
-CREATE INDEX IX_blog_post_event_created_at ON blog_post_event(created_at);
-CREATE INDEX IX_blog_post_event_display_order ON blog_post_event(display_order);
+CREATE INDEX idx_blog_post_event_blog_post ON blog_post_event(blog_post_id);
+CREATE INDEX idx_blog_post_event_event ON blog_post_event(event_id);
+CREATE INDEX idx_blog_post_event_type ON blog_post_event(relation_type);
+CREATE INDEX idx_blog_post_event_active ON blog_post_event(is_active);
+CREATE INDEX idx_blog_post_event_created ON blog_post_event(created_at);
+CREATE INDEX idx_blog_post_event_order ON blog_post_event(display_order);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.BlogPostEvent`
+
+**Entidad**: `CentroCultural.Domain.Entities.BlogPostEvent`
+
 **Propósito**: Vincular posts del blog con eventos relacionados
 
 ---
 
-### 📚 **Sistema de Biblioteca Digital**
+### 📅 Sistema de Eventos (1 tabla)
+
+#### `event` - Eventos Culturales
+
+```sql
+CREATE TABLE event (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    start_date_time INTEGER NOT NULL,
+    end_date_time INTEGER,
+    is_all_day INTEGER DEFAULT 0,
+    location TEXT,
+    event_type TEXT NOT NULL DEFAULT 'General',
+    is_active INTEGER DEFAULT 1,
+    is_featured INTEGER DEFAULT 0,
+    is_recurring INTEGER DEFAULT 0,
+    recurrence_pattern TEXT, -- 'Daily', 'Weekly', 'Monthly', 'Yearly'
+    recurrence_interval INTEGER DEFAULT 1,
+    recurrence_end_date INTEGER,
+    recurrence_days_of_week TEXT, -- '1,3,5' para Lun, Mie, Vie
+    related_project_id TEXT,
+    related_blog_post_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER,
+    organizer_id TEXT NOT NULL
+);
+
+CREATE INDEX idx_event_organizer ON event(organizer_id);
+CREATE INDEX idx_event_start_time ON event(start_date_time);
+CREATE INDEX idx_event_active ON event(is_active);
+CREATE INDEX idx_event_type ON event(event_type);
+CREATE INDEX idx_event_featured ON event(is_featured);
+CREATE INDEX idx_event_recurring ON event(is_recurring);
+CREATE INDEX idx_event_created ON event(created_at);
+```
+
+**Entidad**: `CentroCultural.Domain.Entities.Event`
+
+**Servicio**: `CentroCultural.Application.Services.CalendarService`
+
+**Características**:
+- **Eventos recurrentes**: Soporta patrones diarios, semanales, mensuales, anuales
+- **Eventos de todo el día**: Campo `is_all_day`
+- **Relaciones**: Puede vincularse con blog posts
+- **Tipos configurables**: `event_type` (General, Clase, Taller, Conferencia, etc.)
+
+---
+
+### 📚 Sistema de Biblioteca Digital (3 tablas)
 
 #### `library_item` - Recursos de Biblioteca
+
 ```sql
 CREATE TABLE library_item (
     id TEXT PRIMARY KEY,
@@ -331,13 +405,13 @@ CREATE TABLE library_item (
     created_at INTEGER NOT NULL,
     updated_at INTEGER,
     uploaded_by TEXT NOT NULL,
-    file_type TEXT NOT NULL,
+    file_type TEXT NOT NULL, -- 'video', 'audio', 'document', 'image'
     file_path TEXT NOT NULL,
     file_name TEXT NOT NULL,
     file_size INTEGER NOT NULL,
     mime_type TEXT,
-    tags TEXT,
-    language TEXT,
+    tags TEXT, -- JSON array
+    language TEXT, -- 'es', 'en', etc.
     year INTEGER,
     category TEXT,
     subcategory TEXT,
@@ -346,19 +420,41 @@ CREATE TABLE library_item (
     is_active INTEGER DEFAULT 1,
     is_featured INTEGER DEFAULT 0
 );
+
+CREATE INDEX idx_library_item_title ON library_item(title);
+CREATE INDEX idx_library_item_author ON library_item(author);
+CREATE INDEX idx_library_item_file_type ON library_item(file_type);
+CREATE INDEX idx_library_item_category ON library_item(category);
+CREATE INDEX idx_library_item_language ON library_item(language);
+CREATE INDEX idx_library_item_year ON library_item(year);
+CREATE INDEX idx_library_item_active ON library_item(is_active);
+CREATE INDEX idx_library_item_featured ON library_item(is_featured);
+CREATE INDEX idx_library_item_created ON library_item(created_at);
+CREATE INDEX idx_library_item_downloads ON library_item(download_count);
+CREATE INDEX idx_library_item_views ON library_item(view_count);
 ```
-**Entidad Backend**: `CentroCultural.Domain.Entities.LibraryItem`
+
+**Entidad**: `CentroCultural.Domain.Entities.LibraryItem`
+
 **Servicio**: `CentroCultural.Application.Services.DigitalLibraryService`
-**Soporta**: Documentos, libros, recursos educativos
+
+**Tipos de archivo soportados**:
+- `video`: MP4, WebM, AVI, MOV
+- `audio`: MP3, WAV, OGG, M4A
+- `document`: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT
+- `image`: JPEG, PNG, GIF, WebP, SVG
+
+---
 
 #### `library_collection` - Colecciones de Biblioteca
+
 ```sql
 CREATE TABLE library_collection (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     cover_image TEXT,
-    color_theme TEXT,
+    color_theme TEXT, -- Código de color hexadecimal
     created_at INTEGER NOT NULL,
     updated_at INTEGER,
     created_by TEXT NOT NULL,
@@ -366,11 +462,22 @@ CREATE TABLE library_collection (
     is_active INTEGER DEFAULT 1,
     is_featured INTEGER DEFAULT 0
 );
-```
-**Entidad Backend**: `CentroCultural.Domain.Entities.LibraryCollection`
-**Propósito**: Agrupar recursos por temática
 
-#### `library_item_collection` - Relación Items-Colecciones
+CREATE INDEX idx_library_collection_name ON library_collection(name);
+CREATE INDEX idx_library_collection_order ON library_collection(order_number);
+CREATE INDEX idx_library_collection_active ON library_collection(is_active);
+CREATE INDEX idx_library_collection_featured ON library_collection(is_featured);
+CREATE INDEX idx_library_collection_created ON library_collection(created_at);
+```
+
+**Entidad**: `CentroCultural.Domain.Entities.LibraryCollection`
+
+**Propósito**: Agrupar recursos de biblioteca por temática
+
+---
+
+#### `library_item_collection` - Relación Items-Colecciones (N:M)
+
 ```sql
 CREATE TABLE library_item_collection (
     id TEXT PRIMARY KEY,
@@ -379,252 +486,234 @@ CREATE TABLE library_item_collection (
     order_number INTEGER DEFAULT 0,
     added_at INTEGER NOT NULL,
     added_by TEXT,
-    FOREIGN KEY (library_item_id) REFERENCES library_item (id),
-    FOREIGN KEY (library_collection_id) REFERENCES library_collection (id)
+    FOREIGN KEY (library_item_id) REFERENCES library_item(id) ON DELETE CASCADE,
+    FOREIGN KEY (library_collection_id) REFERENCES library_collection(id) ON DELETE CASCADE,
+    UNIQUE(library_item_id, library_collection_id)
 );
+
+CREATE INDEX idx_library_item_collection_item ON library_item_collection(library_item_id);
+CREATE INDEX idx_library_item_collection_collection ON library_item_collection(library_collection_id);
+CREATE INDEX idx_library_item_collection_order ON library_item_collection(order_number);
+CREATE INDEX idx_library_item_collection_added ON library_item_collection(added_at);
 ```
+
+**Entidad**: `CentroCultural.Domain.Entities.LibraryItemCollection`
+
 **Propósito**: Tabla de unión many-to-many entre items y colecciones
+
+**UNIQUE constraint**: Evita duplicados de mismo item en misma colección
 
 ---
 
-### 📊 **Sistema de Analytics (Octubre 2025)**
+### 📊 Sistema de Analytics (2 tablas) - Octubre 2025
 
 #### `visitor_tracking` - Seguimiento de Visitantes
+
 ```sql
 CREATE TABLE visitor_tracking (
     id TEXT PRIMARY KEY,
     ip_address TEXT NOT NULL,
     user_agent TEXT,
+    page_visited TEXT NOT NULL,
     visited_at INTEGER NOT NULL,
-    user_id INTEGER, -- NULL para visitantes anónimos
-    page_visited TEXT,
-    session_id TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES Usuario(IdUsuario)
+    session_id TEXT
 );
 
--- Índices
 CREATE INDEX idx_visitor_tracking_date ON visitor_tracking(visited_at);
 CREATE INDEX idx_visitor_tracking_ip ON visitor_tracking(ip_address);
 CREATE INDEX idx_visitor_tracking_session ON visitor_tracking(session_id);
-CREATE INDEX idx_visitor_tracking_user ON visitor_tracking(user_id);
 CREATE INDEX idx_visitor_tracking_page ON visitor_tracking(page_visited);
 ```
-**Entidad Backend**: `VisitorTrackingDto`
+
 **Servicio**: `CentroCultural.Application.Services.AnalyticsService`
+
 **Propósito**: Rastrear visitantes únicos y páginas visitadas
 
+**Nota**: No tiene FK a Usuario para permitir tracking anónimo
+
+---
+
 #### `download_tracking` - Seguimiento de Descargas
+
 ```sql
 CREATE TABLE download_tracking (
     id TEXT PRIMARY KEY,
+    resource_type TEXT NOT NULL, -- 'library_item', 'blog', 'material_apoyo'
     resource_id TEXT NOT NULL,
-    resource_type TEXT NOT NULL, -- 'library_item', 'blog_media', 'course_media'
-    file_path TEXT NOT NULL,
     file_name TEXT NOT NULL,
-    downloaded_by INTEGER, -- user_id o NULL para anónimos
     downloaded_at INTEGER NOT NULL,
     ip_address TEXT,
-    file_size INTEGER,
-    FOREIGN KEY (downloaded_by) REFERENCES Usuario(IdUsuario)
+    user_id TEXT
 );
 
--- Índices
 CREATE INDEX idx_download_tracking_date ON download_tracking(downloaded_at);
-CREATE INDEX idx_download_tracking_resource ON download_tracking(resource_id, resource_type);
-CREATE INDEX idx_download_tracking_user ON download_tracking(downloaded_by);
+CREATE INDEX idx_download_tracking_resource ON download_tracking(resource_type, resource_id);
 CREATE INDEX idx_download_tracking_ip ON download_tracking(ip_address);
 CREATE INDEX idx_download_tracking_file ON download_tracking(file_name);
 ```
-**Entidad Backend**: `DownloadTrackingDto`
+
 **Servicio**: `CentroCultural.Application.Services.AnalyticsService`
+
 **Propósito**: Rastrear descargas de archivos multimedia
 
-#### **Campos de Tracking Agregados a Tablas Existentes**
-```sql
--- Agregados a library_item
-ALTER TABLE library_item ADD COLUMN view_count INTEGER DEFAULT 0;
-ALTER TABLE library_item ADD COLUMN download_count INTEGER DEFAULT 0;
-ALTER TABLE library_item ADD COLUMN last_accessed INTEGER;
-
--- Agregados a blog_post_element
-ALTER TABLE blog_post_element ADD COLUMN view_count INTEGER DEFAULT 0;
-ALTER TABLE blog_post_element ADD COLUMN download_count INTEGER DEFAULT 0;
-ALTER TABLE blog_post_element ADD COLUMN last_accessed INTEGER;
-
--- Agregados a post_element
-ALTER TABLE post_element ADD COLUMN view_count INTEGER DEFAULT 0;
-ALTER TABLE post_element ADD COLUMN download_count INTEGER DEFAULT 0;
-ALTER TABLE post_element ADD COLUMN last_accessed INTEGER;
-```
-
-**API Endpoints disponibles**:
-- `GET /api/analytics/summary` - Total de visitantes, descargas y recursos
-- `GET /api/analytics/visitors?days=30` - Datos del gráfico de visitantes
-- `GET /api/analytics/top-downloads?limit=5` - Recursos más descargados
-- `POST /api/analytics/track-visitor` - Rastrear visitas (acceso anónimo)
-- `POST /api/analytics/track-download` - Rastrear descargas (acceso anónimo)
+**Tipos de recursos**:
+- `library_item`: Descargas de biblioteca digital
+- `blog`: Multimedia de blog
+- `material_apoyo`: Recursos educativos
 
 ---
 
-### 🔧 **Sistema Interno**
+## 🔗 Diagrama de Relaciones
 
-#### `__EFMigrationsHistory` - Historial de Migraciones
-```sql
-CREATE TABLE "__EFMigrationsHistory" (
-    "MigrationId" TEXT NOT NULL CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY,
-    "ProductVersion" TEXT NOT NULL
-);
 ```
-**Propósito**: Control de versiones de Entity Framework Core
-**Estado**: Administrada automáticamente por EF Core
+Rol (1) ←──── (n) Usuario
+                  ↓
+                  └─→ author_id en: module_post, blog_post
 
----
+material_apoyo (1) ←──── (n) modulo (1) ←──── (n) module_post (1) ←──── (n) post_element
+                                                     ↓
+                                                     └─→ author_id → Usuario
 
-## 🔗 **Relaciones y Foreign Keys**
+blog_post (1) ←──── (n) blog_post_element
+    ↓
+    └─→ blog_post_event (n:m) ←→ event
 
-### **Jerarquía Sistema Educativo**
-```
-course (1) ─── has many ──→ module (n) ─── has many ──→ module_post (n) ─── has many ──→ post_element (n)
-   │                           │                              │
-   └─ educator_id              └─ course_id                   └─ module_id
-```
+library_item (n) ←──→ library_item_collection (n:m) ←──→ library_collection (n)
 
-### **Sistema Blog**
-```
-Usuario (author) ─── creates ──→ blog_post (1) ─── has many ──→ blog_post_element (n)
-                                     │
-                                     └─── relates to ──→ event (n) via blog_post_event
-```
-
-### **Sistema Eventos**
-```
-Usuario (organizer) ─── creates ──→ event (1)
-                                     │
-                                     └─── relates to ──→ blog_post (n) via blog_post_event
-```
-
-### **Sistema Biblioteca**
-```
-library_collection (n) ←─── many-to-many ───→ library_item (n)
-                                via library_item_collection
+visitor_tracking (sin FK)
+download_tracking (sin FK)
 ```
 
 ---
 
-## 📊 **Estado Actual de Datos**
+## 🔧 Características Técnicas
 
-```sql
--- Conteo de registros (aproximado después de limpieza + analytics)
-Rol:                      3 roles
-Usuario:                  2+ usuarios
-course:                   datos de prueba
-module:                   datos de prueba
-module_post:              datos de prueba
-post_element:             4 elementos (limpiados de 26) + tracking fields
-blog_post:                1+ posts de prueba
-blog_post_element:        2+ elementos + tracking fields
-event:                    datos migrados
-blog_post_event:          datos migrados
-library_item:             datos activos + tracking fields
-library_collection:       colecciones activas
-library_item_collection:  relaciones activas
-visitor_tracking:         4+ registros de prueba
-download_tracking:        3+ registros de prueba
-```
+### Foreign Keys
+
+**Habilitadas globalmente**: `PRAGMA foreign_keys = ON`
+
+**Relaciones con CASCADE DELETE**:
+- `modulo` → `material_apoyo` (ON DELETE CASCADE)
+- `module_post` → `modulo` (ON DELETE CASCADE)
+- `post_element` → `module_post` (ON DELETE CASCADE)
+- `blog_post_element` → `blog_post` (ON DELETE CASCADE)
+- `blog_post_event` → `blog_post`, `event` (ON DELETE CASCADE)
+- `library_item_collection` → `library_item`, `library_collection` (ON DELETE CASCADE)
+
+**Efecto**: Al eliminar material_apoyo, se eliminan automáticamente sus módulos, posts y elementos
 
 ---
 
-## 🔧 **Servicios Backend Registrados**
+### Índices
 
-### `ApplicationServiceRegistration.cs`
+Todas las tablas tienen índices optimizados para:
+- **Búsquedas**: IDs, títulos, slugs
+- **Filtros**: is_active, is_featured, tipos
+- **Ordenamiento**: order_number, created_at, fechas
+- **Relaciones**: Foreign keys
+- **Performance**: Campos frecuentemente consultados
+
+---
+
+### Timestamps
+
+**Formato**: Unix epoch (INTEGER)
+
+**Campos comunes**:
+- `created_at`: Timestamp de creación (obligatorio)
+- `updated_at`: Timestamp de última actualización (opcional)
+
+**Conversión en backend**:
 ```csharp
-services.AddScoped<IBlogService, BlogService>();
-services.AddScoped<IBlogPostElementService, BlogPostElementService>();
-services.AddScoped<ICourseService, CourseService>();
-services.AddScoped<IPostElementService, PostElementService>();
-services.AddScoped<IDigitalLibraryService, DigitalLibraryService>();
-services.AddScoped<ICalendarService, CalendarService>();
-services.AddScoped<IAnalyticsService, AnalyticsService>();
-```
+// C# → SQLite
+long unixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-**Servicios Activos**: 7 servicios principales
-**Patrón**: Dependency Injection con interfaces
-
----
-
-## 🎯 **Patrones de Diseño Implementados**
-
-### **1. Sistema Modular de Elementos**
-- `module_post` + `post_element` para contenido de cursos
-- `blog_post` + `blog_post_element` para posts del blog
-- Permite composición flexible de contenido ordenado
-
-### **2. Soft Delete**
-- Columna `is_active` en todas las tablas principales
-- No se eliminan registros físicamente
-- Facilita recuperación y auditoría
-
-### **3. Multimedia Contextual**
-- Archivos siempre vinculados a contenido específico
-- Rutas almacenadas en entidades principales
-- Sistema de upload por contexto
-
-### **4. Unix Timestamps**
-- Todos los timestamps como INTEGER
-- Formato: segundos desde epoch Unix
-- Facilita cálculos y comparaciones
-
----
-
-## 🔍 **Comandos de Verificación**
-
-```bash
-# Ver todas las tablas actuales
-Data/sqlite3.exe Data/ccpvj.db ".tables"
-
-# Ver estructura de tabla específica
-Data/sqlite3.exe Data/ccpvj.db ".schema course"
-
-# Verificar integridad de la BD
-Data/sqlite3.exe Data/ccpvj.db "PRAGMA integrity_check;"
-
-# Verificar foreign keys
-Data/sqlite3.exe Data/ccpvj.db "PRAGMA foreign_key_check;"
-
-# Contar registros de todas las tablas
-Data/sqlite3.exe Data/ccpvj.db "SELECT 'course', COUNT(*) FROM course UNION ALL SELECT 'module', COUNT(*) FROM module;"
-
-# Ver datos de una tabla
-Data/sqlite3.exe Data/ccpvj.db "SELECT * FROM blog_post LIMIT 5;"
+// SQLite → C#
+DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds(unixTime).DateTime;
 ```
 
 ---
 
-## 🚨 **Reglas de Desarrollo**
+### Convenciones de Nombres
 
-### **Al Agregar Nuevas Tablas**
-1. ✅ Usar snake_case para nombres de tablas/columnas
-2. ✅ Agregar `is_active INTEGER DEFAULT 1` para soft delete
-3. ✅ Usar `created_at INTEGER` y `updated_at INTEGER` para timestamps
-4. ✅ Crear entidad C# con atributos `[Table]` y `[Column]`
-5. ✅ Registrar DbSet en ApplicationDbContext
-6. ✅ Crear servicio e interface si es necesario
-7. ✅ Registrar servicio en ApplicationServiceRegistration
-
-### **Al Modificar Tablas Existentes**
-1. ✅ Verificar impacto en foreign keys
-2. ✅ Actualizar entidad C# correspondiente
-3. ✅ Actualizar servicio si cambian propiedades
-4. ✅ Ejecutar `PRAGMA integrity_check` después del cambio
-
-### **Al Eliminar Tablas/Columnas**
-1. ✅ Verificar que no hay foreign keys apuntando a ella
-2. ✅ Eliminar entidad C# y DbSet correspondiente
-3. ✅ Eliminar servicio y registro si existía
-4. ✅ Limpiar referencias en código frontend
+| Elemento | Convención | Ejemplo |
+|----------|------------|---------|
+| **Tablas BD** | snake_case | `material_apoyo`, `blog_post` |
+| **Columnas BD** | snake_case | `created_at`, `is_active` |
+| **Entidades C#** | PascalCase | `MaterialApoyo`, `BlogPost` |
+| **Propiedades C#** | PascalCase | `CreatedAt`, `IsActive` |
+| **Foreign Keys** | snake_case_id | `material_apoyo_id`, `blog_post_id` |
 
 ---
 
-**📝 Última actualización**: Octubre 2025 - Después de limpieza completa del backend y base de datos
-**🔍 Verificado**: PRAGMA integrity_check - OK | PRAGMA foreign_key_check - Sin errores
-**📦 Estado**: 14 tablas funcionales, sin tablas huérfanas ni backups
+## 🔍 Verificación de Integridad
+
+### Comandos SQLite
+
+```sql
+-- Verificar integridad de la base de datos
+PRAGMA integrity_check;
+
+-- Verificar foreign keys
+PRAGMA foreign_key_check;
+
+-- Listar todas las tablas
+SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
+
+-- Ver esquema de una tabla
+.schema table_name
+
+-- Contar registros por tabla
+SELECT
+    'Rol' as tabla, COUNT(*) as registros FROM Rol
+UNION ALL SELECT 'Usuario', COUNT(*) FROM Usuario
+UNION ALL SELECT 'material_apoyo', COUNT(*) FROM material_apoyo
+UNION ALL SELECT 'modulo', COUNT(*) FROM modulo
+UNION ALL SELECT 'module_post', COUNT(*) FROM module_post
+UNION ALL SELECT 'post_element', COUNT(*) FROM post_element
+UNION ALL SELECT 'blog_post', COUNT(*) FROM blog_post
+UNION ALL SELECT 'blog_post_element', COUNT(*) FROM blog_post_element
+UNION ALL SELECT 'blog_post_event', COUNT(*) FROM blog_post_event
+UNION ALL SELECT 'event', COUNT(*) FROM event
+UNION ALL SELECT 'library_item', COUNT(*) FROM library_item
+UNION ALL SELECT 'library_collection', COUNT(*) FROM library_collection
+UNION ALL SELECT 'library_item_collection', COUNT(*) FROM library_item_collection
+UNION ALL SELECT 'visitor_tracking', COUNT(*) FROM visitor_tracking
+UNION ALL SELECT 'download_tracking', COUNT(*) FROM download_tracking;
+```
+
+---
+
+## 📝 Notas Importantes
+
+### ⚠️ Seguridad
+
+- **Contraseñas**: Actualmente almacenadas en texto plano
+  - **RECOMENDACIÓN**: Implementar BCrypt o similar para producción
+- **SQL Injection**: Entity Framework provee protección
+  - **IMPORTANTE**: Validar inputs en APIs
+
+### 🎯 Performance
+
+- **Índices**: Optimizados para consultas frecuentes
+- **Foreign Keys**: Mejoran integridad pero pueden afectar escrituras
+- **Unix Timestamps**: Más eficientes que TEXT para fechas
+
+### 🔄 Migraciones
+
+- **Entity Framework**: No usa migraciones tradicionales
+- **Cambios de esquema**: Aplicar manualmente con ALTER TABLE
+- **Backup**: Siempre respaldar antes de cambios de esquema
+
+---
+
+## 📚 Referencias
+
+- **Documentación SQLite**: https://www.sqlite.org/docs.html
+- **Entity Framework Core**: https://docs.microsoft.com/ef/core/
+- **Foreign Keys en SQLite**: https://www.sqlite.org/foreignkeys.html
+
+---
+
+*Última revisión: Octubre 2025*
+*Esquema verificado y funcional*

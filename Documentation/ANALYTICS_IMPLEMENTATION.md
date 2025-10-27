@@ -77,7 +77,7 @@ Back/CentroCultural.Api/Controllers/AnalyticsController.cs
 ### **Fase 3: Frontend Integration** ✅
 **Archivos creados/modificados:**
 ```
-Front/src/lib/services/analytics/analyticsService.ts
+Front/src/lib/application/services/analytics/AnalyticsService.ts
 Front/src/routes/admin/analytics/+page.svelte (actualizado)
 ```
 

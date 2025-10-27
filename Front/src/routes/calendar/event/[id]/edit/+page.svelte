@@ -2,14 +2,15 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { calendarService, type EventDetail, type UpdateEventData } from '$lib/services/calendar/calendarService';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import { blogService } from '$lib/services/blog/blogService';
-	import { jwtService } from '$lib/services/auth/jwtService';
-	import EventForm from '$lib/components/calendar/EventForm.svelte';
+	import { calendarService, type EventDetail, type UpdateEventData } from '$lib/application/services/calendar/CalendarService';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+import { blogService } from '$lib/application/services/blog/blogService';
+	import { jwtService } from '$lib/application/services/auth/JwtService';
+	import EventForm from '$lib/presentation/components/calendar/EventForm.svelte';
 
 	// Props desde la URL
-	$: eventId = $page.params.id;
+	let eventId: string = '';
+	$: eventId = ($page.params.id ?? '') as string;
 
 	// Estado de la página
 	let loading = true;
@@ -47,7 +48,11 @@
 			loading = true;
 			error = '';
 
-			event = await calendarService.getEvent(eventId);
+	if (!eventId) {
+		throw new Error('ID de evento inválido');
+	}
+
+	event = await calendarService.getEvent(eventId);
 
 			if (!event) {
 				error = 'Evento no encontrado';
@@ -55,10 +60,9 @@
 			}
 
 			// Verificar si el usuario puede editar este evento
-			if (currentUser) {
-				canEditEvent = currentUser.role === 'Administrador' ||
-							  (event.organizerId === currentUser.id);
-			}
+			const isAdmin = jwtService.isAdmin();
+			const isOrganizer = currentUser && event.organizerId === String(currentUser.id);
+			canEditEvent = isAdmin || isOrganizer;
 
 			if (!canEditEvent) {
 				error = 'No tienes permisos para editar este evento';
@@ -86,7 +90,7 @@
 			availableBlogPosts = blogPosts
 				.filter(post => post.status === 'published')
 				.map(post => ({
-					id: post.id,
+					id: String(post.id),
 					title: post.title,
 					slug: post.slug
 				}));
@@ -96,7 +100,7 @@
 	}
 
 	async function handleUpdate(updatedData: any) {
-		if (!event || saving) return;
+		if (!event || saving || !eventId) return;
 
 		try {
 			saving = true;
@@ -121,7 +125,7 @@
 				relatedBlogPostId: updatedData.relatedBlogPostId || undefined
 			};
 
-			await calendarService.updateEvent(updateData);
+			await calendarService.updateEvent(eventId, updateData);
 
 			// Navegar de vuelta al detalle del evento
 			goto(`/calendar/event/${eventId}`);
@@ -130,7 +134,7 @@
 
 			// Detectar error 401 (sesión expirada)
 			if (err instanceof Error && (err.message.includes('401') || err.message.includes('Unauthorized'))) {
-				jwtService.clearToken();
+				jwtService.removeToken();
 				goto(`/auth/login?redirect=/calendar/event/${eventId}/edit&message=session-expired`);
 				return;
 			}
@@ -141,7 +145,7 @@
 	}
 
 	async function handleDelete() {
-		if (!event || deleting) return;
+		if (!event || deleting || !eventId) return;
 
 		let confirmMessage = `¿Estás seguro de que deseas eliminar el evento "${event.title}"?`;
 

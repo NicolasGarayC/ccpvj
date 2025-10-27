@@ -2,12 +2,12 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import ModuleList from '$lib/components/course/ModuleList.svelte';
-	import MediaUploader from '$lib/components/blog/MediaUploader.svelte';
-	import ModuleForm from '$lib/components/course/ModuleForm.svelte';
+import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+	import ModuleList from '$lib/presentation/components/course/ModuleList.svelte';
+	import MediaUploader from '$lib/presentation/components/blog/MediaUploader.svelte';
+	import ModuleForm from '$lib/presentation/components/course/ModuleForm.svelte';
 
 	let course: MaterialApoyoDetailDto | null = null;
 	let loading = true;
@@ -25,7 +25,8 @@
 		title: '',
 		description: '',
 		isFeatured: false,
-		imagePath: ''
+		imagePath: '',
+		educatorName: ''
 	};
 
 	// Form errors
@@ -36,8 +37,8 @@
 	let editingModule: ModuleSummaryDto | null = null;
 	let moduleFormLoading = false;
 
-	const materialApoyoId = $page.params.id;
-	let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo para operaciones
+const materialApoyoId = $page.params.id as string;
+let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo para operaciones
 
 	// Function to update authentication state (same as layout)
 	async function updateAuthState() {
@@ -106,7 +107,8 @@
 			title: course.title,
 			description: course.description,
 			isFeatured: course.isFeatured || false,
-			imagePath: course.imagePath || ''
+			imagePath: course.imagePath || '',
+			educatorName: course.educatorName || ''
 		};
 
 		formErrors = {};
@@ -158,11 +160,12 @@
 		error = '';
 
 		try {
-			const updateData: UpdateCourseDto = {
+			const updateData: UpdateMaterialApoyoDto = {
 				title: editForm.title.trim(),
 				description: editForm.description.trim(),
 				isFeatured: editForm.isFeatured,
-				imagePath: editForm.imagePath || undefined
+				imagePath: editForm.imagePath || undefined,
+				educatorName: editForm.educatorName.trim() || undefined
 			};
 
 			await materialApoyoService.updateMaterialApoyo(course.id, updateData);
@@ -180,13 +183,13 @@
 		}
 	}
 
-	function handleImageUpload(event: CustomEvent<string>) {
-		editForm.imagePath = event.detail;
-	}
+function handleImageUpload(mediaUrl: string) {
+	editForm.imagePath = mediaUrl;
+}
 
-	function handleImageRemove() {
-		editForm.imagePath = '';
-	}
+function handleImageRemove() {
+	editForm.imagePath = '';
+}
 
 	// Module management functions
 	function handleCreateModule() {
@@ -446,7 +449,7 @@
 									</div>
 								</div>
 							{:else}
-								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap break-words overflow-wrap-anywhere hyphens-auto max-w-full overflow-hidden">{course.description}</p>
+								<p class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap break-words overflow-wrap-anywhere hyphens-auto max-w-full">{course.description}</p>
 							{/if}
 						</div>
 					</div>
@@ -487,9 +490,9 @@
 								contentType="course"
 								contentId={course.id}
 								mediaType="image"
-								currentPath={editForm.imagePath}
-								on:upload={handleImageUpload}
-								on:remove={handleImageRemove}
+								currentMedia={editForm.imagePath}
+								onUploadComplete={handleImageUpload}
+								onRemoveComplete={handleImageRemove}
 								disabled={saving}
 							/>
 						</div>
@@ -513,6 +516,27 @@
 							</label>
 							<p class="text-gray-500 text-sm mt-2">
 								Los proyectos destacados aparecen en la sección principal.
+							</p>
+						</div>
+					{/if}
+
+					<!-- Educator Name (Edit Mode) -->
+					{#if editMode && canManage}
+						<div class="bg-white rounded-3xl shadow-xl border-2 border-emerald-100 p-6">
+							<h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+								<span class="text-2xl">👨‍🏫</span>
+								Encargado del Proyecto
+							</h3>
+							<input
+								type="text"
+								bind:value={editForm.educatorName}
+								class="w-full p-3 border-2 border-emerald-200 rounded-xl text-gray-700 focus:outline-none focus:border-emerald-500 transition-colors"
+								placeholder="Nombre del encargado"
+								maxlength="100"
+								disabled={saving}
+							/>
+							<p class="text-gray-500 text-sm mt-2">
+								Nombre de la persona responsable de este proyecto.
 							</p>
 						</div>
 					{/if}

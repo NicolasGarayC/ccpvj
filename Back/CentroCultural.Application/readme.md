@@ -5,9 +5,9 @@
 **Sistema Backend** para la plataforma del Centro Cultural Víctor Jara construido con **.NET 8** como **API REST complementaria** al frontend SvelteKit.
 
 ### 🎯 Estado Actual
-- **✅ OPERATIVO**: APIs funcionales con autenticación cookie-based
+- **✅ OPERATIVO**: APIs funcionales con autenticación JWT
 - **✅ COMPATIBLE**: Integración completa con frontend SvelteKit
-- **✅ MODERNIZADO**: Sistema JWT eliminado, reemplazado por cookies
+- **✅ MODERNO**: Sistema JWT con Bearer tokens
 - **⚠️ OPCIONAL**: El frontend puede operar independientemente
 
 ---
@@ -20,10 +20,10 @@
 - **Entity Framework Core 8.0** - ORM para SQLite
 - **Microsoft.EntityFrameworkCore.Sqlite** - Proveedor SQLite
 
-### **Autenticación** (Cookie-based)
-- **Microsoft.AspNetCore.Authentication.Cookies** - Autenticación por cookies
-- **BCrypt.Net-Next 4.0.3** - Hash de contraseñas
-- **⚠️ JWT Packages**: Presentes pero NO utilizados (legacy)
+### **Autenticación** (JWT-based)
+- **Microsoft.AspNetCore.Authentication.JwtBearer** - Autenticación JWT
+- **System.IdentityModel.Tokens.Jwt** - Generación y validación de tokens
+- **BCrypt.Net-Next 4.0.3** - Hash de contraseñas (no utilizado actualmente)
 
 ### **Testing y Desarrollo**
 - **Microsoft.AspNetCore.Mvc.Testing** - Testing de integración
@@ -64,19 +64,26 @@ Back/
 
 ---
 
-## 🔑 Sistema de Autenticación (Cookie-based)
+## 🔑 Sistema de Autenticación (JWT-based)
 
 ### **Configuración Actual**
 ```csharp
-// Program.cs - Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// Program.cs - JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.Cookie.Name = "auth-session";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-        options.SlidingExpiration = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!)
+            )
+        };
     });
 ```
 
@@ -88,7 +95,6 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSvelteKit", policy =>
     {
         policy.WithOrigins("http://localhost:5173")
-              .AllowCredentials() // Crucial para cookies
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -101,10 +107,9 @@ builder.Services.AddCors(options =>
 
 ### **🔐 Autenticación** (`/api/auth`)
 ```
-POST   /api/auth/login       # Iniciar sesión (cookies)
-POST   /api/auth/logout      # Cerrar sesión
-GET    /api/auth/me          # Usuario actual
-POST   /api/auth/refresh     # Auto-refresh (sliding expiration)
+POST   /api/auth/login       # Iniciar sesión (JWT)
+POST   /api/auth/logout      # Cerrar sesión (revocar token)
+GET    /api/auth/validate    # Validar token actual
 ```
 
 ### **📚 Cursos** (`/api/course`)
@@ -312,27 +317,34 @@ Data/media/uploads/
 
 ---
 
-## 🔄 Migración de JWT a Cookies
+## 🔐 Sistema JWT Implementado
 
-### **Cambios Realizados**
-- ✅ **Eliminado**: Sistema JWT completo
-- ✅ **Implementado**: Cookie-based authentication
+### **Características**
+- ✅ **JWT Tokens**: Autenticación con Bearer tokens
+- ✅ **Token Revocation**: Sistema de revocación de tokens
 - ✅ **Compatible**: Headers CORS para SvelteKit
-- ✅ **Mantiene**: Misma estructura de endpoints
+- ✅ **Expirable**: Tokens con tiempo de expiración configurable
 
-### **AuthController Simplificado**
+### **SimpleAuthController**
 ```csharp
-// Login ahora usa cookies HttpOnly
-await HttpContext.SignInAsync(
-    CookieAuthenticationDefaults.AuthenticationScheme,
-    new ClaimsPrincipal(claimsIdentity),
-    authProperties
+// Login genera JWT token
+var token = _jwtService.GenerateToken(
+    userId,
+    username,
+    role,
+    nombre,
+    apellido
 );
 
-// Logout limpia cookies
-await HttpContext.SignOutAsync(
-    CookieAuthenticationDefaults.AuthenticationScheme
-);
+return Ok(new {
+    success = true,
+    token = token,
+    user = new { id, username, role },
+    expiresAt = _jwtService.GetTokenExpiration(token)
+});
+
+// Logout revoca token
+_jwtService.RevokeToken(token);
 ```
 
 ---
@@ -340,8 +352,8 @@ await HttpContext.SignOutAsync(
 ## 📈 Estado de Desarrollo
 
 ### **✅ Funcional**
-- APIs CRUD completas para cursos, módulos, blog
-- Autenticación cookie-based operativa
+- APIs CRUD completas para material educativo, módulos, blog
+- Autenticación JWT operativa con Bearer tokens
 - Sistema multimedia contextual implementado
 - Base de datos SQLite con foreign keys
 - Documentación Swagger actualizada
@@ -349,11 +361,11 @@ await HttpContext.SignOutAsync(
 ### **⚠️ En Desarrollo**
 - Testing unitario e integración
 - Optimización de rendimiento
-- Limpieza de dependencias JWT legacy
+- Refresh tokens automáticos
 
 ### **🔄 Integración con Frontend**
 - **SvelteKit**: Consume APIs via `/api/` routes
-- **Cookies**: Compartidas entre frontend/backend
+- **JWT Tokens**: Stored en localStorage del frontend
 - **CORS**: Configurado para desarrollo local
 - **Opcional**: Frontend puede operar sin backend
 

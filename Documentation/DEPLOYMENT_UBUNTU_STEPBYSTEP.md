@@ -95,7 +95,7 @@ sudo chown -R $USER:$USER /var/www/centro-cultural
 cd /var/www/centro-cultural
 
 # Copiar base de datos existente (si existe)
-cp Data/ccpvj.db /var/www/centro-cultural/data/ 2>/dev/null || echo "No se encontró BD existente, se creará una nueva"
+cp /home/user/ccpvj/Data/ccpvj.db /var/www/centro-cultural/data/ 2>/dev/null || echo "No se encontró BD existente, se creará una nueva"
 
 # Si no existe, crear una nueva base de datos SQLite
 touch /var/www/centro-cultural/data/ccpvj.db
@@ -188,45 +188,28 @@ cd /var/www/centro-cultural/Front
 
 # Instalar dependencias
 npm install
+# (El script start-app.sh también ejecuta este paso automáticamente.)
 
 # Crear archivo de variables de entorno
+# Crear archivo de variables de entorno
 cat > .env.production << 'EOF'
-PUBLIC_API_URL=http://localhost:5251/api
-PUBLIC_BACKEND_URL=http://localhost:5251
-NODE_ENV=production
+PUBLIC_BACKEND_BASE_URL=http://localhost
+DATABASE_URL=file:/var/www/centro-cultural/data/ccpvj.db
 EOF
+
+# Notas:
+# - `PUBLIC_BACKEND_BASE_URL` debe apuntar a la raíz pública del backend (sin `/api` al final), por ejemplo `https://tu-dominio.com`.
+# - `DATABASE_URL` apunta al archivo SQLite dentro del directorio de despliegue. Ajusta la ruta si cambias la ubicación de la base de datos.
+# - Puedes usar `Front/env.production.example` como plantilla y copiarlo a `.env.production`.
+
 ```
 
 ### Compilar la aplicación SvelteKit
 
 ```bash
 # Compilar la aplicación SvelteKit
+# Este paso es opcional. El script de despliegue automático (PASO 8) ejecuta la build por ti.
 npm run build
-```
-
-### Crear archivo de configuración PM2 para el frontend
-
-```bash
-# Crear archivo de configuración PM2 para el frontend
-cat > ecosystem.frontend.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: 'centro-cultural-frontend',
-    cwd: '/var/www/centro-cultural/Front',
-    script: 'node',
-    args: 'build/index.js',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000,
-      HOST: '0.0.0.0'
-    },
-    error_file: '/var/log/centro-cultural/frontend-error.log',
-    out_file: '/var/log/centro-cultural/frontend-out.log',
-    log_file: '/var/log/centro-cultural/frontend.log',
-    time: true
-  }]
-};
-EOF
 ```
 
 ---
@@ -237,7 +220,7 @@ EOF
 
 ```bash
 # Crear configuración de Nginx
-sudo cat > /etc/nginx/sites-available/centro-cultural << 'EOF'
+sudo tee /etc/nginx/sites-available/centro-cultural > /dev/null << 'EOF'
 server {
     listen 80;
     server_name tu-dominio.com;  # Reemplaza con tu dominio o IP
@@ -306,26 +289,31 @@ sudo systemctl enable nginx
 
 ---
 
-## ▶️ PASO 8: Iniciar las Aplicaciones
+## ▶️ PASO 8: Despliegue automático con `start-app.sh`
 
-### Iniciar servicios con PM2
+El repositorio incluye el script `start-app.sh` que automatiza la instalación de dependencias npm, la compilación de frontend y backend y el arranque en PM2. Úsalo siempre que actualices el código.
 
 ```bash
-# Iniciar el backend
-cd /var/www/centro-cultural/Back
-pm2 start ecosystem.backend.config.js
+# Dar permisos de ejecución (solo la primera vez)
+chmod +x /var/www/centro-cultural/start-app.sh
 
-# Iniciar el frontend
-cd /var/www/centro-cultural/Front
-pm2 start ecosystem.frontend.config.js
+# Ejecutar el despliegue automatizado
+cd /var/www/centro-cultural
+./start-app.sh
 
-# Guardar configuración de PM2
-pm2 save
-pm2 startup
-
-# Verificar que los procesos estén corriendo
-pm2 status
+# Si ejecutas el script desde otra ruta (por ejemplo, /opt/scripts), puedes forzar
+# el directorio del proyecto con:
+# PROJECT_DIR_OVERRIDE=/var/www/centro-cultural ./start-app.sh
+# Asegúrate de que PUBLIC_BACKEND_BASE_URL esté definido (en .env.production o en el entorno).
 ```
+
+El script:
+- Corre `npm install --no-audit --no-fund` antes de construir el frontend.
+- Compila el backend en modo Release.
+- Reinicia los procesos `centro-cultural-backend` y `centro-cultural-frontend` en PM2.
+- Ejecuta `pm2 save` para persistir la configuración tras reinicios del servidor.
+
+Al finalizar verás un resumen de procesos. Verifica que ambos servicios estén en estado `online`.
 
 ---
 
@@ -405,19 +393,10 @@ sudo ufw enable
 ```bash
 # Ir al directorio del proyecto y actualizar desde git
 cd /var/www/centro-cultural
-git pull origin main
+git pull origin desarrollo  # Ajusta la rama si usas otra en producción
 
-# Recompilar backend
-cd Back
-dotnet publish --configuration Release --output ./publish
-
-# Recompilar frontend
-cd ../Front
-npm install  # Solo si hay nuevas dependencias
-npm run build
-
-# Reiniciar servicios
-pm2 restart all
+# Ejecutar el script de despliegue para compilar y reiniciar servicios
+./start-app.sh
 
 # Verificar que todo funcione
 pm2 status
@@ -443,6 +422,7 @@ pm2 status
 2. **Asegúrate** de que los puertos 3000 y 5251 no estén bloqueados internamente
 3. **Revisa los logs** si algo no funciona: `pm2 logs`
 4. **La base de datos** se crea automáticamente cuando el backend se ejecuta por primera vez
+5. **Utiliza `./start-app.sh`** después de cada actualización para recompilar y reiniciar los servicios sin pasos manuales.
 
 ---
 

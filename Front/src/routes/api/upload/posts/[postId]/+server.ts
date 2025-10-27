@@ -11,7 +11,7 @@ const BASE_UPLOAD_DIR = path.resolve(process.cwd(), '../Back/Data/media/content/
 const MEDIA_CONFIG = {
     image: {
         types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
-        maxSize: 20 * 1024 * 1024, // 20MB
+        maxSize: 1024 * 1024 * 1024, // 1GB
         folder: 'images'
     },
     video: {
@@ -21,7 +21,7 @@ const MEDIA_CONFIG = {
     },
     audio: {
         types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
-        maxSize: 100 * 1024 * 1024, // 100MB
+        maxSize: 20 * 1024 * 1024 * 1024, // 20GB
         folder: 'audio'
     },
     document: {

@@ -2,11 +2,11 @@
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { blogService } from '$lib/services/blog/blogService';
-  import { blogPostElementService } from '$lib/services/blog/blogPostElementService';
-  import { calendarService, type EventSummary } from '$lib/services/calendar/calendarService';
-  import type { BlogPost } from '$lib/data/models/interfaces';
-  import type { BlogPostElement } from '$lib/services/blog/blogPostElementService';
+  import { blogService } from '$lib/application/services/blog/blogService';
+  import { blogPostElementService } from '$lib/application/services/blog/blogPostElementService';
+  import { calendarService, type EventSummary } from '$lib/application/services/calendar/CalendarService';
+  import type { BlogPost } from '$lib/types/api';
+  import type { BlogPostElement } from '$lib/application/services/blog/blogPostElementService';
   import { getBlogMediaUrl, getUntrackedMediaUrl } from '$lib/utils/mediaUtils';
 
   import { t } from '$lib/i18n';
@@ -27,13 +27,13 @@
         if (!post) {
           error = 'Noticia no encontrada';
         } else {
-          // Load blog post elements
-          elements = await blogPostElementService.getElementsByBlogPostId(post.id);
+			// Load blog post elements
+			elements = await blogPostElementService.getElementsByBlogPostId(String(post.id));
           elements = elements.sort((a, b) => a.orderNumber - b.orderNumber);
 
           // Load related events
           try {
-            relatedEvents = await calendarService.getEventsByBlogPost(post.id);
+				relatedEvents = await calendarService.getEventsByBlogPost(String(post.id));
           } catch (e) {
             console.error('Error al cargar eventos relacionados:', e);
             relatedEvents = [];
@@ -53,13 +53,62 @@
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
     // For downloadable media (audio, video, documents), use tracking
-    if (enableTracking && post) {
-      return getBlogMediaUrl(post.id, cleanPath);
+	if (enableTracking && post) {
+		return getBlogMediaUrl(String(post.id), cleanPath);
     }
 
     // For inline images (thumbnails, etc), use untracked URL
     return getUntrackedMediaUrl(cleanPath);
   }
+
+  function stripProtocol(path: string): string {
+    return path.replace(/^https?:\/\/[^/]+/i, '');
+  }
+
+  function normalizeMediaPath(path: string | null | undefined): string | null {
+    if (!path) return null;
+    const withoutQuery = path.split('?')[0].split('#')[0];
+    const noProtocol = stripProtocol(withoutQuery);
+    return noProtocol
+      .replace(/^\/+/, '')
+      .replace(/^media\//i, '')
+      .replace(/^back\/data\/media\//i, '')
+      .trim() || null;
+  }
+
+  function extractMediaInfo(path: string | null | undefined) {
+    const normalized = normalizeMediaPath(path);
+    if (!normalized) return null;
+    const segments = normalized.split('/');
+    const fileName = segments[segments.length - 1] || null;
+    return {
+      normalized,
+      fileName
+    };
+  }
+
+  $: featuredMediaInfo = extractMediaInfo(post?.featuredMedia);
+
+  function isSameAsFeatured(filePath: string | null | undefined): boolean {
+    if (!filePath || !featuredMediaInfo) return false;
+    const candidate = extractMediaInfo(filePath);
+    if (!candidate) return false;
+
+    if (candidate.normalized === featuredMediaInfo.normalized) return true;
+    if (
+      candidate.normalized &&
+      featuredMediaInfo.normalized &&
+      (candidate.normalized.endsWith(featuredMediaInfo.normalized) ||
+        featuredMediaInfo.normalized.endsWith(candidate.normalized))
+    ) {
+      return true;
+    }
+    return candidate.fileName !== null && candidate.fileName === featuredMediaInfo.fileName;
+  }
+
+  $: featuredInline =
+    Boolean(featuredMediaInfo) &&
+    elements.some((el) => el.elementType === 'image' && isSameAsFeatured(el.filePath));
 
   function isVideo(mediaPath: string) {
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
@@ -74,10 +123,10 @@
 
 <svelte:head>
   {#if post}
-    <title>{post.title} | {t('centroTitle') || 'Centro Cultural'}</title>
+    <title>{post.title} | {$t('centroTitle') || 'Centro Cultural'}</title>
     <meta name="description" content={post.excerpt} />
   {:else}
-    <title>{t('newsArticle') || 'Artículo'} | {t('centroTitle') || 'Centro Cultural'}</title>
+    <title>{$t('newsArticle') || 'Artículo'} | {$t('centroTitle') || 'Centro Cultural'}</title>
   {/if}
 </svelte:head>
 
@@ -93,14 +142,14 @@
         <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
       </div>
       <h1 class="text-2xl font-bold text-gray-900 mb-4">
-        {error || (t('articleNotFound') || 'Artículo no encontrado')}
+		{error || ($t('articleNotFound') || 'Artículo no encontrado')}
       </h1>
-      <a 
-        href="/blog" 
+      <a
+        href="/blog"
         class="inline-flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
       >
         <i class="fas fa-arrow-left mr-2"></i>
-        {t('backToNews') || 'Volver a noticias'}
+        {$t('backToNews') || 'Volver a noticias'}
       </a>
     </div>
 
@@ -109,12 +158,12 @@
     <article>
       <!-- Back Navigation -->
       <div class="mb-8">
-        <a 
-          href="/blog" 
+        <a
+          href="/blog"
           class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
         >
           <i class="fas fa-arrow-left mr-2"></i>
-          {t('backToNews') || 'Volver a noticias'}
+          {$t('backToNews') || 'Volver a noticias'}
         </a>
       </div>
 
@@ -153,7 +202,7 @@
       </header>
 
       <!-- Featured Media -->
-      {#if post.featuredMedia}
+      {#if post.featuredMedia && !featuredInline}
         <div class="mb-8 rounded-lg overflow-hidden shadow-lg">
           {#if isVideo(post.featuredMedia)}
             <video
@@ -163,7 +212,7 @@
             >
               <source src={getMediaUrl(post.featuredMedia, true)} type="video/mp4">
               <track kind="captions" src="" label="Captions" default>
-              <p class="text-gray-500 p-4">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
+              <p class="text-gray-500 p-4">{$t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
             </video>
           {:else if isImage(post.featuredMedia)}
             <img
@@ -204,7 +253,7 @@
                 >
                   <source src={getMediaUrl(element.filePath, true)} type={element.mimeType || 'video/mp4'}>
                   <track kind="captions" src="" label="Captions" default>
-                  <p class="text-gray-500 p-4">{t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
+                  <p class="text-gray-500 p-4">{$t('videoNotSupported') || 'Tu navegador no soporta video.'}</p>
                 </video>
               </div>
 
@@ -215,7 +264,7 @@
                   controls
                 >
                   <source src={getMediaUrl(element.filePath, true)} type={element.mimeType || 'audio/mp3'}>
-                  <p class="text-gray-500">{t('audioNotSupported') || 'Tu navegador no soporta audio.'}</p>
+                  <p class="text-gray-500">{$t('audioNotSupported') || 'Tu navegador no soporta audio.'}</p>
                 </audio>
               </div>
             {/if}
@@ -334,7 +383,7 @@
             href="/blog"
             class="inline-flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            {t('readMoreNews') || 'Leer más noticias'}
+            {$t('readMoreNews') || 'Leer más noticias'}
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>

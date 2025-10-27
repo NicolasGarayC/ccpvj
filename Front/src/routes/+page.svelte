@@ -1,16 +1,19 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import BlogPostCard from '$lib/components/blog/BlogPostCard.svelte';
-	import FeatureCard from '$lib/components/common/FeatureCard.svelte';
-	import UpcomingEventsWidget from '$lib/components/calendar/UpcomingEventsWidget.svelte';
-	import { blogService } from '$lib/services/blog/blogService';
-	import { materialApoyoService } from '$lib/services/materialApoyoService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
-	import { analyticsService } from '$lib/services/analytics/analyticsService';
-	import type { BlogPost, Course } from '$lib/data/models/interfaces';
+	import BlogPostCard from '$lib/presentation/components/blog/BlogPostCard.svelte';
+	import FeatureCard from '$lib/presentation/components/common/FeatureCard.svelte';
+	import UpcomingEventsWidget from '$lib/presentation/components/calendar/UpcomingEventsWidget.svelte';
+import { blogService } from '$lib/application/services/blog/blogService';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+	import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
+	import type { LibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
+	import { analyticsService } from '$lib/application/services/analytics/AnalyticsService';
+import type { BlogPost } from '$lib/types/api';
+import type { MaterialApoyoSummaryDto } from '$lib/types/api/materialApoyo.types';
 
-	import { t, t_params } from '$lib/i18n';
+	import { t } from '$lib/i18n';
 
 	let currentLocale = 'es';
 
@@ -24,8 +27,9 @@
 	$: isEducator = isLoggedIn && (user?.role === 'administrador' || user?.role === 'colaborador');
 
 	let latestBlogPosts: BlogPost[] = [];
-	let featuredCourses: Course[] = [];
-	let allCourses: Course[] = [];
+let featuredCourses: MaterialApoyoSummaryDto[] = [];
+let allCourses: MaterialApoyoSummaryDto[] = [];
+	let libraryItems: LibraryItemDto[] = [];
 	let totalModulesCount = 0;
 	let totalVisitors = 0;
 
@@ -41,16 +45,45 @@
 		{ color: 'from-cyan-400 to-blue-600', icon: 'fa-palette' }
 	];
 
+	// Función para dividir texto en spans animados
+	function splitTextIntoAnimatedSpans(text: string) {
+		return text.split('').map((char, index) => ({
+			char,
+			delay: index * 0.1
+		}));
+	}
+
+	$: welcomeChars = splitTextIntoAnimatedSpans($t('welcome'));
+	$: readyAdventureChars = splitTextIntoAnimatedSpans($t('readyForAdventure'));
+
+	function truncateDescription(text: string, maxLength = 220): string {
+		if (!text) return '';
+		return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
+	}
+
 	onMount(async () => {
 		try {
 			latestBlogPosts = await blogService.getLatestPosts();
-			featuredCourses = await materialApoyoService.getFeaturedMaterialApoyo();
 			allCourses = await materialApoyoService.getAllMaterialApoyo();
+
+			const activeCourses = allCourses.filter((course) => course.isActive !== false);
+			const featuredFromAll = activeCourses.filter((course) => course.isFeatured);
+			const sourceCourses = featuredFromAll.length > 0 ? featuredFromAll : activeCourses;
+			featuredCourses = sourceCourses.slice(0, 6);
 
 			// Calcular total de módulos
 			totalModulesCount = allCourses.reduce((sum, course) => sum + (course.moduleCount || 0), 0);
 
-			// Cargar estadísticas de visitantes
+			// Cargar items de la biblioteca para la sección Educational Materials
+			try {
+				const libraryResult = await digitalLibraryService.getItems({ pageSize: 4, page: 1 });
+				libraryItems = libraryResult.items || [];
+			} catch (err) {
+				console.error('Error cargando biblioteca:', err);
+				libraryItems = [];
+			}
+
+			// Cargar estadísticas de visitantes (el endpoint ahora es público)
 			try {
 				const analytics = await analyticsService.getSummary();
 				totalVisitors = analytics.totalVisitors;
@@ -65,12 +98,8 @@
 </script>
 
 <svelte:head>
-	<title>{t('centroTitle') || 'Centro Cultural Víctor Jara'}</title>
-	<meta name="description" content={t('centroDescription') || 'Centro Cultural Víctor Jara - Red Comunitaria de Aprendizaje'} />
-	<link
-		rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-	/>
+	<title>{$t('centroTitle') || 'Centro Cultural Popular Víctor Jara'}</title>
+	<meta name="description" content={$t('centroDescription') || 'Centro Cultural Popular Víctor Jara - Red Comunitaria de Aprendizaje'} />
 </svelte:head>
 
 <!-- Hero Section Juvenil -->
@@ -98,23 +127,14 @@
 
 		<!-- Título principal con animación -->
 		<h1 class="mb-6 text-4xl sm:text-6xl lg:text-7xl font-bold animate-fade-in-up">
-			<span class="inline-block animate-bounce" style="animation-delay: 0.1s;">¡</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.2s;">B</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.3s;">i</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.4s;">e</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.5s;">n</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.6s;">v</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.7s;">e</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.8s;">n</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 0.9s;">i</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 1s;">d</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 1.1s;">o</span>
-			<span class="inline-block animate-bounce" style="animation-delay: 1.2s;">!</span>
-			<span class="text-5xl animate-spin inline-block" style="animation-duration: 3s;">🎉</span>
+			{#each welcomeChars as {char, delay}}
+				<span class="inline-block animate-bounce" style="animation-delay: {delay}s;">{char}</span>
+			{/each}
+			<span class="text-5xl animate-spin inline-block ml-2" style="animation-duration: 3s;">🎉</span>
 		</h1>
 
 		<p class="mx-auto mb-8 max-w-2xl text-xl md:text-2xl text-pink-100 animate-fade-in-up" style="animation-delay: 0.5s;">
-			{t('centroPurpose')}
+			{$t('centroPurpose')}
 		</p>
 
 		<!-- Botones de acción juveniles -->
@@ -122,35 +142,35 @@
 			{#if !isLoggedIn}
 				<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-8 py-4 font-bold text-purple-900 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-yellow-300/50">
 					<span class="relative z-10 flex items-center gap-2">
-						{t('startLearning')}
+						{$t('startLearning')}
 					</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
 				</a>
 				<a href="/auth/login" class="group relative overflow-hidden rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-white/30">
 					<span class="flex items-center gap-2">
-						{t('educatorLogin')}
+						{$t('educatorLogin')}
 					</span>
 				</a>
 			{:else if isEducator}
 				<a href="/dashboard" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-green-400 to-blue-500 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
 					<span class="relative z-10 flex items-center gap-2">
-						📊 {t('educatorDashboard')}
+						📊 {$t('educatorDashboard')}
 					</span>
 				</a>
 				<a href="/editor" class="group relative overflow-hidden rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
 					<span class="flex items-center gap-2">
-						✨ {t('createContent')}
+						✨ {$t('createContent')}
 					</span>
 				</a>
 			{:else}
 				<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
 					<span class="relative z-10 flex items-center gap-2">
-						🎒 {t('myMaterials')}
+						🎒 {$t('myMaterials')}
 					</span>
 				</a>
 				<a href="/library" class="group relative overflow-hidden rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300 hover:scale-110">
 					<span class="flex items-center gap-2">
-						📖 {t('exploreLibrary')}
+						📖 {$t('exploreLibrary')}
 					</span>
 				</a>
 			{/if}
@@ -161,22 +181,22 @@
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse">📚</div>
 				<div class="text-3xl font-bold mb-1">{allCourses.length || 0}</div>
-				<div class="text-pink-100 text-sm">{t('availableCourses')}</div>
+				<div class="text-pink-100 text-sm">{$t('availableCourses')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 0.5s;">📝</div>
 				<div class="text-3xl font-bold mb-1">{totalModulesCount || 0}</div>
-				<div class="text-pink-100 text-sm">{t('totalModules')}</div>
+				<div class="text-pink-100 text-sm">{$t('totalModules')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1s;">📰</div>
 				<div class="text-3xl font-bold mb-1">{latestBlogPosts.length || 0}</div>
-				<div class="text-pink-100 text-sm">{t('recentNews')}</div>
+				<div class="text-pink-100 text-sm">{$t('recentNews')}</div>
 			</div>
 			<div class="group text-center transition-transform duration-300 hover:scale-110">
 				<div class="text-6xl mb-2 animate-pulse" style="animation-delay: 1.5s;">👥</div>
 				<div class="text-3xl font-bold mb-1">{totalVisitors || 0}</div>
-				<div class="text-pink-100 text-sm">{t('uniqueVisitors')}</div>
+				<div class="text-pink-100 text-sm">{$t('uniqueVisitors')}</div>
 			</div>
 		</div>
 	</div>
@@ -202,19 +222,19 @@
 
 			<div class="inline-block mb-4 text-6xl animate-pulse">📰</div>
 			<h2 class="mb-6 text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-				{t('latestNews')}
+				{$t('latestNews')}
 			</h2>
 			<div class="mx-auto h-2 w-32 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4"></div>
 			<p class="mx-auto max-w-2xl text-lg text-gray-600 font-medium">
-				{t('stayUpdated')}
+				{$t('stayUpdated')}
 			</p>
 		</div>
 
 		<!-- Grid de noticias con efectos juveniles -->
-		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 {latestBlogPosts.length === 1 ? 'justify-center' : ''}">
 			{#if latestBlogPosts.length > 0}
 				{#each latestBlogPosts as post, index}
-					<div class="group relative transform transition-all duration-500 hover:-translate-y-4 hover:rotate-1" style="animation-delay: {index * 0.1}s;">
+					<div class="group relative w-full max-w-md mx-auto transform transition-all duration-500 hover:-translate-y-4 hover:rotate-1" style="animation-delay: {index * 0.1}s;">
 						<!-- Sombra de color -->
 						<div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-pink-400 opacity-20 blur-lg group-hover:opacity-40 transition-opacity duration-300"></div>
 
@@ -234,10 +254,10 @@
 					<div class="text-center py-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-dashed border-purple-300">
 						<div class="text-8xl mb-6 animate-bounce">🎪</div>
 						<h3 class="text-2xl font-bold text-purple-800 mb-4">
-							{t('noBlogPostsYet')}
+							{$t('noBlogPostsYet')}
 						</h3>
 						<p class="text-purple-600 max-w-md mx-auto">
-							{t('noBlogPostsMessage')}
+							{$t('noBlogPostsMessage')}
 						</p>
 
 						<!-- Elementos decorativos -->
@@ -254,7 +274,7 @@
 		<!-- Botón de ver todas las noticias -->
 		<div class="mt-16 text-center">
 			<a href="/blog" class="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-full shadow-2xl transform transition-all duration-300 hover:scale-110 hover:shadow-purple-300/50">
-				<span class="relative z-10">{t('viewAllNews')}</span>
+				<span class="relative z-10">{$t('viewAllNews')}</span>
 				<div class="text-2xl animate-bounce group-hover:translate-x-1 transition-transform duration-300">👀</div>
 
 				<!-- Efecto de onda en hover -->
@@ -275,11 +295,11 @@
 
 			<div class="inline-block mb-4 text-7xl animate-pulse">📅</div>
 			<h2 class="mb-6 text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-				{t('upcomingEvents')}
+				{$t('upcomingEvents')}
 			</h2>
 			<div class="mx-auto h-2 w-40 rounded-full bg-gradient-to-r from-orange-400 to-red-400 mb-4"></div>
 			<p class="mx-auto max-w-2xl text-lg text-gray-700 font-medium">
-				{t('upcomingEventsMessage')}
+				{$t('upcomingEventsMessage')}
 			</p>
 		</div>
 
@@ -301,7 +321,7 @@
 		<!-- Botón para ver calendario completo -->
 		<div class="mt-12 text-center">
 			<a href="/calendar" class="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg rounded-full shadow-2xl transform transition-all duration-300 hover:scale-110 hover:shadow-orange-300/50">
-				<span class="relative z-10">{t('viewCalendar')}</span>
+				<span class="relative z-10">{$t('viewCalendar')}</span>
 				<div class="text-2xl animate-bounce group-hover:rotate-12 transition-transform duration-300">📅</div>
 
 				<!-- Efecto de resplandor -->
@@ -323,20 +343,20 @@
 
 			<div class="inline-block mb-6 text-8xl animate-pulse">🌟</div>
 			<h2 class="mb-6 text-5xl md:text-6xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-				{t('educationalMaterials')}
+				{$t('educationalMaterials')}
 			</h2>
 			<div class="mx-auto h-3 w-48 rounded-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 mb-6"></div>
 			<p class="mx-auto max-w-3xl text-xl text-gray-700 font-medium leading-relaxed">
-				{t('accessCourseMaterials')}
+				{$t('accessCourseMaterials')}
 			</p>
 		</div>
 
-		<!-- Grid de materias súper cool -->
-		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{#if allCourses.length > 0}
-				{#each allCourses.slice(0, 8) as course, index}
+		<!-- Grid de materiales de biblioteca súper cool -->
+		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 {libraryItems.length === 1 ? 'justify-center' : ''}">
+			{#if libraryItems.length > 0}
+				{#each libraryItems.slice(0, 4) as item, index}
 					{@const colorScheme = courseColors[index % courseColors.length]}
-					<div class="group relative transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
+					<div class="group relative w-full max-w-xs mx-auto transform transition-all duration-500 hover:-translate-y-6 hover:rotate-3 hover:scale-105"
 						 style="animation-delay: {index * 0.2}s;">
 
 						<!-- Sombra colorida -->
@@ -353,27 +373,27 @@
 								<!-- Icono grande central -->
 								<div class="text-center mb-6">
 									<div class="inline-block w-20 h-20 rounded-full bg-gradient-to-r {colorScheme.color} flex items-center justify-center text-3xl text-white shadow-lg transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-										<i class="{colorScheme.icon}"></i>
+										{digitalLibraryService.getFileTypeIcon(item.fileType)}
 									</div>
 								</div>
 
 								<!-- Título -->
 								<h3 class="text-xl font-bold text-center mb-3 text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2">
-									{course.title}
+									{item.title}
 								</h3>
 
 								<!-- Descripción genial -->
 								<div class="text-center mb-6">
 									<div class="inline-block bg-gradient-to-r {colorScheme.color} text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
-										{course.moduleCount || 0} {course.moduleCount === 1 ? t('module') : t('modules')}
+										{digitalLibraryService.formatFileSize(item.fileSize)}
 									</div>
 								</div>
 
 								<!-- Botón de acceso épico -->
 								<div class="text-center">
-									<a href={`/material-apoyo/${course.id}`}
+									<a href={`/library/${item.id}`}
 									   class="group/btn relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r {colorScheme.color} text-white font-bold text-sm rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
-										<span class="relative z-10">{t('accessMaterials')}</span>
+										<span class="relative z-10">{$t('viewResource') || 'Ver Recurso'}</span>
 										<div class="text-lg animate-bounce group-hover/btn:translate-x-1 transition-transform duration-300">🎯</div>
 									</a>
 								</div>
@@ -398,10 +418,10 @@
 				<div class="col-span-full text-center py-20 rounded-3xl bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-dashed border-purple-300">
 					<div class="text-8xl mb-6 animate-bounce">📚</div>
 					<h3 class="text-2xl font-bold text-purple-800 mb-4">
-						{t('noCoursesYet')}
+						{$t('noLibraryItemsYet') || 'No hay recursos todavía'}
 					</h3>
 					<p class="text-purple-600 max-w-md mx-auto">
-						{t('noCoursesMessage')}
+						{$t('noLibraryItemsMessage') || 'Pronto agregaremos recursos educativos a la biblioteca'}
 					</p>
 				</div>
 			{/if}
@@ -410,17 +430,17 @@
 		<!-- Sección de Quick Actions -->
 		<div class="mt-20">
 			<h3 class="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-				{t('quickActions')} ⚡
+				{$t('quickActions')} ⚡
 			</h3>
 
 			<div class="flex flex-wrap justify-center gap-4">
 				<a href="/material-apoyo" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
-					<span class="relative z-10">🚀 {t('exploreAllProjects')}</span>
+					<span class="relative z-10">🚀 {$t('exploreAllProjects')}</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 				</a>
 
 				<a href="/library" class="group relative inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-full shadow-xl transform transition-all duration-300 hover:scale-110">
-					<span class="relative z-10">📖 {t('viewLibrary')}</span>
+					<span class="relative z-10">📖 {$t('viewLibrary')}</span>
 					<div class="absolute inset-0 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 				</a>
 			</div>
@@ -440,19 +460,19 @@
 
 			<div class="inline-block mb-6 text-9xl animate-bounce">🌟</div>
 			<h2 class="mb-6 text-5xl md:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-				{t('featuredCourses')}
+				{$t('featuredCourses')}
 			</h2>
 			<div class="mx-auto h-3 w-56 rounded-full bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-6"></div>
 			<p class="mx-auto max-w-3xl text-xl text-gray-700 font-medium leading-relaxed">
-				{t('exploreCourseOfferings')}
+				{$t('exploreCourseOfferings')}
 			</p>
 		</div>
 
 		<!-- Proyectos destacados con diseño juvenil -->
-		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid gap-10 md:grid-cols-2 lg:grid-cols-3 {featuredCourses.length === 1 ? 'justify-center' : ''}">
 			{#if featuredCourses.length > 0}
 				{#each featuredCourses as course, index}
-					<div class="group relative transform transition-all duration-700 hover:-translate-y-8 hover:rotate-2 hover:scale-105"
+					<div class="group relative w-full max-w-sm mx-auto transform transition-all duration-700 hover:-translate-y-8 hover:rotate-2 hover:scale-105"
 					     style="animation-delay: {index * 0.3}s;">
 
 						<!-- Sombra holográfica -->
@@ -485,9 +505,9 @@
 								<h3 class="text-2xl font-bold mb-4 text-gray-800 group-hover:text-purple-600 transition-colors duration-300">
 									{course.title}
 								</h3>
-								<p class="text-gray-600 mb-6 leading-relaxed">
-									{course.description}
-								</p>
+									<p class="text-gray-600 mb-6 leading-relaxed">
+										{truncateDescription(course.description)}
+									</p>
 
 								<!-- Estadísticas mini -->
 								{#if course.moduleCount || course.educatorName}
@@ -495,7 +515,7 @@
 										{#if course.moduleCount}
 											<div class="flex items-center gap-1">
 												<span class="text-purple-500">📚</span>
-												<span>{course.moduleCount} {course.moduleCount === 1 ? t('module') : t('modules')}</span>
+												<span>{course.moduleCount} {course.moduleCount === 1 ? $t('module') : $t('modules')}</span>
 											</div>
 										{/if}
 										{#if course.educatorName}
@@ -510,7 +530,7 @@
 								<!-- Botón épico -->
 								<a href={`/material-apoyo/${course.id}`}
 								   class="group/btn relative inline-flex items-center gap-3 w-full justify-center px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-2xl shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-300/50">
-									<span class="relative z-10">{t('exploreCourseMaterials')}</span>
+									<span class="relative z-10">{$t('exploreCourseMaterials')}</span>
 									<div class="text-2xl animate-bounce group-hover/btn:translate-x-2 transition-transform duration-300">🎮</div>
 
 									<!-- Efecto de brillo -->
@@ -538,10 +558,10 @@
 					<div class="text-center py-24 rounded-3xl bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 border-4 border-dashed border-purple-300">
 						<div class="text-9xl mb-8 animate-bounce">🎪</div>
 						<h3 class="text-3xl font-bold text-purple-800 mb-6">
-							{t('noCoursesYet')}
+							{$t('noCoursesYet')}
 						</h3>
 						<p class="text-purple-600 max-w-lg mx-auto text-lg">
-							{t('noCoursesMessage')}
+							{$t('noCoursesMessage')}
 						</p>
 
 						<!-- Loading dots -->
@@ -558,7 +578,7 @@
 		<!-- Botón para ver todos los proyectos -->
 		<div class="mt-20 text-center">
 			<a href="/material-apoyo" class="group relative inline-flex items-center gap-4 px-12 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-500 hover:scale-110 hover:shadow-indigo-300/50">
-				<span class="relative z-10">{t('viewAllCourses')}</span>
+				<span class="relative z-10">{$t('viewAllCourses')}</span>
 				<div class="text-3xl animate-bounce group-hover:translate-x-3 group-hover:scale-125 transition-all duration-300">🌟</div>
 
 				<!-- Efecto de resplandor -->
@@ -576,13 +596,13 @@
 <section class="bg-indigo-50 py-16">
 	<div class="container mx-auto max-w-4xl px-4">
 		<div class="mb-12 text-center">
-			<h2 class="mb-3 text-3xl font-bold">{t('aboutCenter')}</h2>
+			<h2 class="mb-3 text-3xl font-bold">{$t('aboutCenter')}</h2>
 			<div class="mx-auto h-1 w-20 rounded-full bg-indigo-600"></div>
 		</div>
 		<div class="rounded-xl bg-white p-8 shadow-lg">
 			<div class="prose prose-indigo max-w-none">
-				<p class="mb-4 text-lg leading-relaxed">{t('centerDescription1')}</p>
-				<p class="mb-6 text-lg leading-relaxed">{t('centerDescription2')}</p>
+				<p class="mb-4 text-lg leading-relaxed">{$t('centerDescription1')}</p>
+				<p class="mb-6 text-lg leading-relaxed">{$t('centerDescription2')}</p>
 			</div>
 			<div class="mt-8 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-6">
 				<div class="flex items-start">
@@ -590,8 +610,8 @@
 						<i class="fas fa-wifi text-3xl"></i>
 					</div>
 					<div>
-						<h3 class="mb-3 text-xl font-semibold text-indigo-800">{t('noInternetRequired')}</h3>
-						<p class="leading-relaxed text-gray-700">{t('localNetworkExplanation')}</p>
+						<h3 class="mb-3 text-xl font-semibold text-indigo-800">{$t('noInternetRequired')}</h3>
+						<p class="leading-relaxed text-gray-700">{$t('localNetworkExplanation')}</p>
 					</div>
 				</div>
 			</div>
@@ -619,31 +639,13 @@
 		<div class="mb-16">
 			<div class="inline-block mb-8 text-8xl animate-pulse">🎯</div>
 			<h2 class="mb-8 text-5xl md:text-7xl font-black animate-fade-in-up">
-				<span class="inline-block animate-bounce" style="animation-delay: 0.1s;">¿</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.2s;">L</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.3s;">i</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.4s;">s</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.5s;">t</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.6s;">o</span>
-				<span class="mx-4 inline-block animate-bounce" style="animation-delay: 0.7s;">🚀</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.8s;">p</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 0.9s;">a</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1s;">r</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.1s;">a</span>
-				<span class="mx-4 inline-block animate-bounce" style="animation-delay: 1.2s;">l</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.3s;">a</span>
-				<span class="mx-4 inline-block animate-bounce" style="animation-delay: 1.4s;">A</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.5s;">v</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.6s;">e</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.7s;">n</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.8s;">t</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 1.9s;">u</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 2s;">r</span>
-				<span class="inline-block animate-bounce" style="animation-delay: 2.1s;">a</span>
+				{#each readyAdventureChars as {char, delay}}
+					<span class="inline-block animate-bounce" style="animation-delay: {delay}s;">{char}</span>
+				{/each}
 				<span class="text-6xl animate-spin inline-block ml-4" style="animation-duration: 3s;">🎉</span>
 			</h2>
 			<p class="mx-auto max-w-3xl text-xl md:text-2xl text-purple-100 leading-relaxed animate-fade-in-up" style="animation-delay: 0.8s;">
-				{t('joinCommunityText')}
+				{$t('joinCommunityText')}
 			</p>
 		</div>
 
@@ -652,7 +654,7 @@
 			<a href="/material-apoyo" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-12 py-5 font-black text-xl text-purple-900 shadow-2xl transition-all duration-500 hover:scale-125 hover:shadow-yellow-300/50 transform hover:-rotate-3">
 				<span class="relative z-10 flex items-center gap-3">
 					<span class="text-3xl animate-bounce">🚀</span>
-					{t('exploreCourses')}
+					{$t('exploreCourses')}
 					<span class="text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
 				</span>
 				<div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-full"></div>
@@ -661,7 +663,7 @@
 			<a href="/blog" class="group relative overflow-hidden rounded-full bg-white/10 backdrop-blur-sm border-4 border-white/30 px-12 py-5 font-black text-xl text-white shadow-2xl transition-all duration-500 hover:scale-125 hover:bg-white/20 transform hover:rotate-3">
 				<span class="relative z-10 flex items-center gap-3">
 					<span class="text-3xl animate-bounce">📱</span>
-					{t('readLatestNews')}
+					{$t('readLatestNews')}
 					<span class="text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
 				</span>
 			</a>
@@ -669,7 +671,7 @@
 			<a href="/library" class="group relative overflow-hidden rounded-full bg-gradient-to-r from-green-400 to-cyan-500 px-12 py-5 font-black text-xl text-white shadow-2xl transition-all duration-500 hover:scale-125 hover:shadow-green-300/50 transform hover:-rotate-2">
 				<span class="relative z-10 flex items-center gap-3">
 					<span class="text-3xl animate-bounce">📖</span>
-					{t('viewLibrary')}
+					{$t('viewLibrary')}
 					<span class="text-2xl group-hover:translate-x-2 transition-transform duration-300">→</span>
 				</span>
 				<div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-full"></div>
@@ -688,7 +690,7 @@
 		<!-- Mensaje final -->
 		<div class="mt-12 animate-fade-in-up" style="animation-delay: 2s;">
 			<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
-				{t('adventureStartsNow')} 🎉
+				{$t('adventureStartsNow')} 🎉
 			</p>
 		</div>
 	</div>

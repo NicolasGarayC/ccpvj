@@ -1,23 +1,30 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { calendarService, type EventDetail, type EventSummary } from '$lib/services/calendar/calendarService';
-	import { jwtService } from '$lib/services/auth/jwtService.js';
+	import { calendarService, type EventDetail, type EventSummary } from '$lib/application/services/calendar/CalendarService';
+	import { jwtService } from '$lib/application/services/auth/JwtService.js';
 
 	// Props desde la URL
-	$: eventId = $page.params.id;
+	let eventId: string = '';
+	$: eventId = ($page.params.id ?? '') as string;
 
 	// Estado de la página
 	let loading = true;
 	let error = '';
 	let event: EventDetail | null = null;
 	let relatedEvents: EventSummary[] = [];
-	
+
 	// ✅ Estado de autorización
 	let isAuthenticated = false;
 	let canEditEvent = false;
 	let currentUser: any = null;
+	let shareFeedback: { message: string; kind: 'success' | 'error' } | null = null;
+	let shareFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Estado para confirmación de eliminación
+	let showDeleteConfirmation = false;
+	let isDeleting = false;
 
 	// Cargar evento y datos relacionados
 	onMount(async () => {
@@ -40,6 +47,10 @@
 			loading = true;
 			error = '';
 			
+			if (!eventId) {
+				throw new Error('ID de evento inválido');
+			}
+
 			event = await calendarService.getEvent(eventId);
 			
 			if (!event) {
@@ -48,10 +59,10 @@
 			}
 
 			// ✅ Verificar si el usuario puede editar este evento
-			if (isAuthenticated && currentUser) {
-				canEditEvent = currentUser.role === 'Administrador' ||
-							  (event.organizerId === currentUser.id);
-			}
+			const isAdmin = jwtService.isAdmin();
+			// Comparar como strings porque organizerId viene del backend como string
+			const isOrganizer = currentUser && event.organizerId === String(currentUser.id);
+			canEditEvent = isAdmin || isOrganizer;
 		} catch (err) {
 			console.error('Error al cargar evento:', err);
 			error = 'Error al cargar el evento';
@@ -146,6 +157,83 @@
 	function isPast(date: Date): boolean {
 		return new Date(date) < new Date();
 	}
+
+	function setShareFeedback(message: string, kind: 'success' | 'error') {
+		shareFeedback = { message, kind };
+		if (shareFeedbackTimeout) {
+			clearTimeout(shareFeedbackTimeout);
+		}
+		shareFeedbackTimeout = setTimeout(() => {
+			shareFeedback = null;
+			shareFeedbackTimeout = null;
+		}, 3500);
+	}
+
+	async function shareEvent() {
+		if (!event) return;
+
+		const shareData = {
+			title: event.title,
+			text: event.description ?? event.title,
+			url: window.location.href
+		};
+
+		try {
+			if (navigator.share) {
+				await navigator.share(shareData);
+				setShareFeedback('Enlace compartido correctamente.', 'success');
+				return;
+			}
+		} catch (err) {
+			if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') {
+				return;
+			}
+			console.warn('Fallo el uso de navigator.share, intentando copiar portapapeles.', err);
+		}
+
+		try {
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				await navigator.clipboard.writeText(shareData.url);
+				setShareFeedback('Enlace copiado al portapapeles.', 'success');
+			} else {
+				setShareFeedback('Tu navegador no permite copiar automáticamente. Copia el enlace manualmente.', 'error');
+			}
+		} catch (err) {
+			console.error('Error al copiar enlace:', err);
+			setShareFeedback('No se pudo copiar el enlace. Copia la URL manualmente.', 'error');
+		}
+	}
+
+	function confirmDeleteEvent() {
+		showDeleteConfirmation = true;
+	}
+
+	function cancelDeleteEvent() {
+		showDeleteConfirmation = false;
+	}
+
+	async function deleteEvent() {
+		if (!event) return;
+
+		try {
+			isDeleting = true;
+			await calendarService.deleteEvent(event.id);
+
+			// Redirigir al calendario después de eliminar
+			goto('/calendar');
+		} catch (err) {
+			console.error('Error al eliminar evento:', err);
+			alert('Error al eliminar el evento. Por favor, intenta de nuevo.');
+			isDeleting = false;
+			showDeleteConfirmation = false;
+		}
+	}
+
+	onDestroy(() => {
+		if (shareFeedbackTimeout) {
+			clearTimeout(shareFeedbackTimeout);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -449,11 +537,22 @@
 										</svg>
 										<span>Editar Evento</span>
 									</button>
+
+									<!-- ✅ Eliminar evento solo para organizador/admin -->
+									<button
+										on:click={confirmDeleteEvent}
+										class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+									>
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+										</svg>
+										<span>Eliminar Evento</span>
+									</button>
 								{/if}
 
 								<!-- Compartir -->
 								<button
-									on:click={() => navigator.clipboard.writeText(window.location.href)}
+									on:click={shareEvent}
 									class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
 								>
 									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,6 +560,11 @@
 									</svg>
 									<span>Compartir</span>
 								</button>
+								{#if shareFeedback}
+									<p class={`text-sm mt-2 ${shareFeedback.kind === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+										{shareFeedback.message}
+									</p>
+								{/if}
 							</div>
 						</div>
 
@@ -501,3 +605,69 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Modal de confirmación de eliminación -->
+{#if showDeleteConfirmation}
+	<!-- Background overlay -->
+	<div
+		class="fixed inset-0 bg-gray-500 bg-opacity-75 z-40"
+		aria-hidden="true"
+		on:click={cancelDeleteEvent}
+		on:keydown={(e) => e.key === 'Escape' && cancelDeleteEvent()}
+	></div>
+
+	<!-- Modal container -->
+	<div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<!-- Modal content -->
+		<div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 w-full max-w-lg">
+			<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+				<div class="sm:flex sm:items-start">
+					<div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+						<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+						</svg>
+					</div>
+					<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+						<h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+							Eliminar Evento
+						</h3>
+						<div class="mt-2">
+							<p class="text-sm text-gray-500">
+								{#if event?.isRecurring}
+									¿Estás seguro de que deseas eliminar este evento recurrente?
+									<strong class="text-red-600">Se eliminarán todas las ocurrencias futuras de este evento.</strong>
+									Esta acción no se puede deshacer.
+								{:else}
+									¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.
+								{/if}
+							</p>
+							{#if event}
+								<p class="mt-2 text-sm font-medium text-gray-900">
+									"{event.title}"
+								</p>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+				<button
+					type="button"
+					disabled={isDeleting}
+					on:click={deleteEvent}
+					class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{isDeleting ? 'Eliminando...' : 'Eliminar'}
+				</button>
+				<button
+					type="button"
+					disabled={isDeleting}
+					on:click={cancelDeleteEvent}
+					class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					Cancelar
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

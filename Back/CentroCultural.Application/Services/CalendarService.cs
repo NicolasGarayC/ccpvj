@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CentroCultural.Application.DTOs;
 using CentroCultural.Application.Interfaces;
 using CentroCultural.Domain.Entities;
@@ -126,11 +129,16 @@ namespace CentroCultural.Application.Services
                 var totalCount = await query.CountAsync();
                 var totalPages = (int)Math.Ceiling(totalCount / (double)searchDto.PageSize);
 
-                var events = await query
+                var eventEntities = await query
                     .Skip((searchDto.Page - 1) * searchDto.PageSize)
                     .Take(searchDto.PageSize)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(eventEntities);
+
+                var events = eventEntities
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
 
                 return new EventPagedResultDto
                 {
@@ -192,13 +200,15 @@ namespace CentroCultural.Application.Services
 
                 var allEvents = new List<EventSummaryDto>();
 
+                var organizerNames = await GetOrganizerNamesAsync(nonRecurringEvents.Concat(recurringEvents));
+
                 // Agregar eventos no recurrentes
-                allEvents.AddRange(nonRecurringEvents.Select(e => MapToEventSummaryDto(e)));
+                allEvents.AddRange(nonRecurringEvents.Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames))));
 
                 // Expandir eventos recurrentes en múltiples instancias
                 foreach (var recurringEvent in recurringEvents)
                 {
-                    var occurrences = GenerateRecurringOccurrences(recurringEvent, startDate, endDate);
+                    var occurrences = GenerateRecurringOccurrences(recurringEvent, startDate, endDate, ResolveOrganizerName(recurringEvent, organizerNames));
                     allEvents.AddRange(occurrences);
                 }
 
@@ -219,7 +229,7 @@ namespace CentroCultural.Application.Services
             }
         }
 
-        private List<EventSummaryDto> GenerateRecurringOccurrences(Event recurringEvent, DateTime rangeStart, DateTime rangeEnd)
+        private List<EventSummaryDto> GenerateRecurringOccurrences(Event recurringEvent, DateTime rangeStart, DateTime rangeEnd, string organizerName)
         {
             var occurrences = new List<EventSummaryDto>();
 
@@ -288,7 +298,8 @@ namespace CentroCultural.Application.Services
                                 Location = recurringEvent.Location,
                                 EventType = recurringEvent.EventType,
                                 IsFeatured = recurringEvent.IsFeatured,
-                                IsRecurring = true
+                                IsRecurring = true,
+                                OrganizerName = organizerName
                             });
                         }
                     }
@@ -318,7 +329,8 @@ namespace CentroCultural.Application.Services
                             Location = recurringEvent.Location,
                             EventType = recurringEvent.EventType,
                             IsFeatured = recurringEvent.IsFeatured,
-                            IsRecurring = true
+                            IsRecurring = true,
+                            OrganizerName = organizerName
                         });
                     }
 
@@ -352,12 +364,17 @@ namespace CentroCultural.Application.Services
             try
             {
                 var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                return await _context.Events
+                var events = await _context.Events
                     .Where(e => e.IsActive && e.IsFeatured && e.StartDateTime >= currentTime)
                     .OrderBy(e => e.StartDateTime)
                     .Take(limit)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(events);
+
+                return events
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -371,12 +388,17 @@ namespace CentroCultural.Application.Services
             try
             {
                 var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                return await _context.Events
+                var events = await _context.Events
                     .Where(e => e.IsActive && e.StartDateTime >= currentTime)
                     .OrderBy(e => e.StartDateTime)
                     .Take(limit)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(events);
+
+                return events
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -421,7 +443,8 @@ namespace CentroCultural.Application.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Event created successfully with ID {EventId}", eventEntity.Id);
-                return MapToEventDto(eventEntity);
+                var organizerName = await GetOrganizerNameAsync(organizerId);
+                return MapToEventDto(eventEntity, organizerName: organizerName);
             }
             catch (Exception ex)
             {
@@ -469,7 +492,8 @@ namespace CentroCultural.Application.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Event updated successfully with ID {EventId}", id);
-                return MapToEventDto(eventEntity);
+                var organizerName = await GetOrganizerNameAsync(int.TryParse(eventEntity.OrganizerId, out var organizerId) ? organizerId : userId);
+                return MapToEventDto(eventEntity, organizerName: organizerName);
             }
             catch (Exception ex)
             {
@@ -572,10 +596,15 @@ namespace CentroCultural.Application.Services
                     query = query.Where(e => e.StartDateTime <= endTimestamp);
                 }
 
-                return await query
+                var events = await query
                     .OrderBy(e => e.StartDateTime)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(events);
+
+                return events
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -588,11 +617,16 @@ namespace CentroCultural.Application.Services
         {
             try
             {
-                return await _context.Events
+                var events = await _context.Events
                     .Where(e => e.IsActive && e.RelatedProjectId == projectId.ToString())
                     .OrderBy(e => e.StartDateTime)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(events);
+
+                return events
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -605,11 +639,16 @@ namespace CentroCultural.Application.Services
         {
             try
             {
-                return await _context.Events
+                var events = await _context.Events
                     .Where(e => e.IsActive && e.RelatedBlogPostId == blogPostId.ToString())
                     .OrderBy(e => e.StartDateTime)
-                    .Select(e => MapToEventSummaryDto(e))
                     .ToListAsync();
+
+                var organizerNames = await GetOrganizerNamesAsync(events);
+
+                return events
+                    .Select(e => MapToEventSummaryDto(e, ResolveOrganizerName(e, organizerNames)))
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -739,7 +778,7 @@ namespace CentroCultural.Application.Services
             };
         }
 
-        private static EventSummaryDto MapToEventSummaryDto(Event eventEntity)
+        private static EventSummaryDto MapToEventSummaryDto(Event eventEntity, string? organizerName = null)
         {
             return new EventSummaryDto
             {
@@ -755,13 +794,92 @@ namespace CentroCultural.Application.Services
                 EventType = eventEntity.EventType,
                 IsFeatured = eventEntity.IsFeatured,
                 IsRecurring = eventEntity.IsRecurring,
-                OrganizerName = "Organizer", // Navigation property removed - use manual lookup if needed
+                OrganizerName = organizerName ?? "Organizer",
                 RelatedProjectId = eventEntity.RelatedProjectId != null && Guid.TryParse(eventEntity.RelatedProjectId, out var projectGuid) ? projectGuid : null,
                 RelatedProjectTitle = null, // Navigation property removed - use manual lookup if needed
                 RelatedBlogPostId = eventEntity.RelatedBlogPostId != null && Guid.TryParse(eventEntity.RelatedBlogPostId, out var blogGuid) ? blogGuid : null,
                 RelatedBlogPostTitle = null, // Navigation property removed - use manual lookup if needed
                 RelatedBlogPostSlug = null // Navigation property removed - use manual lookup if needed
             };
+        }
+
+        private async Task<Dictionary<int, string>> GetOrganizerNamesAsync(IEnumerable<Event> events)
+        {
+            var organizerIds = events
+                .Select(e => e.OrganizerId)
+                .Select(id =>
+                {
+                    if (string.IsNullOrWhiteSpace(id) || !int.TryParse(id, out var parsed))
+                    {
+                        return (int?)null;
+                    }
+
+                    return parsed;
+                })
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList();
+
+            var organizerNames = new Dictionary<int, string>();
+
+            if (!organizerIds.Any())
+            {
+                return organizerNames;
+            }
+
+            var organizers = await _context.Usuarios
+                .Where(u => organizerIds.Contains(u.IdUsuario))
+                .Select(u => new { u.IdUsuario, u.NombreUsuario, u.Nombre, u.Apellido })
+                .ToListAsync();
+
+            foreach (var organizer in organizers)
+            {
+                var nameParts = new[] { organizer.Nombre, organizer.Apellido }
+                    .Where(part => !string.IsNullOrWhiteSpace(part))
+                    .ToArray();
+
+                var displayName = nameParts.Length > 0
+                    ? string.Join(" ", nameParts)
+                    : organizer.NombreUsuario;
+
+                organizerNames[organizer.IdUsuario] = string.IsNullOrWhiteSpace(displayName)
+                    ? organizer.NombreUsuario
+                    : displayName;
+            }
+
+            return organizerNames;
+        }
+
+        private async Task<string> GetOrganizerNameAsync(int organizerId)
+        {
+            var organizer = await _context.Usuarios
+                .Where(u => u.IdUsuario == organizerId)
+                .Select(u => new { u.NombreUsuario, u.Nombre, u.Apellido })
+                .FirstOrDefaultAsync();
+
+            if (organizer == null)
+            {
+                return "Organizer";
+            }
+
+            var nameParts = new[] { organizer.Nombre, organizer.Apellido }
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .ToArray();
+
+            var displayName = nameParts.Length > 0 ? string.Join(" ", nameParts) : organizer.NombreUsuario;
+
+            return string.IsNullOrWhiteSpace(displayName) ? organizer.NombreUsuario : displayName;
+        }
+
+        private static string ResolveOrganizerName(Event eventEntity, IDictionary<int, string> organizerNames)
+        {
+            if (!string.IsNullOrWhiteSpace(eventEntity.OrganizerId) && int.TryParse(eventEntity.OrganizerId, out var organizerId) && organizerNames.TryGetValue(organizerId, out var name))
+            {
+                return name;
+            }
+
+            return "Organizer";
         }
 
         private static string GetEventTypeColor(string eventType)

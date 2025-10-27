@@ -1,5 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { BACKEND_API_URL } from '$lib/config/backend';
+
+const AUTH_ENDPOINT = `${BACKEND_API_URL}/auth`;
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
@@ -20,9 +23,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		console.log(`[DEBUG] Request body to backend: ${requestBody}`);
 
 		// Forward the request to the backend
-		console.log('[DEBUG] Attempting to connect to backend at http://localhost:5251/api/auth/login');
+		console.log('[DEBUG] Attempting to connect to backend at', `${AUTH_ENDPOINT}/login`);
 
-		const backendResponse = await fetch('http://localhost:5251/api/auth/login', {
+		const backendResponse = await fetch(`${AUTH_ENDPOINT}/login`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -84,14 +87,19 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	} catch (error) {
 		console.error('[DEBUG] Login endpoint error:', error);
+
+		const err = error instanceof Error ? error : new Error(String(error));
+		const errorCode = (error as { code?: string | number })?.code;
+		const errorMessage = err.message || '';
+
 		console.error('[DEBUG] Error details:', {
-			name: error.name,
-			message: error.message,
-			stack: error.stack
+			name: err.name,
+			message: errorMessage,
+			stack: err.stack
 		});
 
 		// Check if it's a network error
-		if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+		if (errorCode === 'ECONNREFUSED' || errorMessage.includes('fetch')) {
 			console.log('[DEBUG] Network error - backend might be down');
 			return json(
 				{ success: false, message: 'Cannot connect to authentication server', errorType: 'NETWORK_ERROR' },
@@ -100,7 +108,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		return json(
-			{ success: false, message: 'Error interno del servidor', errorDetails: error.message },
+			{ success: false, message: 'Error interno del servidor', errorDetails: errorMessage },
 			{ status: 500 }
 		);
 	}

@@ -1,5 +1,5 @@
 import type { HandleClientError, HandleFetch } from '@sveltejs/kit';
-import { authModalStore } from '$lib/stores/authStore';
+import { authModalStore } from '$lib/presentation/stores/authStore';
 
 // Interceptor de fetch para detectar sesión expirada
 export const handleFetch: HandleFetch = async ({ request, fetch }) => {

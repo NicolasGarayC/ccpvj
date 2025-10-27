@@ -1,13 +1,14 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { afterNavigate } from '$app/navigation';
-	import { jwtService, type JwtUser } from '$lib/services/auth/jwtService.js';
+	import { jwtService, type JwtUser } from '$lib/application/services/auth/JwtService.js';
 	import { browser } from '$app/environment';
-	import { t } from '$lib/i18n';
-	import SessionExpiredModal from '$lib/components/auth/SessionExpiredModal.svelte';
-	import { analyticsService } from '$lib/services/analytics/analyticsService.js';
+	import { t, getLocale, setLocale, locale } from '$lib/i18n'; // Sistema i18n único
+	import SessionExpiredModal from '$lib/presentation/components/auth/SessionExpiredModal.svelte';
+	import { analyticsService } from '$lib/application/services/analytics/AnalyticsService.js';
+	import { authModalStore } from '$lib/presentation/stores/authStore';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -17,6 +18,8 @@
 
 	// Estado del menú móvil
 	let mobileMenuOpen = false;
+	let mainContentRef: HTMLElement | null = null;
+	let mobileMenuContainerRef: HTMLElement | null = null;
 
 	// Calcular si es encargado (administrador puede crear contenido)
 	$: isEducator =
@@ -26,8 +29,95 @@
 	$: canManageUsers =
 		isLoggedIn && user?.role === 'administrador';
 
-	// Variable reactiva simple para el idioma actual
-	let currentLocale = 'es';
+	const INACTIVITY_LIMIT_MS = 3 * 60 * 1000;
+	const ACTIVITY_THROTTLE_MS = 1000;
+	const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+let inactivityTimeout: number | null = null;
+	let activityListenersRegistered = false;
+	let lastActivityTimestamp = 0;
+	const activityListenerOptions: AddEventListenerOptions = { passive: true };
+
+	function clearInactivityTimer() {
+		if (inactivityTimeout) {
+			clearTimeout(inactivityTimeout);
+			inactivityTimeout = null;
+		}
+	}
+
+	function handleUserActivity() {
+		if (!jwtService.isAuthenticated()) {
+			stopActivityTracking();
+			return;
+		}
+
+		const now = performance.now();
+		if (now - lastActivityTimestamp < ACTIVITY_THROTTLE_MS) {
+			return;
+		}
+		lastActivityTimestamp = now;
+
+		resetInactivityTimer();
+	}
+
+	function resetInactivityTimer() {
+		if (!browser || !jwtService.isAuthenticated()) {
+			clearInactivityTimer();
+			return;
+		}
+		clearInactivityTimer();
+		inactivityTimeout = window.setTimeout(handleInactivityLogout, INACTIVITY_LIMIT_MS);
+	}
+
+	function startActivityTracking() {
+		if (!browser) return;
+		if (!isLoggedIn) {
+			stopActivityTracking();
+			return;
+		}
+
+		if (!activityListenersRegistered) {
+			activityEvents.forEach((eventName) => {
+				document.addEventListener(eventName, handleUserActivity, activityListenerOptions);
+			});
+			activityListenersRegistered = true;
+		}
+
+		resetInactivityTimer();
+	}
+
+	function stopActivityTracking() {
+		if (!browser) {
+			clearInactivityTimer();
+			return;
+		}
+
+		if (activityListenersRegistered) {
+			activityEvents.forEach((eventName) => {
+				document.removeEventListener(eventName, handleUserActivity, false);
+			});
+			activityListenersRegistered = false;
+		}
+
+		clearInactivityTimer();
+		lastActivityTimestamp = 0;
+	}
+
+	async function handleInactivityLogout() {
+		if (!jwtService.isAuthenticated()) {
+			stopActivityTracking();
+			return;
+		}
+
+		try {
+			await jwtService.logout();
+		} catch (error) {
+			console.error('Error during inactivity logout:', error);
+		} finally {
+			stopActivityTracking();
+			authModalStore.showSessionExpired();
+			await updateAuthState();
+		}
+	}
 
 	// Función para actualizar el estado de autenticación
 	async function updateAuthState() {
@@ -62,10 +152,10 @@
 	}
 
 	// Inicialización del componente
-	onMount(() => {
+	onMount(async () => {
 		// Solo actualizar el estado de autenticación si NO estamos en la página de login
 		if ($page.route.id !== '/auth/login') {
-			updateAuthState();
+			await updateAuthState();
 		} else {
 			// Si estamos en login, solo verificar estado local
 			isLoggedIn = jwtService.isAuthenticated();
@@ -76,10 +166,9 @@
 
 		// Solo ejecutar en el navegador
 		if (browser) {
-			// Configuración simple de idioma
-			const browserLang = navigator.language?.split('-')[0] || 'es';
-			currentLocale = ['es', 'en'].includes(browserLang) ? browserLang : 'es';
-
+			if (isLoggedIn) {
+				startActivityTracking();
+			}
 			// Rastrear visita inicial de la página
 			trackPageVisit($page.url.pathname);
 		}
@@ -97,6 +186,14 @@
 		updateAuthState();
 	}
 
+	$: if (browser) {
+		if (isLoggedIn) {
+			startActivityTracking();
+		} else {
+			stopActivityTracking();
+		}
+	}
+
 	async function handleLogout(e: Event) {
 		e.preventDefault();
 		try {
@@ -108,11 +205,52 @@
 		}
 	}
 
+	function handleGlobalClick(event: MouseEvent) {
+		if (!browser || !mobileMenuOpen || !mainContentRef) {
+			return;
+		}
+
+		const target = event.target as Node | null;
+		if (!target) {
+			return;
+		}
+
+		if (mobileMenuContainerRef && mobileMenuContainerRef.contains(target)) {
+			return;
+		}
+
+		if (mainContentRef.contains(target)) {
+			mobileMenuOpen = false;
+		}
+	}
+
+	function handleGlobalKeydown(event: KeyboardEvent) {
+		if (!mobileMenuOpen) {
+			return;
+		}
+
+		if (event.key === 'Escape') {
+			mobileMenuOpen = false;
+		}
+	}
+
+	// Variable reactiva para el idioma actual
+	let currentLocale: string;
+	$: currentLocale = $locale;
+
 	function switchLocale() {
 		// Cambia entre los idiomas disponibles
-		currentLocale = currentLocale === 'es' ? 'en' : 'es';
+		const current = getLocale();
+		const newLocale = current === 'es' ? 'en' : 'es';
+		setLocale(newLocale);
 	}
+
+	onDestroy(() => {
+		stopActivityTracking();
+	});
 </script>
+
+<svelte:window on:click={handleGlobalClick} on:keydown={handleGlobalKeydown} />
 
 <div class="flex min-h-screen flex-col">
 	<!-- Header moderno y juvenil -->
@@ -136,7 +274,7 @@
 					</div>
 					<div>
 						<h1 class="text-2xl font-black text-white tracking-tight">Centro Cultural</h1>
-						<p class="text-xs text-white/80 font-medium">Víctor Jara</p>
+						<p class="text-xs text-white/80 font-medium">Popular Víctor Jara</p>
 					</div>
 				</a>
 
@@ -147,11 +285,11 @@
 						<a
 							href="/"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('home') || 'Inicio'}"
+							title="{$t('home')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-home text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline">{t('home') || 'Inicio'}</span>
+								<span class="hidden lg:inline">{$t('home')}</span>
 							</span>
 						</a>
 
@@ -159,11 +297,11 @@
 						<a
 							href="/blog"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('blog') || 'Blog'}"
+							title="{$t('blog')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-blog text-lg group-hover:wiggle"></i>
-								<span class="hidden lg:inline">{t('blog') || 'Blog'}</span>
+								<span class="hidden lg:inline">{$t('blog')}</span>
 							</span>
 						</a>
 
@@ -171,11 +309,11 @@
 						<a
 							href="/calendar"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('calendar') || 'Calendario'}"
+							title="{$t('calendar')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-calendar-alt text-lg group-hover:pulse"></i>
-								<span class="hidden lg:inline">{t('calendar') || 'Calendario'}</span>
+								<span class="hidden lg:inline">{$t('calendar')}</span>
 							</span>
 						</a>
 
@@ -183,11 +321,11 @@
 						<a
 							href="/library"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('library') || 'Biblioteca'}"
+							title="{$t('library')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-book text-lg group-hover:swing"></i>
-								<span class="hidden lg:inline">{t('library') || 'Biblioteca'}</span>
+								<span class="hidden lg:inline">{$t('library')}</span>
 							</span>
 						</a>
 
@@ -195,11 +333,11 @@
 						<a
 							href="/material-apoyo"
 							class="nav-item group relative px-3 lg:px-4 py-2 text-white font-medium rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105"
-							title="{t('materialApoyo')}"
+							title="{$t('materialApoyo')}"
 						>
 							<span class="flex items-center gap-2">
 								<i class="fas fa-graduation-cap text-lg group-hover:bounce"></i>
-								<span class="hidden lg:inline whitespace-nowrap">{t('materialApoyo')}</span>
+								<span class="hidden lg:inline whitespace-nowrap">{$t('materialApoyo')}</span>
 							</span>
 						</a>
 					</div>
@@ -212,7 +350,7 @@
 						{#if canManageUsers}
 							<a href="/dashboard" class="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-300 transition-all duration-300 shadow-lg hover:shadow-xl">
 								<i class="fas fa-users-cog text-lg"></i>
-								<span class="hidden lg:inline">{t('panel')}</span>
+								<span class="hidden lg:inline">{$t('panel')}</span>
 							</a>
 						{/if}
 						
@@ -234,7 +372,7 @@
 								class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 							>
 								<i class="fas fa-sign-out-alt text-lg"></i>
-								<span class="hidden lg:inline">{t('logout')}</span>
+								<span class="hidden lg:inline">{$t('logout')}</span>
 							</button>
 						</form>
 					{:else}
@@ -244,7 +382,7 @@
 							class="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 						>
 							<i class="fas fa-sign-in-alt text-lg"></i>
-							<span>{t('login') || 'Entrar'}</span>
+							<span>{$t('login') || 'Entrar'}</span>
 						</a>
 					{/if}
 					
@@ -274,14 +412,17 @@
 
 	<!-- Mobile menu dropdown -->
 	{#if mobileMenuOpen}
-		<div class="lg:hidden bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 border-t border-white/20">
+		<div
+			class="lg:hidden bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 border-t border-white/20"
+			bind:this={mobileMenuContainerRef}
+		>
 			<div class="container mx-auto px-4 py-4">
 				<nav class="space-y-2">
 					<!-- Inicio -->
 					<a href="/" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-home text-lg"></i>
-							<span>{t('home') || 'Inicio'}</span>
+							<span>{$t('home') || 'Inicio'}</span>
 						</span>
 					</a>
 
@@ -289,7 +430,7 @@
 					<a href="/blog" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-blog text-lg"></i>
-							<span>{t('blog') || 'Blog'}</span>
+							<span>{$t('blog') || 'Blog'}</span>
 						</span>
 					</a>
 
@@ -297,7 +438,7 @@
 					<a href="/calendar" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-calendar-alt text-lg"></i>
-							<span>{t('calendar') || 'Calendario'}</span>
+							<span>{$t('calendar') || 'Calendario'}</span>
 						</span>
 					</a>
 
@@ -305,7 +446,7 @@
 					<a href="/library" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-book text-lg"></i>
-							<span>{t('library') || 'Biblioteca'}</span>
+							<span>{$t('library') || 'Biblioteca'}</span>
 						</span>
 					</a>
 
@@ -313,7 +454,7 @@
 					<a href="/material-apoyo" class="block px-4 py-3 text-white font-medium rounded-xl hover:bg-white/20 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 						<span class="flex items-center gap-3">
 							<i class="fas fa-graduation-cap text-lg"></i>
-							<span>{t('materialApoyo')}</span>
+							<span>{$t('materialApoyo')}</span>
 						</span>
 					</a>
 
@@ -323,7 +464,7 @@
 							<a href="/dashboard" class="block px-4 py-3 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all duration-300" on:click={() => mobileMenuOpen = false}>
 								<span class="flex items-center gap-3">
 									<i class="fas fa-users-cog text-lg"></i>
-									<span>{t('panelAdmin')}</span>
+									<span>{$t('panelAdmin')}</span>
 								</span>
 							</a>
 						{/if}
@@ -350,7 +491,7 @@
 							>
 								<span class="flex items-center gap-3 justify-center">
 									<i class="fas fa-sign-out-alt text-lg"></i>
-									<span>{t('dashboard.closeSession')}</span>
+									<span>{$t('dashboard.closeSession')}</span>
 								</span>
 							</button>
 						</form>
@@ -363,7 +504,7 @@
 						>
 							<span class="flex items-center gap-3 justify-center">
 								<i class="fas fa-sign-in-alt text-lg"></i>
-								<span>{t('login') || 'Entrar'}</span>
+								<span>{$t('login') || 'Entrar'}</span>
 							</span>
 						</a>
 					{/if}
@@ -373,16 +514,7 @@
 	{/if}
 
 	<!-- Contenido principal -->
-	<main
-		class="flex-grow"
-		on:click={() => mobileMenuOpen = false}
-		on:keydown={(e) => {
-			if (e.key === 'Escape' && mobileMenuOpen) {
-				mobileMenuOpen = false;
-			}
-		}}
-		role="main"
-	>
+	<main class="flex-grow" bind:this={mainContentRef}>
 		<slot />
 	</main>
 
@@ -407,7 +539,7 @@
 					</div>
 					<div>
 						<h3 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-							Centro Cultural Víctor Jara
+							Centro Cultural Popular Víctor Jara
 						</h3>
 					</div>
 				</div>
@@ -417,10 +549,10 @@
 				
 				<!-- Copyright -->
 				<p class="text-white/70 font-medium">
-					&copy; {new Date().getFullYear()} Centro Cultural Víctor Jara
+					&copy; {new Date().getFullYear()} Centro Cultural Popular Víctor Jara
 				</p>
 				<p class="text-white/50 text-sm mt-1">
-					✨ Creando momentos mágicos de aprendizaje ✨
+					✨ {$t('footer.tagline')} ✨
 				</p>
 			</div>
 		</div>

@@ -284,6 +284,119 @@ namespace CentroCultural.API.Controllers
         }
 
         /// <summary>
+        /// Upload media for blog post
+        /// </summary>
+        [HttpPost("blog/{blogPostId}")]
+        public async Task<IActionResult> UploadBlogMedia(
+            string blogPostId,
+            [FromForm] IFormFile file,
+            [FromForm] string mediaType,
+            [FromForm] string? oldFilePath = null)
+        {
+            _logger.LogInformation("Blog media upload request received for blog post {BlogPostId}", blogPostId);
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest(new { error = "No se proporcionó ningún archivo" });
+
+                // Validate media type
+                if (string.IsNullOrEmpty(mediaType) || !new[] { "image", "video", "audio", "document" }.Contains(mediaType))
+                    return BadRequest(new { error = "Tipo de media inválido" });
+
+                // Validate file size based on media type
+                long maxSize = mediaType switch
+                {
+                    "image" => 20_971_520,        // 20MB
+                    "video" => 21_474_836_480,    // 20GB for movies
+                    "audio" => 104_857_600,       // 100MB
+                    "document" => 1_073_741_824,  // 1GB
+                    _ => 20_971_520
+                };
+
+                if (file.Length > maxSize)
+                    return BadRequest(new { error = $"Archivo demasiado grande. Tamaño máximo: {maxSize / 1_048_576}MB" });
+
+                // Validate content type
+                bool isValidType = mediaType switch
+                {
+                    "image" => file.ContentType.StartsWith("image/"),
+                    "video" => file.ContentType.StartsWith("video/"),
+                    "audio" => file.ContentType.StartsWith("audio/"),
+                    "document" => file.ContentType.Contains("pdf") || file.ContentType.Contains("document") ||
+                                  file.ContentType.Contains("word") || file.ContentType.Contains("excel") ||
+                                  file.ContentType.Contains("powerpoint") || file.ContentType.Contains("text/"),
+                    _ => false
+                };
+
+                if (!isValidType)
+                    return BadRequest(new { error = $"El archivo no coincide con el tipo {mediaType}" });
+
+                // Directory structure: Data/media/blog/posts/{blogPostId}/{mediaType}s/
+                var mediaFolder = mediaType + "s"; // images, videos, audios, documents
+                var uploadsDir = Path.Combine("Data", "media", "blog", "posts", blogPostId, mediaFolder);
+
+                if (!Directory.Exists(uploadsDir))
+                    Directory.CreateDirectory(uploadsDir);
+
+                // Generate unique filename
+                var extension = Path.GetExtension(file.FileName);
+                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var safeFileName = Path.GetFileNameWithoutExtension(file.FileName)
+                    .Replace(" ", "_")
+                    .Replace("(", "")
+                    .Replace(")", "");
+                var fileName = $"{safeFileName}_{timestamp}{extension}";
+                var filePath = Path.Combine(uploadsDir, fileName);
+
+                // Delete old file if specified
+                if (!string.IsNullOrEmpty(oldFilePath))
+                {
+                    var oldFullPath = Path.Combine("Data", oldFilePath.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFullPath))
+                    {
+                        System.IO.File.Delete(oldFullPath);
+                        _logger.LogInformation("Deleted old file: {OldFile}", oldFullPath);
+                    }
+                }
+
+                // Save the file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Get relative path from Data folder
+                var relativePath = Path.GetRelativePath("Data", filePath).Replace("\\", "/");
+
+                // Remove 'media/' prefix if present to avoid duplication in URL
+                var cleanRelativePath = relativePath.StartsWith("media/")
+                    ? relativePath.Substring(6)
+                    : relativePath;
+
+                var result = new
+                {
+                    success = true,
+                    filename = fileName,
+                    relativePath = cleanRelativePath,
+                    url = $"/media/{cleanRelativePath}",
+                    size = file.Length,
+                    type = file.ContentType,
+                    mediaType = mediaType,
+                    context = "blog",
+                    contentId = blogPostId
+                };
+
+                _logger.LogInformation("Blog media uploaded successfully: {FilePath}", filePath);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading blog media for {BlogPostId}", blogPostId);
+                return StatusCode(500, new { error = "Error interno del servidor al subir el archivo" });
+            }
+        }
+
+        /// <summary>
         /// Upload file for digital library item
         /// </summary>
         [HttpPost("library/{itemId}")]

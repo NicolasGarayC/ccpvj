@@ -1,7 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
-const BACKEND_URL = 'http://localhost:5251/api';
+const BACKEND_URL = BACKEND_API_URL;
 
 export const GET: RequestHandler = async ({ url, request }) => {
 	try {
@@ -12,12 +13,16 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		const searchParams = url.searchParams.toString();
 		const backendUrl = `${BACKEND_URL}/digitallibrary/items${searchParams ? `?${searchParams}` : ''}`;
 
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json'
+		};
+		if (authHeader) {
+			headers.Authorization = authHeader;
+		}
+
 		const response = await fetch(backendUrl, {
 			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: authHeader
-			}
+			headers
 		});
 
 		if (!response.ok) {
@@ -47,12 +52,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		const body = await request.json();
 
 		// Forward the request to the backend
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Authorization: authHeader
+		};
+
 		const response = await fetch(`${BACKEND_URL}/digitallibrary/items`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: authHeader
-			},
+			headers,
 			body: JSON.stringify(body)
 		});
 

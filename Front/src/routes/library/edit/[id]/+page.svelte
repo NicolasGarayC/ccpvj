@@ -2,29 +2,55 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
-	import type { LibraryItemDto, CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
+import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
+import type { LibraryItemDto, UpdateLibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
+import { contextualUploadService } from '$lib/application/services/upload/ContextualUploadService';
 
-	let resourceId = $page.params.id;
-	let resource: LibraryItemDto | null = null;
-	let formData: CreateLibraryItemDto = {
-		title: '',
-		description: '',
-		author: '',
-		category: '',
-		subcategory: '',
-		fileType: 'document',
-		language: 'es',
-		tags: '',
-		year: undefined
-	};
+interface LibraryItemForm {
+	title: string;
+	description: string;
+	author: string;
+	category: string;
+	subcategory: string;
+	fileType: string;
+	language: string;
+	tags: string;
+	filePath?: string;
+	fileName?: string;
+	fileSize?: number;
+	mimeType?: string;
+	isFeatured?: boolean;
+	collectionIds?: string[];
+	year?: number;
+}
+
+let resourceId = $page.params.id as string;
+let resource: LibraryItemDto | null = null;
+let formData: LibraryItemForm = {
+	title: '',
+	description: '',
+	author: '',
+	category: '',
+	subcategory: '',
+	fileType: 'document',
+	language: 'Español',
+	tags: '',
+	filePath: '',
+	fileName: '',
+	fileSize: undefined,
+	mimeType: '',
+	isFeatured: false,
+	collectionIds: [],
+	year: undefined
+};
 
 	let selectedFile: File | null = null;
 	let authorInput = '';
 	let tagsInput = '';
-	let loading = false;
-	let loadingResource = true;
-	let errors: Record<string, string> = {};
+let loading = false;
+let loadingResource = true;
+let errors: Record<string, string> = {};
+let successMessage = '';
 
 	const languageOptions = [
 		'Español',
@@ -46,18 +72,45 @@
 		{ value: 'Historia', label: 'Historia' }
 	];
 
-	const fileTypeOptions = [
-		{ value: 'document', label: 'Documento' },
-		{ value: 'video', label: 'Video' },
-		{ value: 'audio', label: 'Audio' },
-		{ value: 'image', label: 'Imagen' }
-	];
+const fileTypeOptions = [
+	{ value: 'document', label: 'Documento' },
+	{ value: 'video', label: 'Video' },
+	{ value: 'audio', label: 'Audio' },
+	{ value: 'image', label: 'Imagen' }
+];
 
-	onMount(async () => {
-		await loadResource();
-	});
+function populateFormFromResource(item: LibraryItemDto) {
+	formData = {
+		title: item.title,
+		description: item.description ?? '',
+		author: item.author ?? '',
+		category: item.category ?? '',
+		subcategory: item.subcategory ?? '',
+		fileType: item.fileType ?? 'document',
+		language: item.language ?? 'Español',
+		tags: Array.isArray(item.tags)
+			? item.tags.filter(Boolean).join(', ')
+			: typeof item.tags === 'string'
+				? item.tags
+				: '',
+		filePath: item.filePath,
+		fileName: item.fileName,
+		fileSize: item.fileSize,
+		mimeType: item.mimeType ?? '',
+		isFeatured: item.isFeatured ?? false,
+		collectionIds: Array.isArray(item.collections) ? item.collections.map(collection => collection.id) : [],
+		year: item.year
+	};
 
-	async function loadResource() {
+	authorInput = formData.author;
+	tagsInput = formData.tags;
+}
+
+onMount(async () => {
+	await loadResource();
+});
+
+async function loadResource() {
 		try {
 			loadingResource = true;
 			resource = await digitalLibraryService.getItemById(resourceId);
@@ -67,21 +120,7 @@
 				return;
 			}
 
-			// Llenar formulario con datos existentes
-			formData = {
-				title: resource.title,
-				description: resource.description || '',
-				author: resource.author,
-				year: resource.year,
-				category: resource.category,
-				subcategory: resource.subcategory || '',
-				fileType: resource.fileType,
-				tags: resource.tags || '',
-				language: resource.language
-			};
-
-			authorInput = resource.author;
-			tagsInput = resource.tags || '';
+			populateFormFromResource(resource);
 		} catch (error) {
 			console.error('Error loading resource:', error);
 			goto('/library');
@@ -94,10 +133,20 @@
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
 
-		if (file) {
-			selectedFile = file;
+	if (file) {
+		const validation = digitalLibraryService.validateFile(file);
+		if (!validation.isValid) {
+			errors.file = validation.error || 'Archivo no válido';
+			selectedFile = null;
+			return;
+		}
 
-			// Auto-detect file type
+		delete errors.file;
+		selectedFile = file;
+
+		if (validation.fileType) {
+			formData.fileType = validation.fileType;
+		} else {
 			const mimeType = file.type;
 			if (mimeType.startsWith('video/')) {
 				formData.fileType = 'video';
@@ -110,16 +159,21 @@
 			}
 		}
 
-		validateField('file');
+		formData.fileName = file.name;
+		formData.fileSize = file.size;
+		formData.mimeType = file.type;
 	}
+
+	validateField('file');
+}
 
 	function updateAuthor() {
 		formData.author = authorInput.trim();
 	}
 
-	function updateTags() {
-		formData.tags = tagsInput.trim();
-	}
+function updateTags() {
+	formData.tags = tagsInput.trim();
+}
 
 	function validateField(field: string) {
 		delete errors[field];
@@ -145,10 +199,9 @@
 
 			case 'file':
 				if (selectedFile) {
-					// Basic file size validation (max 500MB)
-					const maxSize = 500 * 1024 * 1024;
-					if (selectedFile.size > maxSize) {
-						errors.file = 'El archivo es demasiado grande. Máximo 500MB';
+					const validation = digitalLibraryService.validateFile(selectedFile);
+					if (!validation.isValid) {
+						errors.file = validation.error || 'Archivo no válido';
 					}
 				}
 				break;
@@ -168,25 +221,78 @@
 		return Object.keys(errors).length === 0;
 	}
 
-	async function handleSubmit() {
-		if (!validateForm()) {
-			return;
-		}
-		
-		loading = true;
-		
-		try {
-			// Note: The digitalLibraryService doesn't have an update method yet
-			// This would need to be implemented in the service
-			console.warn('Update functionality not yet implemented in digitalLibraryService');
-			errors.submit = 'Función de edición aún no implementada';
-		} catch (error) {
-			console.error('Error updating resource:', error);
-			errors.submit = error instanceof Error ? error.message : 'Error al actualizar el recurso';
-		} finally {
-			loading = false;
-		}
+async function handleSubmit() {
+	if (!validateForm()) {
+		return;
 	}
+	
+	loading = true;
+	successMessage = '';
+	delete errors.submit;
+	let uploadedFileReference: string | null = null;
+	
+	try {
+		const trimmedTags = tagsInput
+			.split(',')
+			.map(tag => tag.trim())
+			.filter(tag => tag.length > 0);
+
+		const updatePayload: UpdateLibraryItemDto = {
+			title: formData.title.trim(),
+			description: formData.description?.trim(),
+			author: formData.author?.trim(),
+			category: formData.category?.trim(),
+			subcategory: formData.subcategory?.trim() || undefined,
+			language: formData.language || undefined,
+			year: formData.year,
+			fileType: formData.fileType,
+			isFeatured: formData.isFeatured,
+			collectionIds: formData.collectionIds
+		};
+
+		updatePayload.tags = trimmedTags.length > 0 ? trimmedTags.join(', ') : '';
+
+		if (selectedFile) {
+			const uploadResult = await digitalLibraryService.uploadLibraryFile({
+				itemId: resourceId,
+				file: selectedFile,
+				category: formData.category || 'general',
+				oldFilePath: resource?.filePath
+			});
+
+			uploadedFileReference =
+				uploadResult.relativePath ||
+				(uploadResult.url?.startsWith('/media/')
+					? uploadResult.url.substring('/media/'.length)
+					: uploadResult.url);
+
+			updatePayload.filePath = uploadResult.url;
+			updatePayload.fileName = uploadResult.filename || selectedFile.name;
+			updatePayload.fileSize = uploadResult.size ?? selectedFile.size;
+			updatePayload.mimeType = selectedFile.type;
+			updatePayload.fileType = uploadResult.fileType ?? formData.fileType;
+		}
+
+		await digitalLibraryService.updateItem(resourceId, updatePayload);
+
+		const updatedResource = await digitalLibraryService.getItemById(resourceId);
+		resource = updatedResource;
+		populateFormFromResource(updatedResource);
+		selectedFile = null;
+
+		successMessage = 'Recurso actualizado exitosamente';
+	} catch (error) {
+		console.error('Error updating resource:', error);
+		errors.submit = error instanceof Error ? error.message : 'Error al actualizar el recurso';
+		successMessage = '';
+
+		if (uploadedFileReference) {
+			await contextualUploadService.cleanupOrphanFiles([uploadedFileReference]);
+		}
+	} finally {
+		loading = false;
+	}
+}
 
 	function handleCancel() {
 		goto('/library');
@@ -223,6 +329,12 @@
 			</div>
 		</div>
 
+		{#if successMessage}
+			<div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+				<i class="fas fa-check-circle mr-2 text-green-500"></i>{successMessage}
+			</div>
+		{/if}
+
 		<!-- Formulario -->
 		<form on:submit|preventDefault={handleSubmit} class="space-y-8">
 			<!-- Información básica -->
@@ -238,14 +350,14 @@
 						<input
 							id="resource-name"
 							type="text"
-							bind:value={formData.name}
-							on:blur={() => validateField('name')}
+							bind:value={formData.title}
+							on:blur={() => validateField('title')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							class:border-red-300={errors.name}
+							class:border-red-300={errors.title}
 							placeholder="Ingresa el nombre del recurso"
 						>
-						{#if errors.name}
-							<p class="mt-1 text-sm text-red-600">{errors.name}</p>
+						{#if errors.title}
+							<p class="mt-1 text-sm text-red-600">{errors.title}</p>
 						{/if}
 					</div>
 
@@ -263,31 +375,27 @@
 						></textarea>
 					</div>
 
-					<!-- Autores -->
+					<!-- Autor -->
 					<div>
 						<label for="resource-authors" class="block text-sm font-medium text-gray-700 mb-2">
-							Autores *
+							Autor *
 						</label>
 						<input
 							id="resource-authors"
 							type="text"
 							bind:value={authorInput}
-							on:input={updateAuthors}
-							on:blur={() => validateField('authors')}
+							on:input={updateAuthor}
+							on:blur={() => validateField('author')}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-							class:border-red-300={errors.authors}
-							placeholder="Ingresa los autores separados por comas"
+							class:border-red-300={errors.author}
+							placeholder="Ingresa el autor principal"
 						>
-						{#if errors.authors}
-							<p class="mt-1 text-sm text-red-600">{errors.authors}</p>
+						{#if errors.author}
+							<p class="mt-1 text-sm text-red-600">{errors.author}</p>
 						{/if}
-						{#if formData.authors.length > 0}
-							<div class="mt-2 flex flex-wrap gap-2">
-								{#each formData.authors as author}
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-										{author}
-									</span>
-								{/each}
+						{#if formData.author}
+							<div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+								{formData.author}
 							</div>
 						{/if}
 					</div>

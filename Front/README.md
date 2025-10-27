@@ -7,7 +7,7 @@
 ### 🎯 Estado Actual
 - **✅ OPERATIVO**: Sistema completo con autenticación, cursos, blog, biblioteca
 - **✅ INDEPENDIENTE**: Puede operar sin backend usando APIs internas
-- **✅ MODERNO**: SvelteKit 5, TypeScript, Tailwind CSS 4.0, Drizzle ORM
+- **✅ MODERNO**: SvelteKit 5, TypeScript, Tailwind CSS 4.0 y APIs locales
 - **✅ RESPONSIVE**: Interfaz adaptable para diferentes dispositivos
 - **✅ CORRECCIONES APLICADAS**: Compatible con backend corregido (Septiembre 2025)
 
@@ -38,10 +38,10 @@ El frontend ya estaba correctamente implementado y es totalmente compatible con 
 - **@tailwindcss/typography** - Tipografía avanzada
 - **Font Awesome 6.4** - Iconografía completa
 
-### **Base de Datos**
-- **Drizzle ORM 0.40** - ORM TypeScript type-safe
-- **@libsql/client** - Cliente SQLite para el navegador
-- **SQLite** - Base de datos local (`D:/ccpvj/Data/ccpvj.db`)
+### **Persistencia y APIs**
+- **Servicios HTTP internos** - Endpoints en `src/routes/api` para CRUD offline-first
+- **SQLite** - Base de datos local (`Data/ccpvj.db`) accesible vía servicios del proyecto
+- **Entity Framework (.NET)** - Capa opcional cuando se usa el backend legacy
 
 ### **Autenticación y Seguridad**
 - **@oslojs/crypto** - Utilidades criptográficas
@@ -87,27 +87,20 @@ Front/
 │       │   ├── common/             # Compartidos
 │       │   └── shared/             # Utilidades
 │       │
-│       ├── services/               # Servicios de datos (8)
-│       │   ├── auth/jwtService.ts  # Autenticación JWT
-│       │   ├── courseService.ts    # Gestión de cursos
-│       │   ├── blog/               # Servicios blog
-│       │   ├── library/            # Servicios biblioteca
-│       │   └── calendar/           # Servicios eventos
-│       │
-│       ├── server/                 # Lógica servidor
-│       │   ├── db/                 # Base de datos
-│       │   │   ├── schema.ts       # Esquema Drizzle
-│       │   │   └── index.ts        # Conexión DB
-│       │   └── utils/              # Utilidades servidor
-│       │       └── mediaCleanup.ts # Limpieza multimedia
-│       │
+│       ├── services/               # Servicios HTTP/BaseHttpService
+│       ├── server/                 # Utilidades server-side (offline-first)
+│       │   └── utils/              # mediaCleanup, paths
 │       ├── data/                   # Tipos y modelos
-│       └── config/                 # Configuración
+│       ├── config/                 # Configuración
+│       ├── stores/                 # Stores globales
+│       ├── utils/                  # Utilidades compartidas
+│       ├── assets/                 # Recursos locales
+│       └── types/                  # Definiciones API
 │
 ├── static/                         # Archivos estáticos
 ├── tests/                          # Tests E2E
 ├── stories/                        # Storybook stories
-└── drizzle/                        # Migraciones DB
+└── project.inlang/                 # Configuración i18n
 ```
 
 ---
@@ -327,57 +320,19 @@ FileUploader.svelte           # Subida de archivos genérica
 
 ---
 
-## 🗄️ Base de Datos (Drizzle ORM)
+## 🗄️ Integración de Datos
 
-### **Esquema Principal**
-```typescript
-// Autenticación
-user                          # Usuarios del sistema
-session                       # Sesiones JWT activas
+El frontend ya no se conecta directamente a SQLite mediante Drizzle. Toda la persistencia se realiza a través de servicios HTTP (`src/lib/services`) que consumen las rutas internas de SvelteKit en `src/routes/api` o, si se habilita, el backend .NET.
 
-// Sistema Educativo
-course                        # Cursos
-module                        # Módulos de cursos
-modulePost                    # Posts/contenido de módulos
+### **Servicios Clave**
+- `BaseHttpService` centraliza cabeceras, control de errores y autenticación.
+- `auth/jwtService.ts` gestiona tokens y permisos.
+- Servicios específicos (`materialApoyoService`, `blog`, `calendar`, `digitalLibraryService`, etc.) implementan los CRUD de cada módulo consumiendo las APIs internas.
 
-// Blog y Contenido
-blogPost                      # Posts del blog
-blogCategory                  # Categorías del blog
-
-// Multimedia
-mediaFile                     # Archivos multimedia
-uploadStatus                  # Estado de uploads
-
-// Biblioteca
-libraryResource               # Recursos de biblioteca
-
-// Eventos
-event                         # Eventos del centro
-eventRegistration             # Registro a eventos
-```
-
-### **Configuración Drizzle**
-```typescript
-// drizzle.config.ts
-export default defineConfig({
-  schema: './src/lib/server/db/schema.ts',
-  dialect: 'sqlite',
-  dbCredentials: {
-    url: process.env.DATABASE_URL || 'file:/home/user/ccpvj/Data/ccpvj.db'
-  },
-  verbose: true,
-  strict: true
-});
-```
-
-### **Scripts de Base de Datos**
-```bash
-npm run db:push              # Actualizar esquema
-npm run db:generate          # Generar migraciones
-npm run db:migrate           # Ejecutar migraciones
-npm run db:studio            # Drizzle Studio GUI
-npm run db:seed              # Datos de prueba
-```
+### **Persistencia**
+- La base de datos SQLite vive en `Data/ccpvj.db` y es compartida entre frontend y backend.
+- Para inspeccionar la base de datos usa la CLI de SQLite (`sqlite3 Data/ccpvj.db`) o la herramienta que prefieras; no hay scripts `db:*` en el frontend.
+- Si se ejecuta el backend .NET, Entity Framework es la capa recomendada para mantener el esquema en sincronía.
 
 ---
 
@@ -442,20 +397,16 @@ npm run dev                  # Servidor desarrollo (http://localhost:5173)
 npm run build               # Build de producción
 npm run preview             # Preview del build
 
-# Base de Datos
-npm run db:push             # Actualizar esquema DB
-npm run db:studio           # Drizzle Studio GUI
-npm run db:seed             # Insertar datos de prueba
+# Calidad
+npm run check               # TypeScript + Svelte check
+npm run check:watch         # Watch mode para checks
+npm run format              # Formatear código (Prettier)
+npm run lint                # Verificación de formato
 
 # Testing
 npm run test                # Ejecutar todos los tests
 npm run test:unit           # Tests unitarios (Vitest)
 npm run test:e2e            # Tests E2E (Playwright)
-
-# Calidad de Código
-npm run check               # TypeScript checking
-npm run format              # Formatear código (Prettier)
-npm run lint                # Linting (Prettier check)
 
 # Componentes
 npm run storybook           # Storybook dev server
@@ -620,7 +571,7 @@ export default {
 - Biblioteca digital con upload/download
 - Sistema de eventos y calendario
 - Upload y gestión multimedia contextual
-- Base de datos SQLite con Drizzle ORM
+- Persistencia en SQLite accesible mediante APIs internas
 - Componentes UI responsivos
 - APIs internas completas (62 endpoints)
 
@@ -632,7 +583,7 @@ export default {
 
 ### **🔄 Integración**
 - **Backend .NET**: APIs complementarias opcionales
-- **Base de Datos**: Esquema unificado entre ORMs
+- **Base de Datos**: Esquema compartido entre frontend y backend (.NET)
 - **Multimedia**: Sistema de limpieza compartido
 - **Autenticación**: Cookies compatibles entre sistemas
 
@@ -652,10 +603,10 @@ export default {
 - **Limpiar** archivos anteriores al reemplazar
 
 ### **Base de Datos**
-- Usar **Drizzle Studio** para inspección: `npm run db:studio`
-- **Foreign keys** habilitados automáticamente
-- **Migraciones** automáticas en desarrollo
-- **Seeding** disponible para datos de prueba
+- Gestionar cambios mediante las APIs internas o el backend .NET
+- Foreign keys activas por defecto (`PRAGMA foreign_keys = ON`)
+- Para inspeccionar usa `sqlite3 Data/ccpvj.db` o tu herramienta preferida
+- Scripts SQL auxiliares disponibles en `Data/scripts/`
 
 ### **Autenticación**
 - **Siempre** usar `jwtService.getAuthHeader()` para requests autenticados
@@ -668,9 +619,8 @@ export default {
 
 ### **Desarrollo**
 - **Frontend**: http://localhost:5173
-- **Drizzle Studio**: `npm run db:studio`
 - **Storybook**: http://localhost:6006
-- **Base de Datos**: `D:/ccpvj/Data/ccpvj.db`
+ - **Base de Datos**: `Data/ccpvj.db`
 
 ### **Testing**
 ```bash
@@ -683,5 +633,3 @@ role: administrador
 ---
 
 **⚠️ Importante**: Este frontend es **completamente independiente** y puede operar sin el backend .NET. Es el **sistema principal** de la plataforma del Centro Cultural Víctor Jara.
-
-

@@ -10,17 +10,17 @@ const BASE_UPLOAD_DIR = path.resolve(process.cwd(), '../Back/Data/media');
 const MEDIA_CONFIG = {
     image: {
         types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
-        maxSize: 20 * 1024 * 1024, // 20MB
+        maxSize: 1024 * 1024 * 1024, // 1GB
         folder: 'images'
     },
     video: {
         types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/mkv'],
-        maxSize: 500 * 1024 * 1024, // 500MB
+        maxSize: 20 * 1024 * 1024 * 1024, // 20GB
         folder: 'videos'
     },
     audio: {
         types: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/flac'],
-        maxSize: 100 * 1024 * 1024, // 100MB
+        maxSize: 20 * 1024 * 1024 * 1024, // 20GB
         folder: 'audio'
     },
     document: {
@@ -35,7 +35,7 @@ const MEDIA_CONFIG = {
             'text/plain',
             'text/csv'
         ],
-        maxSize: 50 * 1024 * 1024, // 50MB
+        maxSize: 1024 * 1024 * 1024, // 1GB
         folder: 'documents'
     }
 };
