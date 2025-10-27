@@ -7,9 +7,10 @@
 	export let post: BlogPost | null = null;
 	export let nextOrderNumber = 1;
 	export let formComponent: typeof BlogPostForm = BlogPostForm;
-	export let onCreated: ((detail: unknown) => void) | undefined;
-	export let onUpdated: ((detail: unknown) => void) | undefined;
-	export let onClose: (() => void) | undefined;
+	// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+	export let onCreated: ((detail: unknown) => void) | undefined = undefined;
+	export let onUpdated: ((detail: unknown) => void) | undefined = undefined;
+	export let onClose: (() => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher();
 

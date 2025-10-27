@@ -8,10 +8,11 @@ export let isEdit: boolean = false;
 export let availableProjects: Array<{ id: string; title: string }> = [];
 export let availableBlogPosts: Array<{ id: string; title: string; slug: string }> = [];
 export let initialDate: Date | null = null;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
 export let onSaveCallback:
 	| ((event: CustomEvent<{ eventData: CreateEventData }>) => void)
-	| undefined;
-export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined;
+	| undefined = undefined;
+export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		save: { eventData: CreateEventData };
@@ -196,7 +197,7 @@ export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined;
 
 	// Manejar cancelación
 	function handleCancel() {
-		const event = new CustomEvent('cancel');
+		const event = new CustomEvent<void>('cancel');
 		onCancelCallback?.(event);
 		dispatch('cancel');
 	}

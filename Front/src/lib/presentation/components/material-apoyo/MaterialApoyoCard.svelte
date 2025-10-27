@@ -7,7 +7,8 @@ import ConfirmationModal from '../common/ConfirmationModal.svelte';
 
 export let materialApoyo: MaterialApoyoDto | MaterialApoyoSummaryDto;
 export let showActions = false;
-export let onDeleted: ((materialId: string) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onDeleted: ((materialId: string) => void) | undefined = undefined;
 const dispatch = createEventDispatcher<{
 	deleted: string;
 }>();

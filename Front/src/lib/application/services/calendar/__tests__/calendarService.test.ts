@@ -3,7 +3,9 @@ import type { Mock } from 'vitest';
 import { calendarService } from '../CalendarService';
 
 vi.mock('$env/dynamic/public', () => ({
-	env: {}
+	env: {
+		PUBLIC_BACKEND_BASE_URL: 'http://localhost:5251'
+	}
 }));
 
 const backendEventBase = {

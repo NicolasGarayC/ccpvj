@@ -7,8 +7,9 @@ export let events: EventSummary[] = [];
 export let currentDate: Date = new Date();
 export let viewType: 'month' | 'week' | 'day' = 'month';
 export let onViewChange: ((detail: { date: Date; viewType: string }) => void) | undefined;
-export let onDateClick: ((detail: { date: Date }) => void) | undefined;
-export let onEventClick: ((detail: { event: EventSummary }) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onDateClick: ((detail: { date: Date }) => void) | undefined = undefined;
+export let onEventClick: ((detail: { event: EventSummary }) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		eventClick: { event: EventSummary };

@@ -9,8 +9,9 @@
   export let showActions = false;
   export let canEdit = false;
   export let canDelete = false;
-  export let onEditCallback: ((event: CustomEvent<string>) => void) | undefined;
-  export let onDeleteCallback: ((event: CustomEvent<string>) => void) | undefined;
+  // TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+  export let onEditCallback: ((event: CustomEvent<string>) => void) | undefined = undefined;
+  export let onDeleteCallback: ((event: CustomEvent<string>) => void) | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 

@@ -8,8 +8,9 @@
 export let user: User | null = null;
 export let isEdit: boolean = false;
 export let availableRoles: Role[] = [];
-export let onSave: ((detail: { userData: CreateUserData | UpdateUserData }) => void) | undefined;
-export let onCancel: (() => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onSave: ((detail: { userData: CreateUserData | UpdateUserData }) => void) | undefined = undefined;
+export let onCancel: (() => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		save: { userData: CreateUserData | UpdateUserData };

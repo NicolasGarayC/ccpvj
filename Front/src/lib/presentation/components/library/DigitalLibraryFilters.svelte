@@ -9,7 +9,8 @@ import { t, translate } from '$lib/i18n';
 	}>();
 
 	export let currentFilters: LibrarySearchDto = {};
-	export let onFiltersChange: ((filters: LibrarySearchDto) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+	export let onFiltersChange: ((filters: LibrarySearchDto) => void) | undefined = undefined;
 
 	let availableCategories: string[] = [];
 	let availableAuthors: string[] = [];

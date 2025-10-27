@@ -9,8 +9,9 @@ export let confirmText = translate('modal.confirm');
 export let cancelText = translate('action.cancel');
 export let type: 'danger' | 'warning' | 'info' = 'warning';
 export let loading = false;
-export let onConfirmCallback: ((event: CustomEvent<void>) => void) | undefined;
-export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onConfirmCallback: ((event: CustomEvent<void>) => void) | undefined = undefined;
+export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		confirm: void;
@@ -18,14 +19,14 @@ export let onCancelCallback: ((event: CustomEvent<void>) => void) | undefined;
 	}>();
 
 function handleConfirm() {
-	const event = new CustomEvent('confirm');
+	const event = new CustomEvent<void>('confirm');
 	onConfirmCallback?.(event);
 	dispatch('confirm');
 }
 
 function handleCancel() {
 	if (!loading) {
-		const event = new CustomEvent('cancel');
+		const event = new CustomEvent<void>('cancel');
 		onCancelCallback?.(event);
 		dispatch('cancel');
 	}

@@ -10,13 +10,14 @@ export let showFilters: boolean = true;
 export let showCreateButton: boolean = false;
 export let limit: number = 0;
 export let currentUserRole: string = '';
-export let onUserClick: ((detail: { user: User }) => void) | undefined;
-export let onCreateUser: (() => void) | undefined;
-export let onEditUser: ((detail: { user: User }) => void) | undefined;
-export let onDeleteUser: ((detail: { user: User }) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onUserClick: ((detail: { user: User }) => void) | undefined = undefined;
+export let onCreateUser: (() => void) | undefined = undefined;
+export let onEditUser: ((detail: { user: User }) => void) | undefined = undefined;
+export let onDeleteUser: ((detail: { user: User }) => void) | undefined = undefined;
 export let onToggleUser: ((detail: { user: User; isActive: boolean }) => void) | undefined;
 export let onChangeRole: ((detail: { user: User; newRole: string }) => void) | undefined;
-export let onResetPassword: ((detail: { user: User }) => void) | undefined;
+export let onResetPassword: ((detail: { user: User }) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		userClick: { user: User };

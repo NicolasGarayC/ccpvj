@@ -4,6 +4,141 @@
 
 ---
 
+## ⚠️ ESTADO DE LA MIGRACIÓN (Actualización: 2025-10-25)
+
+### ✅ FASES COMPLETADAS:
+- **FASE 1:** Estructura de carpetas creada ✅
+- **FASE 2:** Servicios movidos a `application/services/` ✅
+- **FASE 3:** Infraestructura movida a `infrastructure/` ✅ (parcial)
+- **FASE 4:** Presentación movida a `presentation/` ✅
+
+### ❌ FASES PENDIENTES:
+
+#### **FASE 5: MOVER SHARED (CRÍTICO - PENDIENTE)**
+
+**Estado:** ⏸️ **NO EJECUTADA** - Los archivos siguen en ubicaciones del modelo viejo
+
+**Archivos que deben moverse:**
+
+1. **`lib/config/` → `lib/shared/config/`**
+   - `backend.ts` (23+ imports activos en routes/api/)
+   - `media.ts` (verificar uso)
+
+2. **`lib/utils/` → `lib/shared/utils/`**
+   - `mediaUtils.ts` (5+ imports activos)
+   - `roleUtils.ts` (1+ imports activos)
+
+3. **`lib/types/` → `lib/shared/types/`**
+   - `api/blog.types.ts` (EN USO)
+   - `api/common.types.ts` (EN USO)
+   - `api/index.ts` (EN USO)
+   - `api/materialApoyo.types.ts` (EN USO)
+
+**Impacto estimado:**
+- ~50-60 archivos con imports que actualizar
+- Riesgo: 🔴 Alto (puede romper funcionalidad si no se hace con cuidado)
+- Tiempo estimado: 2-3 horas
+- Tests afectados: Todos los tests que usen estos módulos
+
+**Prerequisitos antes de ejecutar:**
+1. ✅ Todos los tests actuales deben pasar
+2. ✅ Build de producción debe funcionar
+3. ✅ Crear backup completo del frontend
+4. ✅ Crear branch específico: `refactor/move-to-shared`
+
+**Pasos detallados para FASE 5:**
+```bash
+# 1. Crear estructura shared
+mkdir -p lib/shared/config
+mkdir -p lib/shared/utils
+mkdir -p lib/shared/types/api
+
+# 2. Mover archivos (uno a uno, con tests entre cada paso)
+mv lib/config/* lib/shared/config/
+mv lib/utils/* lib/shared/utils/
+mv lib/types/* lib/shared/types/
+
+# 3. Buscar y reemplazar imports (CRÍTICO)
+# Buscar: from '$lib/config/
+# Reemplazar: from '$lib/shared/config/
+
+# Buscar: from '$lib/utils/
+# Reemplazar: from '$lib/shared/utils/
+
+# Buscar: from '$lib/types/
+# Reemplazar: from '$lib/shared/types/
+
+# 4. Ejecutar tests después de CADA cambio
+npm run test:unit -- --run
+
+# 5. Verificar build
+npm run build
+
+# 6. Eliminar directorios vacíos
+rmdir lib/config
+rmdir lib/utils
+rmdir lib/types/api
+rmdir lib/types
+```
+
+**Archivos a revisar manualmente (lista completa):**
+```bash
+# Config imports (23+ archivos):
+grep -r "from '\$lib/config/" Front/src --include="*.ts" --include="*.svelte"
+
+# Utils imports (5+ archivos):
+grep -r "from '\$lib/utils/" Front/src --include="*.ts" --include="*.svelte"
+
+# Types imports (10+ archivos):
+grep -r "from '\$lib/types/" Front/src --include="*.ts" --include="*.svelte"
+```
+
+### 🗂️ PENDIENTE: Evaluar directorio `lib/data/`
+
+**Estado:** 🤔 **SIN DEFINIR** (no aparece en plan original)
+
+**Contenido encontrado:**
+- `lib/data/models/interfaces.ts`
+- `lib/data/stores/blogStore.ts`
+
+**Acciones pendientes:**
+1. Verificar si estos archivos se están usando (no se encontraron imports directos)
+2. Si no se usan, eliminar el directorio completo
+3. Si se usan, definir dónde deben vivir en la nueva arquitectura
+
+**Comando para verificar:**
+```bash
+grep -r "from '\$lib/data/" Front/src --include="*.ts" --include="*.svelte"
+```
+
+### 🔄 CONFLICTO: Duplicación de server/utils
+
+**Estado:** ⚠️ **REVISAR**
+
+**Problema encontrado:**
+- Existe `lib/server/utils/media-paths.ts` (recién creado para fix de medios)
+- Existe `lib/infrastructure/server/utils/` con `mediaCleanup.ts` y `paths.ts`
+
+**Decisión pendiente:**
+- ¿Consolidar todo en `infrastructure/server/utils/`?
+- ¿Mantener `lib/server/utils/` para utilidades específicas de SvelteKit server?
+
+**Recomendación:** Mover `lib/server/utils/media-paths.ts` a `lib/infrastructure/server/utils/media-paths.ts` y actualizar imports.
+
+---
+
+## 🎯 PRIORIDAD DE EJECUCIÓN (Siguiente Sesión):
+
+1. **Alta Prioridad:** Completar FASE 5 (mover a `shared/`)
+2. **Media Prioridad:** Resolver duplicación `server/utils/`
+3. **Baja Prioridad:** Limpiar directorio `lib/data/` si está en desuso
+
+**Fecha de análisis:** 2025-10-25
+**Analizado por:** Claude Code
+**Estado:** ⏸️ Pausado - Funciona correctamente con estructura actual, pero falta completar migración
+
+---
+
 ## 📊 Estado Actual (Diagnóstico)
 
 ### Problemas Identificados
