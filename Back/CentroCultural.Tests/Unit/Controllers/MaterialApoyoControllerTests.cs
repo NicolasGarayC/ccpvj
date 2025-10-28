@@ -51,15 +51,15 @@ public class MaterialApoyoControllerTests
     public async Task GetMaterialApoyo_WithValidSearch_ShouldReturnOkWithData()
     {
         // Arrange
-        var searchDto = new MaterialApoyoSearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new MaterialApoyoSearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new MaterialApoyoPagedResultDto
         {
-            Items = new List<MaterialApoyoSummaryDto>
+            MaterialApoyo = new List<MaterialApoyoSummaryDto>
             {
                 new MaterialApoyoSummaryDto { Id = "1", Title = "Test Material" }
             },
-            TotalItems = 1,
-            PageNumber = 1,
+            TotalCount = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -222,7 +222,7 @@ public class MaterialApoyoControllerTests
         SetupUserClaims("1");
         var expectedMaterials = new List<MaterialApoyoSummaryDto>
         {
-            new MaterialApoyoSummaryDto { Id = "1", Title = "My Material 1", EducatorId = "1" }
+            new MaterialApoyoSummaryDto { Id = "1", Title = "My Material 1", EducatorName = "Test Educator" }
         };
 
         _mockService

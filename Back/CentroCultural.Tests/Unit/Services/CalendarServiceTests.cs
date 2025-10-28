@@ -48,11 +48,10 @@ public class CalendarServiceTests : IDisposable
             NombreUsuario = "organizer",
             Nombre = "Test",
             Apellido = "Organizer",
-            Correo = "organizer@test.com",
             Contrasena = "hashed",
-            RoleString = "administrador",
-            IsActive = true,
-            CreatedAt = currentTime
+            IdRol = 3, // 3 = Administrador
+            FechaCreacion = currentTime.ToString(),
+            EsActivo = true
         };
 
         _context.Usuario.Add(organizer);

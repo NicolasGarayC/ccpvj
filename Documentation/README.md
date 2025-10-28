@@ -1,5 +1,7 @@
 # Centro Cultural Víctor Jara - Plataforma Web Educativa
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica.
+
 ## 📌 Resumen del Proyecto
 
 **PROYECTO EN DESARROLLO**: Plataforma web para centros culturales comunitarios diseñada para ser offline-first con arquitectura de red mesh local.

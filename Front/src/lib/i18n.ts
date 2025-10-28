@@ -51,7 +51,7 @@ export const messages = {
 
     // LOGIN
     "login.title": "Iniciar Sesión",
-    "login.subtitle": "Accede con tu cuenta del Centro Cultural",
+    "login.subtitle": "Accede con tu cuenta del Centro Cultural, solo para administradores y colaboradores.",
     "login.usernameLabel": "Usuario",
     "login.passwordLabel": "Contraseña",
     "login.usernamePlaceholder": "Ingresa tu usuario",
@@ -767,7 +767,7 @@ export const messages = {
 
     // LOGIN
     "login.title": "Log In",
-    "login.subtitle": "Access with your Cultural Center account",
+    "login.subtitle": "Access with your Cultural Center account, only for authorized users",
     "login.usernameLabel": "Username",
     "login.passwordLabel": "Password",
     "login.usernamePlaceholder": "Enter your username",

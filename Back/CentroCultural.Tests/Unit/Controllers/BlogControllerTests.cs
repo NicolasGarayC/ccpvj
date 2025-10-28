@@ -51,15 +51,15 @@ public class BlogControllerTests
     public async Task GetBlogPosts_WithValidSearch_ShouldReturnOkWithData()
     {
         // Arrange
-        var searchDto = new BlogPostSearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new BlogPostSearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new BlogPostPagedResultDto
         {
-            Items = new List<BlogPostSummaryDto>
+            Posts = new List<BlogPostSummaryDto>
             {
                 new BlogPostSummaryDto { Id = "1", Title = "Test Post", Slug = "test-post" }
             },
-            TotalItems = 1,
-            PageNumber = 1,
+            TotalCount = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -286,7 +286,10 @@ public class BlogControllerTests
         {
             Title = "New Post",
             Slug = "new-post",
-            Content = "Post content"
+            Elements = new List<BlogPostElementDto>
+            {
+                new BlogPostElementDto { ElementType = "text", Content = "Post content", OrderNumber = 1 }
+            }
         };
 
         var createdPost = new BlogPostDto

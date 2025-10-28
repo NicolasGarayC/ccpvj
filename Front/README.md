@@ -1,5 +1,7 @@
 # Frontend Centro Cultural Víctor Jara - SvelteKit 5
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica para desarrolladores.
+
 ## 📌 Resumen del Frontend
 
 **Sistema Frontend Principal** para la plataforma del Centro Cultural Víctor Jara construido con **SvelteKit 5** como aplicación web moderna **offline-first**.

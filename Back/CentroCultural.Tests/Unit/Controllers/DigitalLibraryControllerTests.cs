@@ -51,15 +51,15 @@ public class DigitalLibraryControllerTests
     public async Task GetItems_WithValidSearch_ShouldReturnOkWithData()
     {
         // Arrange
-        var searchDto = new LibrarySearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new LibrarySearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new LibraryItemPagedResultDto
         {
-            Items = new List<LibraryItemSummaryDto>
+            Items = new List<LibraryItemDto>
             {
-                new LibraryItemSummaryDto { Id = "1", Title = "Test Resource" }
+                new LibraryItemDto { Id = "1", Title = "Test Resource" }
             },
-            TotalItems = 1,
-            PageNumber = 1,
+            TotalCount = 1,
+            Page = 1,
             PageSize = 10
         };
 

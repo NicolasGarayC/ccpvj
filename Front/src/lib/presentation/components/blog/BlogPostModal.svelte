@@ -59,6 +59,9 @@
 	{visible}
 	{post}
 	{nextOrderNumber}
+	onCreated={(detail) => handleCreated({ detail } as CustomEvent)}
+	onUpdated={(detail) => handleUpdated({ detail } as CustomEvent)}
+	onClose={handleClose}
 	on:created={handleCreated}
 	on:updated={handleUpdated}
 	on:close={handleClose}

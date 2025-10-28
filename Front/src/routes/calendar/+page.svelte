@@ -462,6 +462,7 @@ function getStatusMessage(): string {
 					<CalendarView
 						events={calendarData.events}
 						currentDate={currentDate}
+						onViewChange={(detail) => handleViewChange({ detail } as CustomEvent<{ date: Date; viewType: string }>)}
 						on:eventClick={handleEventClick}
 						on:dateClick={handleDateClick}
 						on:viewChange={handleViewChange}

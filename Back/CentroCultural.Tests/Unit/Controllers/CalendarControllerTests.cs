@@ -51,7 +51,7 @@ public class CalendarControllerTests
     public async Task GetEvents_WithValidSearch_ShouldReturnOkWithEvents()
     {
         // Arrange
-        var searchDto = new EventSearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new EventSearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new EventPagedResultDto
         {
             Events = new List<EventSummaryDto>
@@ -59,7 +59,7 @@ public class CalendarControllerTests
                 new EventSummaryDto { Id = Guid.NewGuid(), Title = "Test Event" }
             },
             TotalCount = 1,
-            PageNumber = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -99,7 +99,7 @@ public class CalendarControllerTests
     public async Task GetEventsPaged_WithValidSearch_ShouldReturnOkWithPagedResult()
     {
         // Arrange
-        var searchDto = new EventSearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new EventSearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new EventPagedResultDto
         {
             Events = new List<EventSummaryDto>
@@ -108,7 +108,7 @@ public class CalendarControllerTests
                 new EventSummaryDto { Id = Guid.NewGuid(), Title = "Event 2" }
             },
             TotalCount = 2,
-            PageNumber = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -243,8 +243,8 @@ public class CalendarControllerTests
         // Arrange
         var expectedTypes = new List<EventTypeDto>
         {
-            new EventTypeDto { Name = "Workshop", Color = "blue" },
-            new EventTypeDto { Name = "Concert", Color = "red" }
+            new EventTypeDto { Type = "Workshop", DisplayName = "Workshop", Color = "blue" },
+            new EventTypeDto { Type = "Concert", DisplayName = "Concert", Color = "red" }
         };
 
         _mockService

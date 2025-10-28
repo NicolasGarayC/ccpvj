@@ -93,7 +93,11 @@
       "Bash(npm run build:*)",
       "Bash(rm:*)",
       "Bash(npm run check:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

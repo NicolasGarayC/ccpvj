@@ -1,5 +1,7 @@
 # Backend CentroCultural - API .NET 8
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica para desarrolladores.
+
 ## 📌 Resumen del Backend
 
 **Sistema Backend** para la plataforma del Centro Cultural Víctor Jara construido con **.NET 8** como **API REST complementaria** al frontend SvelteKit.

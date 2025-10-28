@@ -3,6 +3,7 @@
 	import { blogService } from '$lib/application/services/blog/blogService';
 import { blogPostElementService, type CreateElementDto, type ElementType, type ElementWithFile } from '$lib/application/services/blog/blogPostElementService';
 	import type { BlogPost } from '$lib/types/api';
+	import type { BlogPostElementDto } from '$lib/types/api/blog.types';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
 	import { contextualUploadService, type UploadResult } from '$lib/application/services/upload/ContextualUploadService';
 	import BlogEventRelation from './BlogEventRelation.svelte';
@@ -297,7 +298,7 @@ function resetForm() {
 				featuredMedia: post?.featuredMedia ?? undefined,
 				tags: resolvedTags,
 				content: combinedContent,
-				elements: elementsPayload
+				elements: elementsPayload as unknown as BlogPostElementDto[]
 			};
 
 			await blogService.updatePost(String(post.id), updateData);
@@ -309,13 +310,15 @@ function resetForm() {
 			await updateEventRelations(String(post.id));
 
 			// Dispatch success with message
-			const detail = {
-				postId: String(post.id),
-				message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
-				post: updatedPost
-			};
-			dispatch('updated', detail);
-			onUpdated?.(detail);
+			if (updatedPost) {
+				const detail = {
+					postId: String(post.id),
+					message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
+					post: updatedPost
+				};
+				dispatch('updated', detail);
+				onUpdated?.(detail);
+			}
 		} else {
 			// Create new blog post
 			const createData = {

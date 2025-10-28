@@ -47,11 +47,10 @@ public class BlogServiceTests : IDisposable
             NombreUsuario = "testauthor",
             Nombre = "Test",
             Apellido = "Author",
-            Correo = "test@example.com",
             Contrasena = "hashed",
-            RoleString = "autor",
-            IsActive = true,
-            CreatedAt = currentTime
+            IdRol = 2, // 2 = Colaborador (autor)
+            FechaCreacion = currentTime.ToString(),
+            EsActivo = true
         };
 
         _context.Usuario.Add(author);
@@ -295,9 +294,9 @@ public class BlogServiceTests : IDisposable
             IsActive = true,
             Tags = new List<string> { "test", "nuevo" },
             Status = "draft",
-            Elements = new List<CreateBlogPostElementDto>
+            Elements = new List<BlogPostElementDto>
             {
-                new CreateBlogPostElementDto
+                new BlogPostElementDto
                 {
                     ElementType = "text",
                     Content = "Contenido del nuevo post",
@@ -328,7 +327,7 @@ public class BlogServiceTests : IDisposable
         var createDto = new CreateBlogPostDto
         {
             Title = "Test Post",
-            Elements = new List<CreateBlogPostElementDto>()
+            Elements = new List<BlogPostElementDto>()
         };
 
         // Act & Assert
@@ -344,7 +343,7 @@ public class BlogServiceTests : IDisposable
         {
             Title = "Test Post",
             Slug = "introduccion-a-net", // Slug ya existe
-            Elements = new List<CreateBlogPostElementDto>()
+            Elements = new List<BlogPostElementDto>()
         };
 
         // Act & Assert
@@ -360,7 +359,7 @@ public class BlogServiceTests : IDisposable
         {
             Title = "Post Publicado Inmediatamente",
             IsPublished = true,
-            Elements = new List<CreateBlogPostElementDto>()
+            Elements = new List<BlogPostElementDto>()
         };
 
         // Act
@@ -393,9 +392,9 @@ public class BlogServiceTests : IDisposable
             IsActive = true,
             Tags = new List<string> { "ef-core", "advanced" },
             Status = "published",
-            Elements = new List<CreateBlogPostElementDto>
+            Elements = new List<BlogPostElementDto>
             {
-                new CreateBlogPostElementDto
+                new BlogPostElementDto
                 {
                     ElementType = "text",
                     Content = "Contenido actualizado",
@@ -423,7 +422,7 @@ public class BlogServiceTests : IDisposable
         {
             Title = "Test",
             Slug = "test",
-            Elements = new List<CreateBlogPostElementDto>()
+            Elements = new List<BlogPostElementDto>()
         };
 
         // Act
@@ -443,7 +442,7 @@ public class BlogServiceTests : IDisposable
             Title = "Work in Progress",
             Slug = "work-in-progress",
             IsPublished = true, // Publicar ahora
-            Elements = new List<CreateBlogPostElementDto>()
+            Elements = new List<BlogPostElementDto>()
         };
 
         // Act
