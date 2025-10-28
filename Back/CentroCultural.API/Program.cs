@@ -92,17 +92,43 @@ Console.WriteLine($"[Startup] SQLite connection resolved to: {resolvedConnection
 builder.Services.AddInfrastructureServices(resolvedConnectionString);
 builder.Services.AddApplicationServices();
 
-// CORS - allow SvelteKit dev servers on loopback (localhost / 127.0.0.1) and common ports
+// CORS - Configuración permisiva para desarrollo y producción
 builder.Services.AddCors(options =>
 {
+    // Política permisiva para desarrollo/producción
     options.AddPolicy("AllowSvelteKit", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-                Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback)
-              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        policy.AllowAnyOrigin()  // Permite cualquier origen
+              .AllowAnyMethod()   // Permite cualquier método HTTP
+              .AllowAnyHeader();  // Permite cualquier header
+        // Nota: AllowCredentials() no es compatible con AllowAnyOrigin()
+    });
+
+    // Política restrictiva (descomentada si necesitas autenticación con cookies/credentials)
+    /*
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost",
+                "https://localhost",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1",
+                "https://127.0.0.1",
+                "http://ccpvj.com",
+                "https://ccpvj.com",
+                "http://www.ccpvj.com",
+                "https://www.ccpvj.com",
+                "http://192.168.68.101",
+                "https://192.168.68.101"
+              )
+              .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
+    */
 });
 
 // JWT Configuration

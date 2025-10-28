@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
-	import { digitalLibraryService } from '$lib/application/services/library/DigitalLibraryService';
-	import type { CreateLibraryItemDto } from '$lib/application/services/library/DigitalLibraryService';
-	import { contextualUploadService } from '$lib/application/services/upload/ContextualUploadService';
+	import { digitalLibraryService } from '$lib/services/digitalLibraryService';
+	import type { CreateLibraryItemDto } from '$lib/services/digitalLibraryService';
+	import { contextualUploadService } from '$lib/services/contextualUploadService';
+	import { safeRandomUUID } from '$lib/utils/uuid';
 
 	// Estado del formulario
 	// Campo separado para el input de tags como string
@@ -164,7 +165,7 @@
 				isUploading = true;
 
 				// Generar un ID temporal para el upload
-				const tempId = crypto.randomUUID();
+				const tempId = safeRandomUUID();
 
 				const uploadResult = await digitalLibraryService.uploadLibraryFile({
 					itemId: tempId,

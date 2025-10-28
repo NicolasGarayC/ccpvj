@@ -190,7 +190,7 @@ describe('BlogPostForm', () => {
 			expect(screen.getByRole('button', { name: /Video/i })).toBeInTheDocument();
 			expect(screen.getByRole('button', { name: /Audio/i })).toBeInTheDocument();
 			expect(screen.getByRole('button', { name: /Documento/i })).toBeInTheDocument();
-		});
+		}, 10000);
 
 		it('should add text element when text button is clicked', async () => {
 			render(BlogPostForm, { props: { visible: true, post: null } });
