@@ -15,8 +15,10 @@ export default defineConfig({
 		// })
 	],
 	server: {
+		host: '0.0.0.0', // Allow access from network
 		port: 5173, // Force specific port
 		strictPort: true, // Fail if port is not available
+		allowedHosts: ['ccpvj.com', 'www.ccpvj.com', '192.168.68.101', 'localhost'],
 		proxy: {
 			'/api': {
 				// Exclude routes that SvelteKit handles directly
@@ -27,7 +29,7 @@ export default defineConfig({
 					}
 					// Everything else goes to backend .NET
 				},
-				target: 'http://localhost:5251',
+				target: 'http://192.168.68.101:5251',
 				changeOrigin: true,
 				secure: false,
 				timeout: 3600000, // 60 minutes for movie uploads
