@@ -2,11 +2,12 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
-import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
+	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
+	import type { MaterialApoyoDetailDto, UpdateMaterialApoyoDto, ModuleSummaryDto } from '$lib/types/api/materialApoyo.types';
+	import type { UploadResult } from '$lib/application/services/upload/ContextualUploadService';
 	import { jwtService } from '$lib/application/services/auth/JwtService.js';
 	import ModuleList from '$lib/presentation/components/course/ModuleList.svelte';
-	import MediaUploader from '$lib/presentation/components/blog/MediaUploader.svelte';
+	import ContextualMediaUploader from '$lib/presentation/components/upload/ContextualMediaUploader.svelte';
 	import ModuleForm from '$lib/presentation/components/course/ModuleForm.svelte';
 
 	let course: MaterialApoyoDetailDto | null = null;
@@ -183,13 +184,37 @@ let actualMaterialApoyoId = materialApoyoId; // ID real del material de apoyo pa
 		}
 	}
 
-function handleImageUpload(mediaUrl: string) {
-	editForm.imagePath = mediaUrl;
-}
+	function handleImageUpload(result: UploadResult) {
+		const relativePath =
+			result?.relativePath ||
+			(result?.url?.startsWith('/media/') ? result.url.substring('/media/'.length) : result?.url) ||
+			'';
 
-function handleImageRemove() {
-	editForm.imagePath = '';
-}
+		editForm.imagePath = relativePath;
+
+		if (course) {
+			course = {
+				...course,
+				imagePath: relativePath
+			};
+		}
+	}
+
+	function handleImageRemove() {
+		editForm.imagePath = '';
+
+		if (course) {
+			course = {
+				...course,
+				imagePath: ''
+			};
+		}
+	}
+
+	function handleImageUploadError(message: string) {
+		console.error('Error al subir imagen:', message);
+		error = message || 'Error al subir la imagen';
+	}
 
 	// Module management functions
 	function handleCreateModule() {
@@ -486,14 +511,15 @@ function handleImageRemove() {
 								<span class="text-2xl">🖼️</span>
 								Imagen del Proyecto
 							</h3>
-							<MediaUploader
-								contentType="course"
+							<ContextualMediaUploader
+								context="material-apoyo"
 								contentId={course.id}
 								mediaType="image"
 								currentMedia={editForm.imagePath}
-								onUploadComplete={handleImageUpload}
-								onRemoveComplete={handleImageRemove}
 								disabled={saving}
+								on:uploadSuccess={(event) => handleImageUpload(event.detail)}
+								on:mediaRemoved={handleImageRemove}
+								on:uploadError={(event) => handleImageUploadError(event.detail)}
 							/>
 						</div>
 					{/if}
