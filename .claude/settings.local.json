@@ -97,7 +97,8 @@
       "Bash(dotnet clean:*)",
       "Bash(dotnet restore:*)",
       "Bash(dotnet build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

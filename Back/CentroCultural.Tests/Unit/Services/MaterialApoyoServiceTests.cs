@@ -20,12 +20,17 @@ public class MaterialApoyoServiceTests : IDisposable
 
     public MaterialApoyoServiceTests()
     {
-        // Configurar base de datos en memoria para tests
+        // Configurar base de datos SQLite en memoria para tests (soporta raw SQL)
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseSqlite("DataSource=:memory:")
             .Options;
 
         _context = new ApplicationDbContext(options);
+
+        // Crear el schema de la base de datos
+        _context.Database.OpenConnection();
+        _context.Database.EnsureCreated();
+
         var mockLogger = new Mock<ILogger<MaterialApoyoService>>();
         _service = new MaterialApoyoService(_context, mockLogger.Object);
 
@@ -177,6 +182,9 @@ public class MaterialApoyoServiceTests : IDisposable
         // Assert
         result.Should().BeTrue();
 
+        // Limpiar el ChangeTracker para forzar reload desde DB
+        _context.ChangeTracker.Clear();
+
         // Verificar que fue eliminado
         var deleted = await _context.MaterialApoyo.FindAsync(materialId);
         deleted.Should().BeNull();
@@ -255,6 +263,7 @@ public class MaterialApoyoServiceTests : IDisposable
 
     public void Dispose()
     {
+        _context.Database.CloseConnection();
         _context.Database.EnsureDeleted();
         _context.Dispose();
     }

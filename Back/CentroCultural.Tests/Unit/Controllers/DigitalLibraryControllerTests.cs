@@ -281,14 +281,21 @@ public class DigitalLibraryControllerTests
     public async Task CreateItem_WithoutUserId_ShouldReturnUnauthorized()
     {
         // Arrange
-        // No se configuran claims
+        // Configurar un HttpContext sin claims de usuario
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
         var createDto = new CreateLibraryItemDto { Title = "Test" };
 
         // Act
         var result = await _controller.CreateItem(createDto);
 
         // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        var objectResult = result.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(401);
     }
 
     [Fact]

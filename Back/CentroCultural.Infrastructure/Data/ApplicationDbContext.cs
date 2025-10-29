@@ -34,9 +34,9 @@ namespace CentroCultural.Infrastructure.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (optionsBuilder.IsConfigured)
+            if (!optionsBuilder.IsConfigured)
             {
-                // Enable foreign key constraints for SQLite
+                // Enable foreign key constraints for SQLite - only if not configured
                 optionsBuilder.UseSqlite(options => options.CommandTimeout(30))
                             .EnableSensitiveDataLogging(false)
                             .EnableServiceProviderCaching()

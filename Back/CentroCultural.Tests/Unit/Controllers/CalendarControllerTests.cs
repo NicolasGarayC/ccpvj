@@ -337,13 +337,21 @@ public class CalendarControllerTests
     public async Task CreateEvent_WithoutUserId_ShouldReturnUnauthorized()
     {
         // Arrange
+        // Configurar un HttpContext sin claims de usuario
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
         var createDto = new CreateEventDto { Title = "Test" };
 
         // Act
         var result = await _controller.CreateEvent(createDto);
 
         // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        var objectResult = result.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(401);
     }
 
     [Fact]

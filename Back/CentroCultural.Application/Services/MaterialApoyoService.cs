@@ -15,14 +15,15 @@ namespace CentroCultural.Application.Services
 
         public MaterialApoyoService(ApplicationDbContext context, ILogger<MaterialApoyoService> logger)
         {
-            _context = context;
-            _logger = logger;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IEnumerable<MaterialApoyoSummaryDto>> GetAllMaterialApoyoAsync()
         {
-            // Primero obtenemos las entidades completas
+            // Primero obtenemos las entidades completas (solo activas)
             var materialApoyoEntities = await _context.MaterialApoyo
+                .Where(c => c.IsActive)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
@@ -384,8 +385,31 @@ namespace CentroCultural.Application.Services
             return fullPath;
         }
 
-        public Task<IEnumerable<MaterialApoyoSummaryDto>> GetMaterialApoyoByEducatorAsync(int userId) =>
-            throw new NotImplementedException();
+        public async Task<IEnumerable<MaterialApoyoSummaryDto>> GetMaterialApoyoByEducatorAsync(int userId)
+        {
+            // Obtener materiales del educador
+            var userIdStr = userId.ToString();
+            var materialApoyoEntities = await _context.MaterialApoyo
+                .Where(m => m.EducatorId == userIdStr && m.IsActive)
+                .OrderByDescending(m => m.CreatedAt)
+                .ToListAsync();
+
+            // Mapear a DTOs
+            var materialApoyo = materialApoyoEntities.Select(m => new MaterialApoyoSummaryDto
+            {
+                Id = m.Id,
+                Title = m.Title,
+                Description = m.Description,
+                IsFeatured = m.IsFeatured,
+                IsActive = m.IsActive,
+                CreatedAt = m.CreatedAt,
+                EducatorName = m.EducatorName ?? "Instructor",
+                ImagePath = m.ImagePath ?? "",
+                ModuleCount = _context.Modulo.Count(mod => mod.MaterialApoyoId == m.Id)
+            });
+
+            return materialApoyo;
+        }
 
         public async Task<IEnumerable<ModuleSummaryDto>> GetMaterialApoyoModulesAsync(string materialApoyoId)
         {
