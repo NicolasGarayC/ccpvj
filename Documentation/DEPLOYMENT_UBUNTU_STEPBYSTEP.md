@@ -2,8 +2,9 @@
 
 ## Servidor Ubuntu - Despliegue Completo
 
-> **Última Actualización**: Octubre 2025
+> **Última Actualización**: 29 de Octubre 2025
 > **Estado**: ✅ Configuración Probada y Funcional
+> **Cambios Recientes**: Configuración PM2, Backend Network Binding, URLs Relativas Frontend
 
 Esta guía te llevará paso a paso para desplegar la aplicación Centro Cultural PVJ en un servidor Ubuntu con arquitectura Frontend (SvelteKit) + Backend (.NET) + Base de Datos (SQLite).
 
@@ -148,36 +149,49 @@ ls -lh bin/Release/net8.0/
 cd /var/www/centro-cultural/Front
 
 # Instalar dependencias
-npm install
+npm install --legacy-peer-deps
 
 # Compilar la aplicación SvelteKit para producción
 npm run build
 
 # Verificar que el build fue exitoso
-ls -lh .svelte-kit/output/
+ls -lh build/
+# Debe existir el archivo: build/index.js
 ```
 
 ### Configurar variables de entorno
 
 ```bash
-# El archivo .env.production ya debe estar configurado con:
-cat > .env.production << 'EOF'
-PUBLIC_BACKEND_BASE_URL=http://localhost
-DATABASE_URL=file:/var/www/centro-cultural/data/ccpvj.db
-MEDIA_DIR=/home/user/ccpvj/Data/media
+# Crear archivo .env con configuración correcta
+cat > /var/www/centro-cultural/Front/.env << 'EOF'
+# Backend URL (vacío = URLs relativas en navegador, evita CORS)
+PUBLIC_BACKEND_BASE_URL=
+
+# Backend URL para server-side (solo usado en SSR)
+BACKEND_URL=http://192.168.68.101:5251
+
+# Database
+DATABASE_URL=file:/tmp/ccpvj.db
 EOF
+
+# Verificar el archivo
+cat /var/www/centro-cultural/Front/.env
 ```
+
+**Importante**: `PUBLIC_BACKEND_BASE_URL` debe estar vacío para que el navegador use URLs relativas (`/api/...`). Nginx se encarga del proxy automáticamente, evitando problemas de CORS.
 
 ---
 
 ## 🔧 PASO 7: Configurar PM2
 
-**IMPORTANTE**: Usa el archivo de configuración `ecosystem.config.js` del proyecto.
+**IMPORTANTE**: El archivo `ecosystem.config.js` está correctamente configurado con:
+- **Frontend**: Script `./build/index.js` en puerto 3000
+- **Backend**: Escuchando en `0.0.0.0:5251` (acepta conexiones de red)
+- **Rutas**: Apuntando a `/var/www/centro-cultural/`
 
 ```bash
-# Iniciar servicios con el archivo de configuración
-cd /home/user/ccpvj
-pm2 start Infraestructure/pm2/ecosystem.config.js
+# Iniciar servicios con el archivo de configuración desde producción
+pm2 start /var/www/centro-cultural/Infraestructure/pm2/ecosystem.config.js
 
 # Verificar que ambos servicios estén corriendo
 pm2 status
@@ -185,6 +199,10 @@ pm2 status
 # Guardar configuración para que persista tras reinicios
 pm2 save
 ```
+
+**Verificación**: Ambos servicios deben aparecer como `online`:
+- `centro-cultural-backend`
+- `centro-cultural-frontend`
 
 ### Comandos PM2 útiles:
 
@@ -215,19 +233,16 @@ pm2 delete all
 
 ## 🌐 PASO 8: Configurar Nginx
 
-**IMPORTANTE**: Usa la configuración del proyecto que incluye CORS funcionando.
+**IMPORTANTE**: Usa la configuración del proyecto que incluye CORS y proxy correctamente configurados.
 
 ### Instalar configuración de Nginx
 
 ```bash
-# Usar el script automatizado
-cd /home/user/ccpvj
-./Infraestructure/scripts/setup-nginx.sh
-
-# O manualmente:
-sudo cp Infraestructure/nginx/sites-available/centro-cultural.conf \
+# Copiar configuración desde el proyecto
+sudo cp /home/user/ccpvj/Infraestructure/nginx/sites-available/centro-cultural.conf \
         /etc/nginx/sites-available/centro-cultural
 
+# Crear symlink para habilitar el sitio
 sudo ln -sf /etc/nginx/sites-available/centro-cultural \
             /etc/nginx/sites-enabled/centro-cultural
 
@@ -237,9 +252,20 @@ sudo rm -f /etc/nginx/sites-enabled/default
 # Verificar configuración de Nginx
 sudo nginx -t
 
-# Reiniciar Nginx
-sudo systemctl start nginx
+# Si la verificación es exitosa, recargar Nginx
+sudo systemctl reload nginx
 sudo systemctl enable nginx
+```
+
+**Verificación de configuración correcta**:
+```bash
+# Verificar que el proxy del frontend apunta al puerto 3000 (producción)
+grep "proxy_pass.*3000" /etc/nginx/sites-available/centro-cultural
+# Debe devolver: proxy_pass http://127.0.0.1:3000;
+
+# Verificar server names configurados
+grep "server_name" /etc/nginx/sites-available/centro-cultural
+# Debe incluir: localhost ccpvj.com www.ccpvj.com 192.168.68.101
 ```
 
 ### Características de la Configuración de Nginx:
@@ -255,7 +281,7 @@ sudo systemctl enable nginx
    - Headers completos para preflight requests
 
 3. **Archivos Multimedia Optimizados**:
-   - Servicio directo desde `/home/user/ccpvj/Data/media`
+   - Servicio directo desde `/var/www/centro-cultural/Back/Data/media`
    - Cache de 30 días
    - Range requests para videos/audio
    - CORS habilitado
@@ -301,8 +327,10 @@ ss -tlnp | grep -E ":(80|3000|5251)"
 ```
 tcp  0.0.0.0:80      ESCUCHAR  nginx
 tcp  0.0.0.0:3000    ESCUCHAR  node (frontend)
-tcp  127.0.0.1:5251  ESCUCHAR  dotnet (backend)
+tcp  0.0.0.0:5251    ESCUCHAR  dotnet (backend)
 ```
+
+**IMPORTANTE**: El backend debe escuchar en `0.0.0.0:5251` (NO `127.0.0.1:5251`) para aceptar conexiones desde equipos remotos en la red local.
 
 ### 2. Verificar Servicios PM2
 
@@ -376,26 +404,47 @@ git pull origin desarrollo
 ### Opción 2: Actualización Manual
 
 ```bash
-# 1. Actualizar código
+# 1. Actualizar código en desarrollo
 cd /home/user/ccpvj
 git pull origin desarrollo
 
-# 2. Compilar Backend
+# 2. Copiar a producción
+sudo rsync -av --exclude='.git' --exclude='node_modules' \
+  --exclude='Front/.svelte-kit' --exclude='Back/obj' \
+  --exclude='Back/bin/Debug' \
+  /home/user/ccpvj/ /var/www/centro-cultural/
+sudo chown -R $USER:$USER /var/www/centro-cultural
+
+# 3. Configurar .env si es necesario
+cat > /var/www/centro-cultural/Front/.env << 'EOF'
+PUBLIC_BACKEND_BASE_URL=
+BACKEND_URL=http://192.168.68.101:5251
+DATABASE_URL=file:/tmp/ccpvj.db
+EOF
+
+# 4. Compilar Backend
 cd /var/www/centro-cultural/Back
 dotnet build --configuration Release --no-incremental
 
-# 3. Compilar Frontend
+# 5. Compilar Frontend
 cd /var/www/centro-cultural/Front
-npm install
+npm install --legacy-peer-deps
 npm run build
 
-# 4. Verificar symlink de BD
+# 6. Verificar symlink de BD
 ls -lh /tmp/ccpvj.db
 
-# 5. Reiniciar servicios
-pm2 restart all
+# 7. Actualizar Nginx si cambió
+sudo cp /home/user/ccpvj/Infraestructure/nginx/sites-available/centro-cultural.conf \
+        /etc/nginx/sites-available/centro-cultural
+sudo nginx -t && sudo systemctl reload nginx
 
-# 6. Verificar estado
+# 8. Reiniciar servicios
+pm2 delete all
+pm2 start /var/www/centro-cultural/Infraestructure/pm2/ecosystem.config.js
+pm2 save
+
+# 9. Verificar estado
 pm2 status
 ```
 
@@ -452,7 +501,7 @@ pm2 status
 | **Proyecto Producción** | `/var/www/centro-cultural` |
 | **Base de Datos** | `/home/user/ccpvj/Data/ccpvj.db` |
 | **Symlink BD** | `/tmp/ccpvj.db` → BD real |
-| **Multimedia** | `/home/user/ccpvj/Data/media` |
+| **Multimedia** | `/var/www/centro-cultural/Back/Data/media` |
 | **Logs PM2** | `/home/user/.pm2/logs/` |
 | **Logs Nginx** | `/var/log/nginx/` |
 
@@ -663,14 +712,53 @@ pm2 monit
 ### Variables de Entorno Importantes
 
 ```bash
-# Frontend (.env.production)
-PUBLIC_BACKEND_BASE_URL=http://localhost
-DATABASE_URL=file:/var/www/centro-cultural/data/ccpvj.db
-MEDIA_DIR=/home/user/ccpvj/Data/media
+# Frontend (/var/www/centro-cultural/Front/.env)
+PUBLIC_BACKEND_BASE_URL=          # Vacío = URLs relativas (evita CORS)
+BACKEND_URL=http://192.168.68.101:5251  # Solo para server-side (SSR)
+DATABASE_URL=file:/tmp/ccpvj.db
 
 # Backend (configurado en PM2 ecosystem.config.js)
 ASPNETCORE_ENVIRONMENT=Production
-ASPNETCORE_URLS=http://localhost:5251
+ASPNETCORE_URLS=http://0.0.0.0:5251  # Escucha en todas las interfaces de red
+```
+
+---
+
+## 🎯 Configuraciones Clave del Sistema
+
+### Resumen de Parámetros Críticos
+
+| Componente | Parámetro | Valor Correcto | Ubicación |
+|-----------|-----------|----------------|-----------|
+| **PM2 Frontend** | script | `./build/index.js` | `ecosystem.config.js` |
+| **PM2 Frontend** | PORT | `3000` | `ecosystem.config.js` |
+| **PM2 Backend** | ASPNETCORE_URLS | `http://0.0.0.0:5251` | `ecosystem.config.js` |
+| **Frontend .env** | PUBLIC_BACKEND_BASE_URL | (vacío) | `/var/www/.../Front/.env` |
+| **Frontend .env** | BACKEND_URL | `http://192.168.68.101:5251` | `/var/www/.../Front/.env` |
+| **Nginx** | Frontend proxy | `http://127.0.0.1:3000` | `sites-available/centro-cultural` |
+| **Nginx** | Backend proxy | `http://127.0.0.1:5251` | `sites-available/centro-cultural` |
+| **Nginx** | Server names | `localhost ccpvj.com www.ccpvj.com 192.168.68.101` | `sites-available/centro-cultural` |
+
+### Puertos del Sistema
+
+```
+Puerto 80    → Nginx (entrada principal HTTP)
+Puerto 3000  → Frontend SvelteKit (interno, via Nginx)
+Puerto 5251  → Backend .NET (interno, via Nginx)
+```
+
+### Flujo de Datos
+
+```
+Usuario (Navegador)
+    ↓
+    http://ccpvj.com (puerto 80)
+    ↓
+Nginx (proxy inverso)
+    ├─→ / → Frontend (localhost:3000)
+    └─→ /api/ → Backend (localhost:5251)
+         ↓
+    SQLite Database (/tmp/ccpvj.db)
 ```
 
 ---

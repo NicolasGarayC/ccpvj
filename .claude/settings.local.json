@@ -141,7 +141,16 @@
       "Bash(sudo -S kill:*)",
       "Bash(awk:*)",
       "Bash(xargs:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(sudo -S rm:*)",
+      "Bash(sudo -S mkdir:*)",
+      "Bash(sudo -S chown:*)",
+      "Bash(rsync:*)",
+      "Bash(pm2 describe:*)",
+      "Bash(PORT=3000 NODE_ENV=production node:*)",
+      "Bash(cp:*)",
+      "Bash(sudo tail:*)",
+      "Bash(sudo nginx:*)"
     ],
     "deny": [],
     "ask": []

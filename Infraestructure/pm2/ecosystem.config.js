@@ -23,7 +23,7 @@ module.exports = {
     {
       name: 'centro-cultural-frontend',
       cwd: '/home/user/ccpvj/Front',
-      script: './build/server/index.js',
+      script: './build/index.js',
       interpreter: 'node',
       instances: 1,
       exec_mode: 'fork',
