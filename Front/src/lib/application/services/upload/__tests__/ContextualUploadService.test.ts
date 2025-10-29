@@ -332,10 +332,10 @@ describe('ContextualUploadService', () => {
 		});
 
 		it('should reject file exceeding size limit for images', () => {
-			// Create file larger than 20MB
-			const largeFile = new File([new ArrayBuffer(21 * 1024 * 1024)], 'large.jpg', {
+			const largeFile = new File(['x'], 'large.jpg', {
 				type: 'image/jpeg'
 			});
+			Object.defineProperty(largeFile, 'size', { value: 205 * 1024 * 1024, configurable: true });
 
 			const result = contextualUploadService.validateFile(largeFile, 'image');
 

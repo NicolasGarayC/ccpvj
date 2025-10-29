@@ -315,7 +315,7 @@ Back/Data/media/
 
 ### 📋 **Formatos de Archivo Soportados**
 
-#### **🖼️ Imágenes** (Límite: 20MB directo / 50MB nginx)
+#### **🖼️ Imágenes** (Límite: 200MB directo / 50MB nginx)
 - **JPEG/JPG** (`image/jpeg`) - Fotografías y imágenes con compresión
 - **PNG** (`image/png`) - Imágenes con transparencia y calidad alta
 - **GIF** (`image/gif`) - Animaciones e imágenes simples
@@ -347,7 +347,7 @@ Back/Data/media/
 ### 🔄 **Endpoints Implementados**
 
 #### **Upload Específico por Tipo (Compatible con Nginx)**
-- `POST /api/upload/images` - Subida de imágenes (20MB direct, 50MB nginx)
+- `POST /api/upload/images` - Subida de imágenes (200MB direct, 50MB nginx)
 - `POST /api/upload/videos` - Subida de videos (500MB direct, 5GB nginx)
 - `POST /api/upload/audio` - Subida de audio (100MB direct, 500MB nginx)
 - `POST /api/upload/documents` - Subida de documentos (100MB)

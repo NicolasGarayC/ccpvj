@@ -1073,7 +1073,7 @@ Back/Data/media/
 
 ### Formatos Soportados
 
-#### Imágenes (límite: 20MB)
+#### Imágenes (límite: 200MB)
 - JPEG/JPG, PNG, GIF, WebP
 - SVG, AVIF, BMP, TIFF
 

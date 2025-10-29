@@ -254,12 +254,12 @@ const emitProgress = (value: number, file: File) => {
 
 function getMaxSizeInfo(type: MediaType): string {
 	const sizes: Record<MediaType, string> = {
-		image: '20MB',
+		image: '200MB',
 		video: '20GB',
 		audio: '100MB',
 		document: '1GB'
 	};
-	return sizes[type] ?? '20MB';
+	return sizes[type] ?? '200MB';
 }
 </script>
 

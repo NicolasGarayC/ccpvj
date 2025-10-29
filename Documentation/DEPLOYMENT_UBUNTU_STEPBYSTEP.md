@@ -172,13 +172,18 @@ BACKEND_URL=http://192.168.68.101:5251
 
 # Database
 DATABASE_URL=file:/tmp/ccpvj.db
+
+# Hosts permitidos cuando Vite corre en modo dev/proxy
+VITE_ALLOWED_HOSTS=ccpvj.com,www.ccpvj.com,192.168.68.101,localhost
 EOF
 
 # Verificar el archivo
 cat /var/www/centro-cultural/Front/.env
 ```
 
-**Importante**: `PUBLIC_BACKEND_BASE_URL` debe estar vacío para que el navegador use URLs relativas (`/api/...`). Nginx se encarga del proxy automáticamente, evitando problemas de CORS.
+**Importante**:
+- `PUBLIC_BACKEND_BASE_URL` vacío permite que el navegador use URLs relativas (`/api/...`) y evite problemas de CORS (Nginx hace de proxy).
+- `BACKEND_URL` debe apuntar al backend accesible desde el propio servidor. En producción se usa la IP estática `192.168.68.101`. Para entornos de debugging locales, ajusta este valor a `http://localhost:5251`.
 
 ---
 

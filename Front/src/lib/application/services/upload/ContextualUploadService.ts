@@ -196,7 +196,7 @@ class ContextualUploadService extends BaseHttpService {
         const config = {
             image: {
                 types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
-                maxSize: 20 * 1024 * 1024 // 20MB
+                maxSize: 200 * 1024 * 1024 // 200MB
             },
             video: {
                 types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov'],

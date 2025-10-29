@@ -108,8 +108,8 @@ namespace CentroCultural.API.Controllers
                 if (file == null || file.Length == 0)
                     return BadRequest(new { error = "No se proporcionó ningún archivo" });
 
-                if (file.Length > 20_971_520) // 20MB
-                    return BadRequest(new { error = "Imagen demasiado grande. Tamaño máximo: 20MB" });
+                if (file.Length > 209_715_200) // 200MB
+                    return BadRequest(new { error = "Imagen demasiado grande. Tamaño máximo: 200MB" });
 
                 if (!file.ContentType.StartsWith("image/"))
                     return BadRequest(new { error = "El archivo debe ser una imagen" });
@@ -197,10 +197,10 @@ namespace CentroCultural.API.Controllers
                 // Validate file size based on media type
                 long maxSize = mediaType switch
                 {
-                    "image" => 20_971_520,        // 20MB
+                    "image" => 209_715_200,        // 200MB
                     "video" => 21_474_836_480,    // 20GB for movies
                     "audio" => 104_857_600,       // 100MB
-                    _ => 20_971_520
+                    _ => 209_715_200
                 };
 
                 if (file.Length > maxSize)
@@ -306,11 +306,11 @@ namespace CentroCultural.API.Controllers
                 // Validate file size based on media type
                 long maxSize = mediaType switch
                 {
-                    "image" => 20_971_520,        // 20MB
+                    "image" => 209_715_200,        // 200MB
                     "video" => 21_474_836_480,    // 20GB for movies
                     "audio" => 104_857_600,       // 100MB
                     "document" => 1_073_741_824,  // 1GB
-                    _ => 20_971_520
+                    _ => 209_715_200
                 };
 
                 if (file.Length > maxSize)

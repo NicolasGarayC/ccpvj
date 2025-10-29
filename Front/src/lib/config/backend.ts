@@ -3,9 +3,12 @@ import { browser } from '$app/environment';
 
 const normalizeBaseUrl = (value: string): string => value.trim().replace(/\/+$/, '');
 
-const SERVER_SIDE_URL = 'http://192.168.68.101:5251';
+const DEFAULT_SERVER_SIDE_URL = 'http://192.168.68.101:5251';
+const SERVER_SIDE_URL = !browser
+	? (process.env.BACKEND_URL ?? DEFAULT_SERVER_SIDE_URL)
+	: DEFAULT_SERVER_SIDE_URL;
 
-// En server-side (SSR), siempre usar la IP del servidor:5251
+// En server-side (SSR), siempre usar la URL configurada en BACKEND_URL (o la IP por defecto)
 // En client-side (browser), usar URLs relativas para evitar problemas CORS
 const rawBaseUrl = browser
 	? (env.PUBLIC_BACKEND_BASE_URL ?? '')

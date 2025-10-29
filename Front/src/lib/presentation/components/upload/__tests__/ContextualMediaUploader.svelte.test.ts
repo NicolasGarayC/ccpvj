@@ -152,7 +152,7 @@ describe('ContextualMediaUploader', () => {
 			render(ContextualMediaUploader, {
 				props: { context: 'course', contentId: 'course-1', mediaType: 'image' }
 			});
-			expect(screen.getByText(/Máximo 20MB/)).toBeInTheDocument();
+			expect(screen.getByText(/Máximo 200MB/)).toBeInTheDocument();
 		});
 
 		it('should show max size info for videos', () => {

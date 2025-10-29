@@ -122,7 +122,7 @@ work_item (id TEXT, module_id TEXT, title TEXT, long_text TEXT, image_path TEXT,
 - `DELETE /api/courses/workitems/[id]` - ✅ **HARD DELETE** with multimedia cleanup
 
 **✅ Upload APIs** (implemented with nginx compatibility):
-- `POST /api/upload/images` - ✅ Image upload with auto-cleanup (20MB direct, 50MB nginx)
+- `POST /api/upload/images` - ✅ Image upload with auto-cleanup (200MB direct, 50MB nginx)
   - **Formats**: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF
 - `POST /api/upload/videos` - ✅ Video upload with auto-cleanup (500MB direct, 5GB nginx)
   - **Formats**: MP4, WebM, AVI, MOV
@@ -270,7 +270,7 @@ const filename = `${sanitizedName}_${timestamp}${extension}`;
 
 **File validation is implemented at multiple levels:**
 
-#### **🖼️ Image Formats** (20MB direct / 50MB nginx)
+#### **🖼️ Image Formats** (200MB direct / 50MB nginx)
 ```typescript
 const validImageTypes = [
   'image/jpeg',      // JPG/JPEG files

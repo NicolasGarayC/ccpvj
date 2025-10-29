@@ -252,7 +252,7 @@ Data/media/uploads/
 ```
 
 ### **Validaciones Implementadas**
-- **Imágenes**: JPG, PNG, GIF, WebP (max 20MB)
+- **Imágenes**: JPG, PNG, GIF, WebP (max 200MB)
 - **Videos**: MP4, WebM, MOV (max 500MB)
 - **Audio**: MP3, WAV, OGG (max 100MB)
 - **Documentos**: PDF, Office files (max 100MB)

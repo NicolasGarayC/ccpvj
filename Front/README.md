@@ -343,7 +343,7 @@ El frontend ya no se conecta directamente a SQLite mediante Drizzle. Toda la per
 ### **Upload por Tipo**
 ```typescript
 // Tipos soportados
-Images: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (20MB)
+Images: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (200MB)
 Videos: MP4, WebM, AVI, MOV (500MB)
 Audio: MP3, WAV, OGG, M4A (100MB)
 Documents: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT (100MB)

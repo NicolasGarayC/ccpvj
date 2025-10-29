@@ -379,7 +379,7 @@ Back/Data/media/
 
 ### Formatos Soportados
 
-- **Imágenes** (20MB): JPEG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF
+- **Imágenes** (200MB): JPEG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF
 - **Videos** (500MB): MP4, WebM, AVI, MOV
 - **Audio** (100MB): MP3, WAV, OGG, M4A
 - **Documentos** (100MB): PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT

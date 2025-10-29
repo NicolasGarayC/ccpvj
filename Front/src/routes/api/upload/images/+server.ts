@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { getMediaDir } from '$lib/server/utils/media-paths';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
 const ALLOWED_TYPES = [
     'image/jpeg',
@@ -39,7 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
         // Validate file size
         if (file.size > MAX_FILE_SIZE) {
             return json({
-                error: 'File too large. Maximum size is 20MB.'
+                error: 'File too large. Maximum size is 200MB.'
             }, { status: 400 });
         }
 
