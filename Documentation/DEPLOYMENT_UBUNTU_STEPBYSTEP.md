@@ -292,9 +292,9 @@ grep "server_name" /etc/nginx/sites-available/centro-cultural
    - CORS habilitado
 
 4. **Límites de Tamaño**:
-   - API normal: 500MB
+   - API normal: 5GB
    - Uploads: 5GB
-   - Timeouts configurados (60s API, 3600s uploads)
+   - Timeouts configurados (3600s para uploads largos)
 
 ---
 
