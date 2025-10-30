@@ -1,0 +1,4 @@
+# Nmap 7.95 scan initiated Thu Oct 30 02:30:23 2025 as: /snap/nmap/4171/usr/bin/nmap -sC -sV -Pn -oA nmap-basico 192.168.68.101
+Host: 192.168.68.101 (ccpvj.com)	Status: Up
+Host: 192.168.68.101 (ccpvj.com)	Ports: 53/open/tcp//domain//dnsmasq 2.90/, 80/open/tcp//http//nginx 1.24.0 (Ubuntu)/, 3000/open/tcp//ppp?///	Ignored State: closed (997)
+# Nmap done at Thu Oct 30 02:30:44 2025 -- 1 IP address (1 host up) scanned in 21.39 seconds

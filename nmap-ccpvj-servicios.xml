@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///snap/nmap/4171/usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Thu Oct 30 02:31:09 2025 as: /snap/nmap/4171/usr/bin/nmap -sV -p 80,3000,5251 -Pn -oA nmap-ccpvj-servicios 192.168.68.101 -->
+<nmaprun scanner="nmap" args="/snap/nmap/4171/usr/bin/nmap -sV -p 80,3000,5251 -Pn -oA nmap-ccpvj-servicios 192.168.68.101" start="1761809469" startstr="Thu Oct 30 02:31:09 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="connect" protocol="tcp" numservices="3" services="80,3000,5251"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1761809470" endtime="1761809482"><status state="up" reason="user-set" reason_ttl="0"/>
+<address addr="192.168.68.101" addrtype="ipv4"/>
+<hostnames>
+<hostname name="ccpvj.com" type="PTR"/>
+</hostnames>
+<ports><port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="http" product="nginx" version="1.24.0" extrainfo="Ubuntu" ostype="Linux" method="probed" conf="10"><cpe>cpe:/a:igor_sysoev:nginx:1.24.0</cpe><cpe>cpe:/o:linux:linux_kernel</cpe></service></port>
+<port protocol="tcp" portid="3000"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="ppp" servicefp="SF-Port3000-TCP:V=7.95%I=7%D=10/30%Time=69031449%P=x86_64-unknown-linux-gnu%r(GetRequest,94EB,&quot;HTTP/1\.1\x20200\x20OK\r\ncontent-length:\x2035389\r\ncontent-type:\x20text/html\r\netag:\x20\&quot;1vvz52l\&quot;\r\nlink:\x20&lt;\./_app/immutable/assets/0\.Bnc9A6BV\.css&gt;;\x20rel=\&quot;preload\&quot;;\x20as=\&quot;style\&quot;;\x20nopush,\x20&lt;\./_app/immutable/assets/BlogPostCard\.BO3LxT0y\.css&gt;;\x20rel=\&quot;preload\&quot;;\x20as=\&quot;style\&quot;;\x20nopush,\x20&lt;\./_app/immutable/assets/2\.CQQEkqwd\.css&gt;;\x20rel=\&quot;preload\&quot;;\x20as=\&quot;style\&quot;;\x20nopush,\x20&lt;\./_app/immutable/entry/start\.DmunTvgH\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/Cl42B9wB\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/CUZF5XXE\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/DfhM1wbu\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/entry/app\.B4bQXEQo\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/Dp1pzeXC\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/Bj-9c9vR\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/chunks/CFJW4ctr\.js&gt;;\x20rel=\&quot;modulepreload\&quot;;\x20nopush,\x20&lt;\./_app/immutable/&quot;)%r(Help,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(NCP,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(HTTPOptions,6E,&quot;HTTP/1\.1\x20204\x20No\x20Content\r\nallow:\x20GET,\x20HEAD,\x20OPTIONS\r\nDate:\x20Thu,\x2030\x20Oct\x202025\x2007:31:21\x20GMT\r\nConnection:\x20close\r\n\r\n&quot;)%r(RTSPRequest,6E,&quot;HTTP/1\.1\x20204\x20No\x20Content\r\nallow:\x20GET,\x20HEAD,\x20OPTIONS\r\nDate:\x20Thu,\x2030\x20Oct\x202025\x2007:31:21\x20GMT\r\nConnection:\x20close\r\n\r\n&quot;)%r(RPCCheck,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(DNSVersionBindReqTCP,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(DNSStatusRequestTCP,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(SSLSessionReq,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;)%r(TerminalServerCookie,2F,&quot;HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n&quot;);" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5251"><state state="closed" reason="conn-refused" reason_ttl="0"/><service name="caevms" method="table" conf="3"/></port>
+</ports>
+<times srtt="407" rttvar="2932" to="100000"/>
+</host>
+<runstats><finished time="1761809482" timestr="Thu Oct 30 02:31:22 2025" summary="Nmap done at Thu Oct 30 02:31:22 2025; 1 IP address (1 host up) scanned in 12.45 seconds" elapsed="12.45" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>
