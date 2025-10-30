@@ -1,9 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { existsSync } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { existsSync, createWriteStream } from 'fs';
+import { mkdir, unlink } from 'fs/promises';
 import path from 'path';
 import { getMediaDir } from '$lib/server/utils/media-paths';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
@@ -91,10 +93,9 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		const filename = sanitizeFileName(file.name);
 		const destinationPath = path.join(courseDir, filename);
 
-		const arrayBuffer = await file.arrayBuffer();
-		const buffer = Buffer.from(arrayBuffer);
-
-		await writeFile(destinationPath, buffer);
+const readable = Readable.fromWeb(file.stream());
+const writable = createWriteStream(destinationPath, { flags: 'w' });
+await pipeline(readable, writable);
 
 		const relativePath = `content/material-apoyo/${courseId}/${filename}`;
 
