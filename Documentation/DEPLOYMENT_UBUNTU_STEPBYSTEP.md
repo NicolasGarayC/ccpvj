@@ -287,14 +287,15 @@ grep "server_name" /etc/nginx/sites-available/centro-cultural
 
 3. **Archivos Multimedia Optimizados**:
    - Servicio directo desde `/var/www/centro-cultural/Back/Data/media`
+   - Soporte para imágenes, audio, video y documentos (PDF, Office, TXT, ZIP)
    - Cache de 30 días
-   - Range requests para videos/audio
+   - Range requests para streaming/descargas parciales
    - CORS habilitado
 
 4. **Límites de Tamaño**:
-   - API normal: 5GB
-   - Uploads: 5GB
-   - Timeouts configurados (3600s para uploads largos)
+   - API normal: 20GB
+   - Uploads: 20GB
+   - Timeouts configurados (1800s ≈ 30 minutos para uploads largos)
 
 ---
 
