@@ -201,6 +201,23 @@ export let onCancel: (() => void) | undefined = undefined;
 	function getRoleColor(roleName: string): string {
 		return userManagementService.getRoleColor(roleName);
 	}
+
+	// Generar contraseña aleatoria
+	function generatePassword() {
+		const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		let password = '';
+		for (let i = 0; i < 8; i++) {
+			password += chars.charAt(Math.floor(Math.random() * chars.length));
+		}
+
+		if (isEdit) {
+			formData.newPassword = password;
+			formData.confirmPassword = password;
+		} else {
+			formData.password = password;
+			formData.confirmPassword = password;
+		}
+	}
 </script>
 
 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -332,10 +349,21 @@ export let onCancel: (() => void) | undefined = undefined;
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<!-- Nueva contraseña -->
 					<div>
-						<label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-							{isEdit ? $t('users.form.password.labelEdit') : $t('users.form.password.labelCreate')}
-							{#if !isEdit}<span class="text-red-500">*</span>{/if}
-						</label>
+						<div class="flex justify-between items-center mb-2">
+							<label for="password" class="block text-sm font-medium text-gray-700">
+								{isEdit ? $t('users.form.password.labelEdit') : $t('users.form.password.labelCreate')}
+								{#if !isEdit}<span class="text-red-500">*</span>{/if}
+							</label>
+							<button
+								type="button"
+								on:click={generatePassword}
+								title="Generate password"
+								class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+								disabled={isSubmitting}
+							>
+								{$t('users.form.password.generate')}
+							</button>
+						</div>
 						{#if isEdit}
 							<input
 								id="password"
