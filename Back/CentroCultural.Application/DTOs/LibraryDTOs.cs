@@ -106,6 +106,21 @@ namespace CentroCultural.Application.DTOs
         public bool IsActive { get; set; }
 
         public List<string> CollectionIds { get; set; } = new();
+
+        // File fields - optional for updates (only when replacing file)
+        [MaxLength(50)]
+        public string? FileType { get; set; }
+
+        [MaxLength(1000)]
+        public string? FilePath { get; set; }
+
+        [MaxLength(500)]
+        public string? FileName { get; set; }
+
+        public long? FileSize { get; set; }
+
+        [MaxLength(200)]
+        public string? MimeType { get; set; }
     }
 
     // DTOs para LibraryCollection

@@ -13,7 +13,7 @@ This file provides technical context to Claude Code when working with this repos
 
  - **Frontend**: SvelteKit 5 + TypeScript + Tailwind CSS (APIs internas)
 - **Database**: SQLite (`D:/ccpvj/Data/ccpvj.db`)
-- **Backend**: Optional .NET 8 (mostly unused)
+- **Backend**: C# .NET 8 (mostly unused)
 - **Authentication**: Cookie-based sessions (SvelteKit primary)
 
 ## Development Commands

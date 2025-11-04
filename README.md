@@ -6,21 +6,9 @@
 
 Plataforma web educativa offline-first para el Centro Cultural Víctor Jara en Bogotá, diseñada para funcionar en redes locales mesh sin dependencia de internet.
 
-### 🎯 Objetivo
-
-Crear una plataforma educativa y cultural que permita:
-- ✅ Gestión de material educativo organizado en módulos
-- ✅ Sistema de blog y noticias del centro
-- ✅ Calendario de eventos con recurrencia
-- ✅ Biblioteca digital con recursos multimedia
-- ✅ Autenticación con roles diferenciados
-- ✅ Sistema multimedia contextual integrado
-
----
-
 ## 👥 Reglas de Negocio para Usuarios
 
-> **Nota**: Esta sección está diseñada para **personal no técnico** que usará el sistema. Para información técnica completa, consulta [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md).
+> **Nota**: Para información técnica completa, consulta [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md).
 
 ### Roles del Sistema
 

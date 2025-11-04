@@ -175,6 +175,22 @@ namespace CentroCultural.Application.Services
             item.IsActive = updateItemDto.IsActive;
             item.UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+            // Update file fields if provided (when file is replaced)
+            if (!string.IsNullOrEmpty(updateItemDto.FileType))
+                item.FileType = updateItemDto.FileType;
+
+            if (!string.IsNullOrEmpty(updateItemDto.FilePath))
+                item.FilePath = updateItemDto.FilePath;
+
+            if (!string.IsNullOrEmpty(updateItemDto.FileName))
+                item.FileName = updateItemDto.FileName;
+
+            if (updateItemDto.FileSize.HasValue)
+                item.FileSize = updateItemDto.FileSize.Value;
+
+            if (!string.IsNullOrEmpty(updateItemDto.MimeType))
+                item.MimeType = updateItemDto.MimeType;
+
             // Update collections
             await UpdateItemCollectionsAsync(id, updateItemDto.CollectionIds, userId);
 

@@ -9,6 +9,7 @@
 	import SessionExpiredModal from '$lib/presentation/components/auth/SessionExpiredModal.svelte';
 	import { analyticsService } from '$lib/application/services/analytics/AnalyticsService.js';
 	import { authModalStore } from '$lib/presentation/stores/authStore';
+	import { inactivityService } from '$lib/application/services/auth/InactivityService.js';
 
 	// Variables reactivas para el estado de autenticación
 	let isLoggedIn = false;
@@ -29,94 +30,42 @@
 	$: canManageUsers =
 		isLoggedIn && user?.role === 'administrador';
 
-	const INACTIVITY_LIMIT_MS = 3 * 60 * 1000;
-	const ACTIVITY_THROTTLE_MS = 1000;
-	const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
-let inactivityTimeout: number | null = null;
-	let activityListenersRegistered = false;
-	let lastActivityTimestamp = 0;
-	const activityListenerOptions: AddEventListenerOptions = { passive: true };
+	// Setup inactivity service callbacks
+	function setupInactivityCallbacks() {
+		if (!browser) return;
 
-	function clearInactivityTimer() {
-		if (inactivityTimeout) {
-			clearTimeout(inactivityTimeout);
-			inactivityTimeout = null;
-		}
-	}
+		// Handle warning (2 minutes before expiration)
+		inactivityService.onWarning((timeRemaining) => {
+			console.log(`⏰ Session warning: ${timeRemaining} seconds remaining`);
+			authModalStore.showSessionWarning(timeRemaining);
+		});
 
-	function handleUserActivity() {
-		if (!jwtService.isAuthenticated()) {
-			stopActivityTracking();
-			return;
-		}
-
-		const now = performance.now();
-		if (now - lastActivityTimestamp < ACTIVITY_THROTTLE_MS) {
-			return;
-		}
-		lastActivityTimestamp = now;
-
-		resetInactivityTimer();
-	}
-
-	function resetInactivityTimer() {
-		if (!browser || !jwtService.isAuthenticated()) {
-			clearInactivityTimer();
-			return;
-		}
-		clearInactivityTimer();
-		inactivityTimeout = window.setTimeout(handleInactivityLogout, INACTIVITY_LIMIT_MS);
+		// Handle auto-logout
+		inactivityService.onLogout(async () => {
+			console.log('🚪 Auto-logout due to inactivity');
+			try {
+				await jwtService.logout();
+			} catch (error) {
+				console.error('Error during inactivity logout:', error);
+			} finally {
+				authModalStore.showSessionExpired();
+				await updateAuthState();
+			}
+		});
 	}
 
 	function startActivityTracking() {
-		if (!browser) return;
-		if (!isLoggedIn) {
-			stopActivityTracking();
-			return;
-		}
+		if (!browser || !isLoggedIn) return;
 
-		if (!activityListenersRegistered) {
-			activityEvents.forEach((eventName) => {
-				document.addEventListener(eventName, handleUserActivity, activityListenerOptions);
-			});
-			activityListenersRegistered = true;
-		}
-
-		resetInactivityTimer();
+		console.log('🔍 Starting inactivity monitoring');
+		inactivityService.start();
 	}
 
 	function stopActivityTracking() {
-		if (!browser) {
-			clearInactivityTimer();
-			return;
-		}
+		if (!browser) return;
 
-		if (activityListenersRegistered) {
-			activityEvents.forEach((eventName) => {
-				document.removeEventListener(eventName, handleUserActivity, false);
-			});
-			activityListenersRegistered = false;
-		}
-
-		clearInactivityTimer();
-		lastActivityTimestamp = 0;
-	}
-
-	async function handleInactivityLogout() {
-		if (!jwtService.isAuthenticated()) {
-			stopActivityTracking();
-			return;
-		}
-
-		try {
-			await jwtService.logout();
-		} catch (error) {
-			console.error('Error during inactivity logout:', error);
-		} finally {
-			stopActivityTracking();
-			authModalStore.showSessionExpired();
-			await updateAuthState();
-		}
+		console.log('⏹️ Stopping inactivity monitoring');
+		inactivityService.stop();
 	}
 
 	// Función para actualizar el estado de autenticación
@@ -153,6 +102,11 @@ let inactivityTimeout: number | null = null;
 
 	// Inicialización del componente
 	onMount(async () => {
+		// Setup inactivity callbacks first
+		if (browser) {
+			setupInactivityCallbacks();
+		}
+
 		// Solo actualizar el estado de autenticación si NO estamos en la página de login
 		if ($page.route.id !== '/auth/login') {
 			await updateAuthState();
@@ -247,6 +201,9 @@ let inactivityTimeout: number | null = null;
 
 	onDestroy(() => {
 		stopActivityTracking();
+		if (browser) {
+			inactivityService.cleanup();
+		}
 	});
 </script>
 
@@ -262,18 +219,18 @@ let inactivityTimeout: number | null = null;
 			<div class="absolute bottom-4 left-1/3 w-16 h-16 bg-green-300 rounded-full mix-blend-multiply animate-pulse"></div>
 		</div>
 		
-		<div class="container mx-auto px-4 py-4 relative z-10">
+		<div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4 relative z-10">
 			<div class="flex items-center justify-between">
 				<!-- Logo juvenil y colorido -->
-				<a href="/" class="flex items-center gap-3 group">
+				<a href="/" class="flex items-center gap-2 sm:gap-3 group">
 					<div class="relative">
-						<div class="w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center transform group-hover:rotate-12 transition-all duration-300">
-							<span class="text-2xl">🎨</span>
+						<div class="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center transform group-hover:rotate-12 transition-all duration-300">
+							<span class="text-xl sm:text-2xl">🎨</span>
 						</div>
-						<div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+						<div class="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full animate-ping"></div>
 					</div>
 					<div>
-						<h1 class="text-2xl font-black text-white tracking-tight">Centro Cultural</h1>
+						<h1 class="text-lg sm:text-2xl font-black text-white tracking-tight">Centro Cultural</h1>
 						<p class="text-xs text-white/80 font-medium">Popular Víctor Jara</p>
 					</div>
 				</a>
@@ -344,7 +301,7 @@ let inactivityTimeout: number | null = null;
 				</nav>
 
 				<!-- Sección de usuario moderna -->
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-1.5 sm:gap-3">
 					{#if isLoggedIn}
 						<!-- Dashboard admin -->
 						{#if canManageUsers}
@@ -353,7 +310,7 @@ let inactivityTimeout: number | null = null;
 								<span class="hidden lg:inline">{$t('panel')}</span>
 							</a>
 						{/if}
-						
+
 						<!-- Info del usuario -->
 						<div class="hidden md:flex items-center gap-3 bg-white/20 backdrop-blur-lg rounded-xl px-4 py-2">
 							<div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
@@ -364,36 +321,36 @@ let inactivityTimeout: number | null = null;
 								<p class="text-white/70 text-xs">{userRole}</p>
 							</div>
 						</div>
-						
+
 						<!-- Botón logout -->
 						<form on:submit|preventDefault={handleLogout}>
 							<button
 								type="submit"
-								class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+								class="flex items-center gap-2 px-3 py-2 sm:px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 							>
 								<i class="fas fa-sign-out-alt text-lg"></i>
-								<span class="hidden lg:inline">{$t('logout')}</span>
+								<span class="hidden sm:inline">{$t('logout')}</span>
 							</button>
 						</form>
 					{:else}
 						<!-- Botón login -->
 						<a
 							href="/auth/login"
-							class="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+							class="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-6 sm:py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
 						>
 							<i class="fas fa-sign-in-alt text-lg"></i>
-							<span>{$t('login') || 'Entrar'}</span>
+							<span class="text-sm sm:text-base">{$t('login') || 'Entrar'}</span>
 						</a>
 					{/if}
-					
+
 					<!-- Selector de idioma moderno -->
 					<button
-						class="flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-lg text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300"
+						class="flex items-center gap-1.5 sm:gap-2 px-2.5 py-2 sm:px-3 bg-white/20 backdrop-blur-lg text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300"
 						on:click={switchLocale}
 						aria-label="Switch language"
 					>
-						<i class="fas fa-globe text-lg"></i>
-						<span class="text-sm font-bold">{currentLocale.toUpperCase()}</span>
+						<i class="fas fa-globe text-base sm:text-lg"></i>
+						<span class="text-xs sm:text-sm font-bold">{currentLocale.toUpperCase()}</span>
 					</button>
 				</div>
 

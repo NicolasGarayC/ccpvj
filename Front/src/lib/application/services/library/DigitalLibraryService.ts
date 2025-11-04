@@ -93,12 +93,12 @@ export interface CreateLibraryItemDto {
 }
 
 export interface UpdateLibraryItemDto {
-	title?: string;
+	title: string;  // Required in backend
 	description?: string;
 	author?: string;
 	category?: string;
 	subcategory?: string;
-	tags?: string | string[];
+	tags: string[];  // Backend expects array of strings
 	language?: string;
 	year?: number;
 	fileType?: string;
@@ -107,6 +107,7 @@ export interface UpdateLibraryItemDto {
 	fileSize?: number;
 	mimeType?: string;
 	isFeatured?: boolean;
+	isActive?: boolean;
 	collectionIds?: string[];
 }
 

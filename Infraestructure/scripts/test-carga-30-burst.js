@@ -1,9 +1,13 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
+// Configuración para 30 usuarios virtuales con arranque casi instantáneo (burst)
 export const options = {
-  vus: 100,           // Usuarios virtuales simultáneos
-  duration: '1m',     // Duración total de la prueba
+  stages: [
+    { duration: '5s', target: 30 },    // Ramp up a 30 VUs en 5 segundos (arranque rápido)
+    { duration: '1m', target: 30 },    // Mantener 30 VUs por 1 minuto
+    { duration: '10s', target: 0 },    // Ramp down gradual
+  ],
   thresholds: {
     http_req_failed: ['rate<0.01'],   // <1% de fallos
     http_req_duration: ['p(95)<5000'] // 95% de peticiones < 5s

@@ -7,12 +7,15 @@ import { translate } from '$lib/i18n';
 export interface AuthModalState {
     show: boolean;
     message: string;
+    type: 'warning' | 'expired' | 'unauthorized';
+    timeRemaining?: number; // For warning modal countdown
 }
 
 function createAuthModalStore() {
     const { subscribe, set, update } = writable<AuthModalState>({
         show: false,
-        message: ''
+        message: '',
+        type: 'expired'
     });
 
     return {
@@ -21,7 +24,25 @@ function createAuthModalStore() {
             modalStore.closeAll();
             set({
                 show: true,
-                message
+                message,
+                type: 'unauthorized'
+            });
+        },
+        showSessionWarning: (timeRemaining: number) => {
+            // Cerrar TODOS los modales primero
+            modalStore.closeAll();
+
+            // Emitir evento global para componentes que no usan modalStore
+            if (browser) {
+                window.dispatchEvent(new CustomEvent('session-warning'));
+            }
+
+            // Mostrar modal de advertencia de sesión
+            set({
+                show: true,
+                message: translate('modal.sessionWarningMessage'),
+                type: 'warning',
+                timeRemaining
             });
         },
         showSessionExpired: () => {
@@ -36,16 +57,25 @@ function createAuthModalStore() {
             // Mostrar modal de sesión expirada
             set({
                 show: true,
-                message: translate('modal.sessionExpiredMessage')
+                message: translate('modal.sessionExpiredMessage'),
+                type: 'expired'
             });
         },
         showUnauthorized: () => set({
             show: true,
-            message: translate('auth.login_required')
+            message: translate('auth.login_required'),
+            type: 'unauthorized'
         }),
+        updateTimeRemaining: (timeRemaining: number) => {
+            update(state => ({
+                ...state,
+                timeRemaining
+            }));
+        },
         hide: () => set({
             show: false,
-            message: ''
+            message: '',
+            type: 'expired'
         })
     };
 }

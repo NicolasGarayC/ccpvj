@@ -191,23 +191,6 @@ export let onCancel: (() => void) | undefined = undefined;
 		dispatch('cancel');
 	}
 
-	// Generar contraseña aleatoria
-	function generateRandomPassword() {
-		const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-		let password = '';
-		for (let i = 0; i < 8; i++) {
-			password += chars.charAt(Math.floor(Math.random() * chars.length));
-		}
-		
-		if (isEdit) {
-			formData.newPassword = password;
-		} else {
-			formData.password = password;
-		}
-		
-		formData.confirmPassword = password;
-	}
-
 	// Obtener descripción del rol
 	function getRoleDescription(roleName: string): string {
 		const role = availableRoles.find(r => r.name === roleName);
@@ -353,42 +336,30 @@ export let onCancel: (() => void) | undefined = undefined;
 							{isEdit ? $t('users.form.password.labelEdit') : $t('users.form.password.labelCreate')}
 							{#if !isEdit}<span class="text-red-500">*</span>{/if}
 						</label>
-						<div class="relative">
-							{#if isEdit}
-								<input
-									id="password"
-									type="password"
-									bind:value={formData.newPassword}
-									placeholder={$t('users.form.password.placeholder')}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-										{errors.newPassword ? 'border-red-500' : ''}"
-									disabled={isSubmitting}
-									minlength="6"
-								/>
-							{:else}
-								<input
-									id="password"
-									type="password"
-									bind:value={formData.password}
-									placeholder={$t('users.form.password.placeholder')}
-									class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
-										{errors.password ? 'border-red-500' : ''}"
-									required
-									disabled={isSubmitting}
-									minlength="6"
-								/>
-							{/if}
-							<button
-								type="button"
-								on:click={generateRandomPassword}
-								class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-								title={$t('users.form.password.generate')}
-							>
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-								</svg>
-							</button>
-						</div>
+						{#if isEdit}
+							<input
+								id="password"
+								type="password"
+								bind:value={formData.newPassword}
+								placeholder={$t('users.form.password.placeholder')}
+								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
+									{errors.newPassword ? 'border-red-500' : ''}"
+								disabled={isSubmitting}
+								minlength="6"
+							/>
+						{:else}
+							<input
+								id="password"
+								type="password"
+								bind:value={formData.password}
+								placeholder={$t('users.form.password.placeholder')}
+								class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent
+									{errors.password ? 'border-red-500' : ''}"
+								required
+								disabled={isSubmitting}
+								minlength="6"
+							/>
+						{/if}
 						{#if isEdit && errors.newPassword}
 							<p class="mt-1 text-sm text-red-600">{$t(errors.newPassword)}</p>
 						{:else if !isEdit && errors.password}

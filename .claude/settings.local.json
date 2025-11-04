@@ -152,7 +152,10 @@
       "Bash(sudo tail:*)",
       "Bash(sudo nginx:*)",
       "Bash(node --version:*)",
-      "Bash(npm --version:*)"
+      "Bash(npm --version:*)",
+      "Bash(tree:*)",
+      "Bash(k6 run:*)",
+      "Bash(dmesg:*)"
     ],
     "deny": [],
     "ask": []
