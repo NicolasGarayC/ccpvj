@@ -3,7 +3,8 @@
 	import { materialApoyoService } from '$lib/application/services/material-apoyo/MaterialApoyoService';
 	import type { MaterialApoyoDetailDto, CreateMaterialApoyoDto, UpdateMaterialApoyoDto } from '$lib/types/api/materialApoyo.types';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
-	import type { UploadResult } from '$lib/application/services/upload/ContextualUploadService';
+	import type { UploadResult } from '$lib/services/contextualUploadService';
+	import { safeRandomUUID } from '$lib/utils/uuid';
 
 	export let course: MaterialApoyoDetailDto | null = null; // null for create, MaterialApoyoDetailDto for edit
 	export let loading = false;
@@ -12,7 +13,7 @@
 	const isEditing = !!course;
 
 	// Generate a temporary ID for new courses to allow image upload before save
-	const tempId = course?.id || crypto.randomUUID();
+	const tempId = course?.id || safeRandomUUID();
 
 	let formData = {
 		title: course?.title || '',

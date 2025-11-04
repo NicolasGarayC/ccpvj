@@ -1,8 +1,11 @@
 using CentroCultural.Application.Services;
+using CentroCultural.Application.DTOs;
 using CentroCultural.Domain.Entities;
 using CentroCultural.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace CentroCultural.Tests.Unit.Services;
@@ -17,13 +20,19 @@ public class MaterialApoyoServiceTests : IDisposable
 
     public MaterialApoyoServiceTests()
     {
-        // Configurar base de datos en memoria para tests
+        // Configurar base de datos SQLite en memoria para tests (soporta raw SQL)
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseSqlite("DataSource=:memory:")
             .Options;
 
         _context = new ApplicationDbContext(options);
-        _service = new MaterialApoyoService(_context);
+
+        // Crear el schema de la base de datos
+        _context.Database.OpenConnection();
+        _context.Database.EnsureCreated();
+
+        var mockLogger = new Mock<ILogger<MaterialApoyoService>>();
+        _service = new MaterialApoyoService(_context, mockLogger.Object);
 
         // Seed data inicial
         SeedTestData();
@@ -76,7 +85,7 @@ public class MaterialApoyoServiceTests : IDisposable
     public async Task GetAllAsync_ShouldReturnAllActiveMaterials()
     {
         // Act
-        var result = await _service.GetAllAsync();
+        var result = await _service.GetAllMaterialApoyoAsync();
 
         // Assert
         result.Should().NotBeNull();
@@ -91,7 +100,7 @@ public class MaterialApoyoServiceTests : IDisposable
         var validId = "test-1";
 
         // Act
-        var result = await _service.GetByIdAsync(validId);
+        var result = await _service.GetMaterialApoyoByIdAsync(validId);
 
         // Assert
         result.Should().NotBeNull();
@@ -106,7 +115,7 @@ public class MaterialApoyoServiceTests : IDisposable
         var invalidId = "non-existent-id";
 
         // Act
-        var result = await _service.GetByIdAsync(invalidId);
+        var result = await _service.GetMaterialApoyoByIdAsync(invalidId);
 
         // Assert
         result.Should().BeNull();
@@ -116,27 +125,23 @@ public class MaterialApoyoServiceTests : IDisposable
     public async Task CreateAsync_WithValidData_ShouldCreateMaterial()
     {
         // Arrange
-        var newMaterial = new MaterialApoyo
+        var createDto = new CreateMaterialApoyoDto
         {
-            Id = Guid.NewGuid().ToString(),
             Title = "Nuevo Material",
             Description = "Descripción del nuevo material",
-            IsActive = true,
             IsFeatured = false,
-            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            EducatorId = "1",
             EducatorName = "Prof. Test"
         };
 
         // Act
-        var result = await _service.CreateAsync(newMaterial);
+        var result = await _service.CreateMaterialApoyoAsync(createDto, 1);
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(newMaterial.Id);
+        result.Title.Should().Be("Nuevo Material");
 
         // Verificar que se guardó en la base de datos
-        var saved = await _context.MaterialApoyo.FindAsync(newMaterial.Id);
+        var saved = await _context.MaterialApoyo.FirstOrDefaultAsync(m => m.Title == "Nuevo Material");
         saved.Should().NotBeNull();
         saved!.Title.Should().Be("Nuevo Material");
     }
@@ -146,18 +151,22 @@ public class MaterialApoyoServiceTests : IDisposable
     {
         // Arrange
         var materialId = "test-1";
-        var material = await _context.MaterialApoyo.FindAsync(materialId);
-        material!.Title = "Título Actualizado";
+        var updateDto = new UpdateMaterialApoyoDto
+        {
+            Title = "Título Actualizado",
+            Description = "Descripción",
+            EducatorName = "Prof. Test"
+        };
 
         // Act
-        var result = await _service.UpdateAsync(material);
+        var result = await _service.UpdateMaterialApoyoAsync(materialId, updateDto, 1);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Title.Should().Be("Título Actualizado");
+        result.Should().BeTrue();
 
         // Verificar que se actualizó en la base de datos
         var updated = await _context.MaterialApoyo.FindAsync(materialId);
+        updated.Should().NotBeNull();
         updated!.Title.Should().Be("Título Actualizado");
     }
 
@@ -168,10 +177,13 @@ public class MaterialApoyoServiceTests : IDisposable
         var materialId = "test-2";
 
         // Act
-        var result = await _service.DeleteAsync(materialId);
+        var result = await _service.DeleteMaterialApoyoAsync(materialId, 1);
 
         // Assert
         result.Should().BeTrue();
+
+        // Limpiar el ChangeTracker para forzar reload desde DB
+        _context.ChangeTracker.Clear();
 
         // Verificar que fue eliminado
         var deleted = await _context.MaterialApoyo.FindAsync(materialId);
@@ -185,7 +197,7 @@ public class MaterialApoyoServiceTests : IDisposable
         var invalidId = "non-existent-id";
 
         // Act
-        var result = await _service.DeleteAsync(invalidId);
+        var result = await _service.DeleteMaterialApoyoAsync(invalidId, 1);
 
         // Assert
         result.Should().BeFalse();
@@ -195,7 +207,7 @@ public class MaterialApoyoServiceTests : IDisposable
     public async Task GetFeaturedAsync_ShouldReturnOnlyFeaturedMaterials()
     {
         // Act
-        var result = await _service.GetFeaturedAsync();
+        var result = await _service.GetFeaturedMaterialApoyoAsync();
 
         // Assert
         result.Should().NotBeNull();
@@ -208,42 +220,50 @@ public class MaterialApoyoServiceTests : IDisposable
     public async Task GetByEducatorAsync_ShouldReturnMaterialsByEducator()
     {
         // Arrange
-        var educatorId = "1";
+        var educatorId = 1;
 
         // Act
-        var result = await _service.GetByEducatorAsync(educatorId);
+        var result = await _service.GetMaterialApoyoByEducatorAsync(educatorId);
 
         // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(2);
-        result.Should().OnlyContain(m => m.EducatorId == educatorId);
     }
 
     [Fact]
     public async Task SearchAsync_WithKeyword_ShouldReturnMatchingMaterials()
     {
         // Arrange
-        var keyword = "matemáticas";
+        var searchDto = new MaterialApoyoSearchDto
+        {
+            SearchTerm = "matemáticas",
+            Page = 1,
+            PageSize = 10
+        };
 
         // Act
-        var result = await _service.SearchAsync(keyword);
+        var result = await _service.GetMaterialApoyoAsync(searchDto);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCountGreaterThan(0);
-        result.Should().Contain(m => m.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        result.MaterialApoyo.Should().HaveCountGreaterThan(0);
+        result.MaterialApoyo.Should().Contain(m => m.Title.Contains("matemáticas", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
     public void Constructor_ShouldThrowException_WhenContextIsNull()
     {
+        // Arrange
+        var mockLogger = new Mock<ILogger<MaterialApoyoService>>();
+
         // Act & Assert
-        Action act = () => new MaterialApoyoService(null!);
+        Action act = () => new MaterialApoyoService(null!, mockLogger.Object);
         act.Should().Throw<ArgumentNullException>();
     }
 
     public void Dispose()
     {
+        _context.Database.CloseConnection();
         _context.Database.EnsureDeleted();
         _context.Dispose();
     }

@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { BACKEND_API_URL } from '$lib/config/backend';
 
-const BACKEND_URL = 'http://localhost:5000'; // Ajusta según tu configuración
+const BACKEND_URL = BACKEND_API_URL;
 
 export const GET: RequestHandler = async () => {
   try {

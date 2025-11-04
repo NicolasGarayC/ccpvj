@@ -45,7 +45,7 @@ describe('MediaUploader', () => {
 				}
 			});
 			expect(
-				screen.getByText(/Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF \(máx\. 20MB\)/i)
+				screen.getByText(/Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF \(máx\. 200MB\)/i)
 			).toBeInTheDocument();
 		});
 
@@ -242,7 +242,7 @@ describe('MediaUploader', () => {
 			await fireEvent.change(fileInput);
 
 			await waitFor(() => {
-				expect(screen.getByText(/Archivo muy grande \(máx\. 20MB para image\)/i)).toBeInTheDocument();
+				expect(screen.getByText(/Archivo muy grande \(máx\. 200MB para image\)/i)).toBeInTheDocument();
 			});
 		});
 

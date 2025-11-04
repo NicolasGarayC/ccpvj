@@ -1,12 +1,19 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { blogService } from '$lib/application/services/blog/blogService';
-import { blogPostElementService, type CreateElementDto, type ElementType, type ElementWithFile } from '$lib/application/services/blog/blogPostElementService';
+	import {
+		blogPostElementService,
+		type CreateElementDto,
+		type ElementType,
+		type ElementWithFile
+	} from '$lib/application/services/blog/blogPostElementService';
 	import type { BlogPost } from '$lib/types/api';
+	import type { BlogPostElementDto } from '$lib/types/api/blog.types';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
 	import { contextualUploadService, type UploadResult } from '$lib/application/services/upload/ContextualUploadService';
 	import BlogEventRelation from './BlogEventRelation.svelte';
-	import { calendarService } from '$lib/application/services/calendar/CalendarService';
+	import { calendarService } from '$lib/services/calendar/calendarService';
+	import { safeRandomUUID } from '$lib/utils/uuid';
 
 export let visible = false;
 export let post: BlogPost | null = null;
@@ -297,7 +304,7 @@ function resetForm() {
 				featuredMedia: post?.featuredMedia ?? undefined,
 				tags: resolvedTags,
 				content: combinedContent,
-				elements: elementsPayload
+				elements: elementsPayload as unknown as BlogPostElementDto[]
 			};
 
 			await blogService.updatePost(String(post.id), updateData);
@@ -309,13 +316,15 @@ function resetForm() {
 			await updateEventRelations(String(post.id));
 
 			// Dispatch success with message
-			const detail = {
-				postId: String(post.id),
-				message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
-				post: updatedPost
-			};
-			dispatch('updated', detail);
-			onUpdated?.(detail);
+			if (updatedPost) {
+				const detail = {
+					postId: String(post.id),
+					message: `✅ Artículo "${formData.title}" actualizado exitosamente`,
+					post: updatedPost
+				};
+				dispatch('updated', detail);
+				onUpdated?.(detail);
+			}
 		} else {
 			// Create new blog post
 			const createData = {
@@ -416,7 +425,7 @@ function handleBackdropKeydown(event: KeyboardEvent) {
 	// Element management functions
 	function addElement(type: ElementType) {
 		const newElement: ElementBlock = {
-			id: crypto.randomUUID(),
+			id: safeRandomUUID(),
 			elementType: type,
 			content: type === 'title' ? 'Nuevo título' : (type === 'text' ? 'Nuevo texto' : ''),
 			orderNumber: elements.length + 1,

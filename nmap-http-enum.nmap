@@ -1,0 +1,11 @@
+# Nmap 7.95 scan initiated Thu Oct 30 02:31:51 2025 as: /snap/nmap/4171/usr/bin/nmap -Pn -p 80,3000 --script=http-enum -oA nmap-http-enum 192.168.68.101
+Nmap scan report for ccpvj.com (192.168.68.101)
+Host is up (0.00038s latency).
+
+PORT     STATE SERVICE
+80/tcp   open  http
+| http-enum: 
+|_  /blog/wp-login.php: Wordpress login page.
+3000/tcp open  ppp
+
+# Nmap done at Thu Oct 30 02:32:12 2025 -- 1 IP address (1 host up) scanned in 21.70 seconds

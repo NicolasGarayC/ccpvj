@@ -1,0 +1,4 @@
+# Nmap 7.95 scan initiated Thu Oct 30 02:31:51 2025 as: /snap/nmap/4171/usr/bin/nmap -Pn -p 80,3000 --script=http-enum -oA nmap-http-enum 192.168.68.101
+Host: 192.168.68.101 (ccpvj.com)	Status: Up
+Host: 192.168.68.101 (ccpvj.com)	Ports: 80/open/tcp//http///, 3000/open/tcp//ppp///
+# Nmap done at Thu Oct 30 02:32:12 2025 -- 1 IP address (1 host up) scanned in 21.70 seconds

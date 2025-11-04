@@ -1,5 +1,7 @@
 # Centro Cultural Víctor Jara - Backend API
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica para desarrolladores.
+
 Backend .NET 8 con arquitectura en capas para la plataforma del Centro Cultural Víctor Jara. Proporciona APIs REST seguras con autenticación JWT completamente **offline en Red MESH autónoma** sin acceso a Internet.
 
 ## ✅ Estado Actual - Correcciones Aplicadas (Septiembre 2025)

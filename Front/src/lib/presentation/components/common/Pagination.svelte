@@ -6,7 +6,8 @@
 	export let hasNext: boolean;
 	export let hasPrevious: boolean;
 	export let showRange: number = 5; // Number of page buttons to show
-	export let onPageChangeCallback: ((event: CustomEvent<number>) => void) | undefined;
+	// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+	export let onPageChangeCallback: ((event: CustomEvent<number>) => void) | undefined = undefined;
 
 const dispatch = createEventDispatcher<{
 	pageChange: number;

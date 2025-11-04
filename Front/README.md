@@ -1,5 +1,7 @@
 # Frontend Centro Cultural Víctor Jara - SvelteKit 5
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica para desarrolladores.
+
 ## 📌 Resumen del Frontend
 
 **Sistema Frontend Principal** para la plataforma del Centro Cultural Víctor Jara construido con **SvelteKit 5** como aplicación web moderna **offline-first**.
@@ -341,7 +343,7 @@ El frontend ya no se conecta directamente a SQLite mediante Drizzle. Toda la per
 ### **Upload por Tipo**
 ```typescript
 // Tipos soportados
-Images: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (20MB)
+Images: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (200MB)
 Videos: MP4, WebM, AVI, MOV (500MB)
 Audio: MP3, WAV, OGG, M4A (100MB)
 Documents: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT (100MB)

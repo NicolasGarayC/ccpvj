@@ -1,10 +1,10 @@
 import type { RequestHandler } from './$types';
-import { readFile } from 'fs/promises';
-import { existsSync, statSync } from 'fs';
+import { existsSync, statSync, createReadStream } from 'fs';
 import path from 'path';
 import { error } from '@sveltejs/kit';
 import { BACKEND_BASE_URL } from '$lib/config/backend';
 import { getMediaDir } from '$lib/server/utils/media-paths';
+import { Readable } from 'stream';
 
 // API base URL for analytics tracking
 const API_BASE_URL = BACKEND_BASE_URL;
@@ -19,22 +19,34 @@ const MIME_TYPES: Record<string, string> = {
     '.png': 'image/png',
     '.gif': 'image/gif',
     '.webp': 'image/webp',
-    '.svg': 'image/svg+xml',
     '.avif': 'image/avif',
     '.bmp': 'image/bmp',
     '.tiff': 'image/tiff',
+    '.svg': 'image/svg+xml',
     '.mp4': 'video/mp4',
     '.webm': 'video/webm',
     '.avi': 'video/avi',
-    '.mov': 'video/mov',
+    '.mov': 'video/quicktime',
+    '.mkv': 'video/x-matroska',
+    '.flv': 'video/x-flv',
+    '.wmv': 'video/x-ms-wmv',
     '.mp3': 'audio/mp3',
     '.wav': 'audio/wav',
     '.ogg': 'audio/ogg',
     '.m4a': 'audio/m4a',
+    '.flac': 'audio/flac',
+    '.aac': 'audio/aac',
+    '.wma': 'audio/x-ms-wma',
     '.pdf': 'application/pdf',
     '.doc': 'application/msword',
     '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    '.txt': 'text/plain'
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.txt': 'text/plain',
+    '.csv': 'text/csv',
+    '.zip': 'application/zip'
 };
 
 /**
@@ -128,26 +140,54 @@ export const GET: RequestHandler = async ({ params, url, request, getClientAddre
             ).catch(err => console.debug('Download tracking failed:', err));
         }
 
-        // Read file
-        const fileBuffer = await readFile(normalizedPath);
-
         // Determine MIME type
         const extension = path.extname(filePath).toLowerCase();
         const mimeType = MIME_TYPES[extension] || 'application/octet-stream';
 
-        // Set appropriate headers
-        const headers: Record<string, string> = {
+        const baseHeaders: Record<string, string> = {
             'Content-Type': mimeType,
-            'Cache-Control': 'public, max-age=31536000', // 1 year cache
+            'Cache-Control': 'public, max-age=31536000',
+            'Accept-Ranges': 'bytes',
+            'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`
         };
 
-        // For images, add additional headers
-        if (mimeType.startsWith('image/')) {
-            headers['Accept-Ranges'] = 'bytes';
+        const rangeHeader = request.headers.get('range');
+
+        if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+            const [rangeStart, rangeEnd] = rangeHeader.replace('bytes=', '').split('-');
+
+            let start = Number(rangeStart);
+            let end = rangeEnd ? Number(rangeEnd) : fileStats.size - 1;
+
+            if (Number.isNaN(start)) start = 0;
+            if (Number.isNaN(end) || end >= fileStats.size) end = fileStats.size - 1;
+
+            if (start > end) {
+                throw error(416, 'Invalid range request');
+            }
+
+            const chunkSize = end - start + 1;
+            const stream = createReadStream(normalizedPath, { start, end });
+            const webStream = Readable.toWeb(stream);
+
+            return new Response(webStream, {
+                status: 206,
+                headers: {
+                    ...baseHeaders,
+                    'Content-Length': chunkSize.toString(),
+                    'Content-Range': `bytes ${start}-${end}/${fileStats.size}`
+                }
+            });
         }
 
-        return new Response(new Uint8Array(fileBuffer), {
-            headers
+        const stream = createReadStream(normalizedPath);
+        const webStream = Readable.toWeb(stream);
+
+        return new Response(webStream, {
+            headers: {
+                ...baseHeaders,
+                'Content-Length': fileStats.size.toString()
+            }
         });
 
     } catch (err: any) {

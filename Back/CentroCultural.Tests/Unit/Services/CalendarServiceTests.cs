@@ -48,11 +48,10 @@ public class CalendarServiceTests : IDisposable
             NombreUsuario = "organizer",
             Nombre = "Test",
             Apellido = "Organizer",
-            Correo = "organizer@test.com",
             Contrasena = "hashed",
-            RoleString = "administrador",
-            IsActive = true,
-            CreatedAt = currentTime
+            IdRol = 3, // 3 = Administrador
+            FechaCreacion = currentTime.ToString(),
+            EsActivo = true
         };
 
         _context.Usuario.Add(organizer);
@@ -408,14 +407,16 @@ public class CalendarServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteEventAsync_WithInvalidId_ShouldThrowException()
+    public async Task DeleteEventAsync_WithInvalidId_ShouldReturnFalse()
     {
         // Arrange
         var invalidId = Guid.NewGuid();
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(async () =>
-            await _service.DeleteEventAsync(invalidId, 1));
+        // Act
+        var result = await _service.DeleteEventAsync(invalidId, 1);
+
+        // Assert
+        result.Should().BeFalse();
     }
 
     #endregion

@@ -8,10 +8,11 @@ export let showCreateButton = false;
 export let limit = 0;
 export let itemsPerPage = 10;
 export let featured = false;
-export let onEventClick: ((detail: { event: EventSummary }) => void) | undefined;
-export let onCreateEvent: (() => void) | undefined;
-export let onEditEvent: ((detail: { event: EventSummary }) => void) | undefined;
-export let onDeleteEvent: ((detail: { event: EventSummary }) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onEventClick: ((detail: { event: EventSummary }) => void) | undefined = undefined;
+export let onCreateEvent: (() => void) | undefined = undefined;
+export let onEditEvent: ((detail: { event: EventSummary }) => void) | undefined = undefined;
+export let onDeleteEvent: ((detail: { event: EventSummary }) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		eventClick: { event: EventSummary };

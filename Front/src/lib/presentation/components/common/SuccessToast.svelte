@@ -4,7 +4,8 @@
 	export let visible = false;
 	export let message = '';
 	export let duration = 3000; // 3 seconds default
-	export let onCloseCallback: ((event: CustomEvent<void>) => void) | undefined;
+	// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+	export let onCloseCallback: ((event: CustomEvent<void>) => void) | undefined = undefined;
 
 	const dispatch = createEventDispatcher<{
 		close: void;
@@ -32,7 +33,7 @@
 			clearTimeout(timeoutId);
 			timeoutId = undefined;
 		}
-		const event = new CustomEvent('close');
+		const event = new CustomEvent<void>('close');
 		onCloseCallback?.(event);
 		dispatch('close');
 	}

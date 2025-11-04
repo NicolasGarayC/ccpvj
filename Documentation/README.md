@@ -1,5 +1,7 @@
 # Centro Cultural Víctor Jara - Plataforma Web Educativa
 
+> **👥 Para usuarios no técnicos**: Si buscas información sobre cómo usar el sistema (permisos, límites de archivos, reglas de negocio), consulta la sección [**Reglas de Negocio para Usuarios**](../README.md#-reglas-de-negocio-para-usuarios) en el README principal. Esta documentación es técnica.
+
 ## 📌 Resumen del Proyecto
 
 **PROYECTO EN DESARROLLO**: Plataforma web para centros culturales comunitarios diseñada para ser offline-first con arquitectura de red mesh local.
@@ -313,7 +315,7 @@ Back/Data/media/
 
 ### 📋 **Formatos de Archivo Soportados**
 
-#### **🖼️ Imágenes** (Límite: 20MB directo / 50MB nginx)
+#### **🖼️ Imágenes** (Límite: 200MB directo / 50MB nginx)
 - **JPEG/JPG** (`image/jpeg`) - Fotografías y imágenes con compresión
 - **PNG** (`image/png`) - Imágenes con transparencia y calidad alta
 - **GIF** (`image/gif`) - Animaciones e imágenes simples
@@ -345,7 +347,7 @@ Back/Data/media/
 ### 🔄 **Endpoints Implementados**
 
 #### **Upload Específico por Tipo (Compatible con Nginx)**
-- `POST /api/upload/images` - Subida de imágenes (20MB direct, 50MB nginx)
+- `POST /api/upload/images` - Subida de imágenes (200MB direct, 50MB nginx)
 - `POST /api/upload/videos` - Subida de videos (500MB direct, 5GB nginx)
 - `POST /api/upload/audio` - Subida de audio (100MB direct, 500MB nginx)
 - `POST /api/upload/documents` - Subida de documentos (100MB)

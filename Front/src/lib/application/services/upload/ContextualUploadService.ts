@@ -105,7 +105,20 @@ class ContextualUploadService extends BaseHttpService {
      * Upload post media (image, video, audio) with contextual structure
      */
     async uploadPostMedia({ postId, courseId, moduleId, file, mediaType, oldFilePath }: PostMediaUploadOptions): Promise<UploadResult> {
+        const startTime = Date.now();
+        console.log(`\n[UPLOAD-CLIENT] 🚀 Starting upload at ${new Date().toISOString()}`);
+        console.log(`[UPLOAD-CLIENT] 📂 File:`, {
+            name: file.name,
+            size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+            type: file.type,
+            mediaType,
+            postId,
+            courseId,
+            moduleId
+        });
+
         try {
+            console.log('[UPLOAD-CLIENT] 📦 Creating FormData...');
             const formData = new FormData();
             formData.append('file', file);
             formData.append('mediaType', mediaType);
@@ -114,18 +127,31 @@ class ContextualUploadService extends BaseHttpService {
             if (oldFilePath) {
                 formData.append('oldFilePath', oldFilePath);
             }
+            console.log('[UPLOAD-CLIENT] ✅ FormData created');
 
-            const response = await fetch(`${this.baseURL}/upload/posts/${postId}`, {
+            const url = `${this.baseURL}/upload/posts/${postId}`;
+            console.log(`[UPLOAD-CLIENT] 🌐 Fetch URL: ${url}`);
+            console.log('[UPLOAD-CLIENT] ⏳ Sending fetch request...');
+
+            const fetchStartTime = Date.now();
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: this.buildAuthHeaders(),
                 body: formData,
                 credentials: 'include'
             });
+            const fetchDuration = ((Date.now() - fetchStartTime) / 1000).toFixed(2);
+            console.log(`[UPLOAD-CLIENT] ✅ Fetch completed in ${fetchDuration}s`);
+            console.log(`[UPLOAD-CLIENT] 📊 Response status: ${response.status} ${response.statusText}`);
 
+            console.log('[UPLOAD-CLIENT] 📥 Parsing response...');
             const { isJson, payload } = await this.parseResponse(response);
+            console.log(`[UPLOAD-CLIENT] ✅ Response parsed (isJson: ${isJson})`);
+
             const result = isJson ? payload : { success: response.ok };
 
             if (!response.ok) {
+                console.log(`[UPLOAD-CLIENT] ❌ Response not OK: ${response.status}`);
                 const message =
                     (typeof result === 'object' && result?.error) ||
                     (typeof payload === 'string' && payload) ||
@@ -133,10 +159,21 @@ class ContextualUploadService extends BaseHttpService {
                 throw new Error(message);
             }
 
+            const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+            console.log(`[UPLOAD-CLIENT] 🎉 Upload completed successfully in ${totalTime}s\n`);
+
             return result as UploadResult;
 
         } catch (error) {
-            console.error(`Post ${mediaType} upload error:`, error);
+            const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+            console.error(`\n[UPLOAD-CLIENT] ❌ Upload failed after ${totalTime}s`);
+            console.error(`[UPLOAD-CLIENT] Error:`, error);
+            console.error(`[UPLOAD-CLIENT] Error details:`, {
+                message: error instanceof Error ? error.message : 'Unknown',
+                name: error instanceof Error ? error.name : 'Unknown',
+                stack: error instanceof Error ? error.stack : 'No stack'
+            });
+            console.error(`[UPLOAD-CLIENT] Post ${mediaType} upload error:`, error);
             throw error;
         }
     }
@@ -196,7 +233,7 @@ class ContextualUploadService extends BaseHttpService {
         const config = {
             image: {
                 types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif', 'image/bmp', 'image/tiff'],
-                maxSize: 20 * 1024 * 1024 // 20MB
+                maxSize: 200 * 1024 * 1024 // 200MB
             },
             video: {
                 types: ['video/mp4', 'video/webm', 'video/avi', 'video/mov'],

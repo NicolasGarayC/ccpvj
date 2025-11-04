@@ -1,0 +1,44 @@
+# Nmap 7.95 scan initiated Thu Oct 30 02:31:26 2025 as: /snap/nmap/4171/usr/bin/nmap -sV -Pn --top-ports 1000 -oA nmap-top1000 192.168.68.101
+Nmap scan report for ccpvj.com (192.168.68.101)
+Host is up (0.00070s latency).
+Not shown: 997 closed tcp ports (conn-refused)
+PORT     STATE SERVICE VERSION
+53/tcp   open  domain  dnsmasq 2.90
+80/tcp   open  http    nginx 1.24.0 (Ubuntu)
+3000/tcp open  ppp?
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port3000-TCP:V=7.95%I=7%D=10/30%Time=6903145A%P=x86_64-unknown-linux-gn
+SF:u%r(GetRequest,94EB,"HTTP/1\.1\x20200\x20OK\r\ncontent-length:\x2035389
+SF:\r\ncontent-type:\x20text/html\r\netag:\x20\"1vvz52l\"\r\nlink:\x20<\./
+SF:_app/immutable/assets/0\.Bnc9A6BV\.css>;\x20rel=\"preload\";\x20as=\"st
+SF:yle\";\x20nopush,\x20<\./_app/immutable/assets/BlogPostCard\.BO3LxT0y\.
+SF:css>;\x20rel=\"preload\";\x20as=\"style\";\x20nopush,\x20<\./_app/immut
+SF:able/assets/2\.CQQEkqwd\.css>;\x20rel=\"preload\";\x20as=\"style\";\x20
+SF:nopush,\x20<\./_app/immutable/entry/start\.DmunTvgH\.js>;\x20rel=\"modu
+SF:lepreload\";\x20nopush,\x20<\./_app/immutable/chunks/Cl42B9wB\.js>;\x20
+SF:rel=\"modulepreload\";\x20nopush,\x20<\./_app/immutable/chunks/CUZF5XXE
+SF:\.js>;\x20rel=\"modulepreload\";\x20nopush,\x20<\./_app/immutable/chunk
+SF:s/DfhM1wbu\.js>;\x20rel=\"modulepreload\";\x20nopush,\x20<\./_app/immut
+SF:able/entry/app\.B4bQXEQo\.js>;\x20rel=\"modulepreload\";\x20nopush,\x20
+SF:<\./_app/immutable/chunks/Dp1pzeXC\.js>;\x20rel=\"modulepreload\";\x20n
+SF:opush,\x20<\./_app/immutable/chunks/Bj-9c9vR\.js>;\x20rel=\"moduleprelo
+SF:ad\";\x20nopush,\x20<\./_app/immutable/chunks/CFJW4ctr\.js>;\x20rel=\"m
+SF:odulepreload\";\x20nopush,\x20<\./_app/immutable/")%r(Help,2F,"HTTP/1\.
+SF:1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n")%r(NCP,2F,"
+SF:HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n")%r(
+SF:HTTPOptions,6E,"HTTP/1\.1\x20204\x20No\x20Content\r\nallow:\x20GET,\x20
+SF:HEAD,\x20OPTIONS\r\nDate:\x20Thu,\x2030\x20Oct\x202025\x2007:31:38\x20G
+SF:MT\r\nConnection:\x20close\r\n\r\n")%r(RTSPRequest,6E,"HTTP/1\.1\x20204
+SF:\x20No\x20Content\r\nallow:\x20GET,\x20HEAD,\x20OPTIONS\r\nDate:\x20Thu
+SF:,\x2030\x20Oct\x202025\x2007:31:38\x20GMT\r\nConnection:\x20close\r\n\r
+SF:\n")%r(RPCCheck,2F,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x
+SF:20close\r\n\r\n")%r(DNSVersionBindReqTCP,2F,"HTTP/1\.1\x20400\x20Bad\x2
+SF:0Request\r\nConnection:\x20close\r\n\r\n")%r(DNSStatusRequestTCP,2F,"HT
+SF:TP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20close\r\n\r\n")%r(SS
+SF:LSessionReq,2F,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nConnection:\x20cl
+SF:ose\r\n\r\n")%r(TerminalServerCookie,2F,"HTTP/1\.1\x20400\x20Bad\x20Req
+SF:uest\r\nConnection:\x20close\r\n\r\n");
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Thu Oct 30 02:31:39 2025 -- 1 IP address (1 host up) scanned in 12.54 seconds

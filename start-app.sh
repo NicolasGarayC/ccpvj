@@ -31,14 +31,20 @@ if [ -f "$ENV_FILE" ]; then
     set +a
 fi
 
-if [ -z "${PUBLIC_BACKEND_BASE_URL:-}" ]; then
-    echo -e "${RED}ERROR: PUBLIC_BACKEND_BASE_URL no está definido.${NC}"
-    echo "Configura la variable en $ENV_FILE o expórtala antes de ejecutar este script."
-    exit 1
+# Normalizar URL del backend público (sin barras finales)
+if [ -n "${PUBLIC_BACKEND_BASE_URL:-}" ]; then
+    PUBLIC_BACKEND_BASE_URL="$(printf '%s' "$PUBLIC_BACKEND_BASE_URL" | sed 's:/*$::')"
+else
+    echo -e "${YELLOW}Aviso: PUBLIC_BACKEND_BASE_URL no está definido. Se utilizarán rutas relativas en el navegador.${NC}"
+    PUBLIC_BACKEND_BASE_URL=""
 fi
 
-# Normalizar URL del backend público (sin barras finales)
-PUBLIC_BACKEND_BASE_URL="$(printf '%s' "$PUBLIC_BACKEND_BASE_URL" | sed 's:/*$::')"
+if [ -z "${BACKEND_URL:-}" ]; then
+    BACKEND_URL="http://192.168.68.101:5251"
+    echo -e "${YELLOW}Aviso: BACKEND_URL no está definido. Se utilizará ${BACKEND_URL}.${NC}"
+fi
+
+BACKEND_URL="$(printf '%s' "$BACKEND_URL" | sed 's:/*$::')"
 
 # Configurar directorio de medios si no está definido
 if [ -z "${MEDIA_DIR:-}" ]; then
@@ -47,6 +53,7 @@ fi
 
 # Configuración de variables de entorno por defecto
 export PUBLIC_BACKEND_BASE_URL
+export BACKEND_URL
 export MEDIA_DIR
 
 echo -e "${GREEN}=====================================================================${NC}"
@@ -110,7 +117,10 @@ start_services() {
 
     # Iniciar frontend con variables de entorno
     cd "$FRONTEND_DIR"
-    MEDIA_DIR="$MEDIA_DIR" pm2 start build/index.js --name centro-cultural-frontend > /dev/null 2>&1
+    MEDIA_DIR="$MEDIA_DIR" \
+    BACKEND_URL="$BACKEND_URL" \
+    PUBLIC_BACKEND_BASE_URL="$PUBLIC_BACKEND_BASE_URL" \
+    pm2 start build/index.js --name centro-cultural-frontend > /dev/null 2>&1
 
     echo -e "${GREEN}✓ Servicios iniciados correctamente${NC}"
 }
@@ -130,7 +140,11 @@ show_status() {
     pm2 status
     echo -e "\n${GREEN}Aplicación disponible en:${NC}"
     echo -e "  - http://localhost"
-    echo -e "  - http://192.168.68.101"
+    if [ -n "$PUBLIC_BACKEND_BASE_URL" ]; then
+        echo -e "  - $PUBLIC_BACKEND_BASE_URL"
+    fi
+    echo -e "\n${YELLOW}Backend URL (SSR):${NC}"
+    echo -e "  $BACKEND_URL"
     echo -e "\n${YELLOW}Directorio de medios:${NC}"
     echo -e "  $MEDIA_DIR"
     echo -e "\n${YELLOW}Comandos útiles:${NC}"

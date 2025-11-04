@@ -51,7 +51,7 @@
     };
 
     const maxSizes: Record<string, number> = {
-      image: 20 * 1024 * 1024,    // 20MB
+      image: 200 * 1024 * 1024,   // 200MB
       video: 500 * 1024 * 1024,   // 500MB
       audio: 100 * 1024 * 1024,   // 100MB
       pdf: 50 * 1024 * 1024,      // 50MB
@@ -161,13 +161,31 @@
           // TODO: Add JWT Bearer token when implemented
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al eliminar la imagen');
+        const rawBody = await response.text();
+        let parsedBody: any = null;
+
+        if (rawBody) {
+          try {
+            parsedBody = JSON.parse(rawBody);
+          } catch {
+            // Ignore JSON parse errors; treat raw text as message
+          }
         }
 
-        const result = await response.json();
-        console.log('✅ Imagen eliminada del servidor:', result.message);
+        if (!response.ok) {
+          const message =
+            parsedBody?.error ||
+            rawBody ||
+            response.statusText ||
+            'Error al eliminar la imagen';
+          throw new Error(message);
+        }
+
+        const successMessage =
+          parsedBody?.message ||
+          rawBody ||
+          'Imagen eliminada correctamente';
+        console.log('✅ Imagen eliminada del servidor:', successMessage);
 
         // Limpiar la UI
         previewUrl = '';
@@ -353,7 +371,7 @@
       </p>
       <p class="text-xs text-gray-500 mb-4">
         {#if mediaType === 'image'}
-          Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (máx. 20MB)
+          Formatos: JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF (máx. 200MB)
         {:else if mediaType === 'video'}
           Formatos: MP4, WebM, MOV, AVI, MKV (máx. 500MB)
         {:else if mediaType === 'audio'}

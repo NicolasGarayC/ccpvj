@@ -21,13 +21,13 @@ export const mediaConfig = {
 	maxFileSizes: {
 		// Direct upload limits (smaller)
 		direct: {
-			image: 1024 * 1024 * 1024,     // 1GB
+			image: 200 * 1024 * 1024,      // 200MB
 			video: 20 * 1024 * 1024 * 1024, // 20GB
 			audio: 20 * 1024 * 1024 * 1024  // 20GB
 		},
-		// Nginx upload limits (larger, as configured in nginx)
+		// Nginx upload limits (larger, as configured en nginx)
 		nginx: {
-			image: 1024 * 1024 * 1024,      // 1GB
+			image: 200 * 1024 * 1024,       // 200MB
 			video: 20 * 1024 * 1024 * 1024, // 20GB
 			audio: 20 * 1024 * 1024 * 1024  // 20GB
 		}

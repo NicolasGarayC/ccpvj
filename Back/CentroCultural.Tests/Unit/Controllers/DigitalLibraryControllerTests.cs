@@ -51,15 +51,15 @@ public class DigitalLibraryControllerTests
     public async Task GetItems_WithValidSearch_ShouldReturnOkWithData()
     {
         // Arrange
-        var searchDto = new LibrarySearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new LibrarySearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new LibraryItemPagedResultDto
         {
-            Items = new List<LibraryItemSummaryDto>
+            Items = new List<LibraryItemDto>
             {
-                new LibraryItemSummaryDto { Id = "1", Title = "Test Resource" }
+                new LibraryItemDto { Id = "1", Title = "Test Resource" }
             },
-            TotalItems = 1,
-            PageNumber = 1,
+            TotalCount = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -281,14 +281,21 @@ public class DigitalLibraryControllerTests
     public async Task CreateItem_WithoutUserId_ShouldReturnUnauthorized()
     {
         // Arrange
-        // No se configuran claims
+        // Configurar un HttpContext sin claims de usuario
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
         var createDto = new CreateLibraryItemDto { Title = "Test" };
 
         // Act
         var result = await _controller.CreateItem(createDto);
 
         // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        var objectResult = result.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(401);
     }
 
     [Fact]

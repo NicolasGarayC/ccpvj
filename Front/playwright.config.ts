@@ -22,7 +22,7 @@ export default defineConfig({
 
 	// Reporter para los resultados
 	reporter: [
-		['html', { outputFolder: 'test-results/html' }],
+		['html', { outputFolder: 'playwright-report' }],
 		['json', { outputFile: 'test-results/results.json' }],
 		['list']
 	],

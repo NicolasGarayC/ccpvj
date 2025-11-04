@@ -108,8 +108,8 @@ namespace CentroCultural.API.Controllers
                 if (file == null || file.Length == 0)
                     return BadRequest(new { error = "No se proporcionó ningún archivo" });
 
-                if (file.Length > 20_971_520) // 20MB
-                    return BadRequest(new { error = "Imagen demasiado grande. Tamaño máximo: 20MB" });
+                if (file.Length > 209_715_200) // 200MB
+                    return BadRequest(new { error = "Imagen demasiado grande. Tamaño máximo: 200MB" });
 
                 if (!file.ContentType.StartsWith("image/"))
                     return BadRequest(new { error = "El archivo debe ser una imagen" });
@@ -184,27 +184,49 @@ namespace CentroCultural.API.Controllers
             [FromForm] string moduleId,
             [FromForm] string? oldFilePath = null)
         {
-            _logger.LogInformation("Post media upload request received for post {PostId}", postId);
+            var startTime = DateTime.UtcNow;
+            _logger.LogInformation("\n[BACKEND-UPLOAD] 🚀 Upload request started at {Time}", startTime);
+            _logger.LogInformation("[BACKEND-UPLOAD] 📝 Post ID: {PostId}", postId);
+
             try
             {
+                _logger.LogInformation("[BACKEND-UPLOAD] 📦 Validating file...");
+
                 if (file == null || file.Length == 0)
+                {
+                    _logger.LogWarning("[BACKEND-UPLOAD] ❌ No file provided");
                     return BadRequest(new { error = "No se proporcionó ningún archivo" });
+                }
+
+                _logger.LogInformation("[BACKEND-UPLOAD] 📂 File details: Name={FileName}, Size={Size}MB, Type={ContentType}, MediaType={MediaType}",
+                    file.FileName,
+                    file.Length / 1024.0 / 1024.0,
+                    file.ContentType,
+                    mediaType);
 
                 // Validate media type
                 if (string.IsNullOrEmpty(mediaType) || !new[] { "image", "video", "audio" }.Contains(mediaType))
+                {
+                    _logger.LogWarning("[BACKEND-UPLOAD] ❌ Invalid media type: {MediaType}", mediaType);
                     return BadRequest(new { error = "Tipo de media inválido" });
+                }
 
                 // Validate file size based on media type
                 long maxSize = mediaType switch
                 {
-                    "image" => 20_971_520,        // 20MB
+                    "image" => 209_715_200,        // 200MB
                     "video" => 21_474_836_480,    // 20GB for movies
                     "audio" => 104_857_600,       // 100MB
-                    _ => 20_971_520
+                    _ => 209_715_200
                 };
 
                 if (file.Length > maxSize)
+                {
+                    _logger.LogWarning("[BACKEND-UPLOAD] ❌ File too large: {FileSize}MB, Max: {MaxSize}MB",
+                        file.Length / 1024.0 / 1024.0,
+                        maxSize / 1024.0 / 1024.0);
                     return BadRequest(new { error = $"Archivo demasiado grande. Tamaño máximo: {maxSize / 1_048_576}MB" });
+                }
 
                 // Validate content type
                 bool isValidType = mediaType switch
@@ -216,14 +238,30 @@ namespace CentroCultural.API.Controllers
                 };
 
                 if (!isValidType)
+                {
+                    _logger.LogWarning("[BACKEND-UPLOAD] ❌ Invalid content type: {ContentType} for mediaType: {MediaType}",
+                        file.ContentType, mediaType);
                     return BadRequest(new { error = $"El archivo no coincide con el tipo {mediaType}" });
+                }
+
+                _logger.LogInformation("[BACKEND-UPLOAD] ✅ Validations passed");
 
                 // Directory structure: Data/media/material-apoyo/{courseId}/modules/{moduleId}/posts/{postId}/{mediaType}s/
                 var mediaFolder = mediaType + "s"; // images, videos, audios
                 var uploadsDir = Path.Combine("Data", "media", "material-apoyo", courseId, "modules", moduleId, "posts", postId, mediaFolder);
 
+                _logger.LogInformation("[BACKEND-UPLOAD] 📁 Target directory: {Directory}", uploadsDir);
+
                 if (!Directory.Exists(uploadsDir))
+                {
+                    _logger.LogInformation("[BACKEND-UPLOAD] 🔨 Creating directory...");
                     Directory.CreateDirectory(uploadsDir);
+                    _logger.LogInformation("[BACKEND-UPLOAD] ✅ Directory created");
+                }
+                else
+                {
+                    _logger.LogInformation("[BACKEND-UPLOAD] ✅ Directory already exists");
+                }
 
                 // Generate unique filename
                 var extension = Path.GetExtension(file.FileName);
@@ -235,22 +273,56 @@ namespace CentroCultural.API.Controllers
                 var fileName = $"{safeFileName}_{timestamp}{extension}";
                 var filePath = Path.Combine(uploadsDir, fileName);
 
+                _logger.LogInformation("[BACKEND-UPLOAD] 📄 Target file: {FileName}", fileName);
+
                 // Delete old file if specified
                 if (!string.IsNullOrEmpty(oldFilePath))
                 {
                     var oldFullPath = Path.Combine("Data", oldFilePath.TrimStart('/'));
+                    _logger.LogInformation("[BACKEND-UPLOAD] 🗑️ Cleaning up old file: {OldFile}", oldFullPath);
                     if (System.IO.File.Exists(oldFullPath))
                     {
                         System.IO.File.Delete(oldFullPath);
-                        _logger.LogInformation("Deleted old file: {OldFile}", oldFullPath);
+                        _logger.LogInformation("[BACKEND-UPLOAD] ✅ Old file deleted");
                     }
                 }
 
                 // Save the file
+                _logger.LogInformation("[BACKEND-UPLOAD] 💾 Starting file write...");
+                var writeStartTime = DateTime.UtcNow;
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await file.CopyToAsync(stream);
+                    // Track progress for large files
+                    var buffer = new byte[81920]; // 80KB buffer
+                    var totalBytesRead = 0L;
+                    var lastLoggedMB = 0L;
+                    int bytesRead;
+
+                    using (var inputStream = file.OpenReadStream())
+                    {
+                        while ((bytesRead = await inputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await stream.WriteAsync(buffer, 0, bytesRead);
+                            totalBytesRead += bytesRead;
+
+                            var currentMB = totalBytesRead / 1024 / 1024;
+                            if (currentMB - lastLoggedMB >= 100) // Log every 100MB
+                            {
+                                var progress = (totalBytesRead * 100.0) / file.Length;
+                                _logger.LogInformation("[BACKEND-UPLOAD] 📊 Progress: {Progress:F2}% ({Current}MB / {Total}MB)",
+                                    progress,
+                                    totalBytesRead / 1024.0 / 1024.0,
+                                    file.Length / 1024.0 / 1024.0);
+                                lastLoggedMB = currentMB;
+                            }
+                        }
+                    }
                 }
+
+                var writeDuration = (DateTime.UtcNow - writeStartTime).TotalSeconds;
+                _logger.LogInformation("[BACKEND-UPLOAD] ✅ File written successfully in {Duration:F2}s", writeDuration);
+                _logger.LogInformation("[BACKEND-UPLOAD] 📊 Final size: {Size:F2}MB", file.Length / 1024.0 / 1024.0);
 
                 // Get relative path from Data folder
                 var relativePath = Path.GetRelativePath("Data", filePath).Replace("\\", "/");
@@ -273,13 +345,24 @@ namespace CentroCultural.API.Controllers
                     contentId = postId
                 };
 
-                _logger.LogInformation("Post media uploaded successfully: {FilePath}", filePath);
+                var totalDuration = (DateTime.UtcNow - startTime).TotalSeconds;
+                _logger.LogInformation("[BACKEND-UPLOAD] 🎉 Upload completed successfully in {Duration:F2}s", totalDuration);
+                _logger.LogInformation("[BACKEND-UPLOAD] 📍 Relative path: {Path}", cleanRelativePath);
+                _logger.LogInformation("[BACKEND-UPLOAD] 📤 Sending response...\n");
+
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading post media for {PostId}", postId);
-                return StatusCode(500, new { error = "Error interno del servidor al subir el archivo" });
+                var totalDuration = (DateTime.UtcNow - startTime).TotalSeconds;
+                _logger.LogError("\n[BACKEND-UPLOAD] ❌ Error after {Duration:F2}s: {Message}", totalDuration, ex.Message);
+                _logger.LogError("[BACKEND-UPLOAD] Exception details: {Exception}", ex);
+                _logger.LogError("[BACKEND-UPLOAD] Stack trace: {StackTrace}\n", ex.StackTrace);
+
+                return StatusCode(500, new {
+                    error = "Error interno del servidor al subir el archivo",
+                    details = ex.Message
+                });
             }
         }
 
@@ -306,11 +389,11 @@ namespace CentroCultural.API.Controllers
                 // Validate file size based on media type
                 long maxSize = mediaType switch
                 {
-                    "image" => 20_971_520,        // 20MB
+                    "image" => 209_715_200,        // 200MB
                     "video" => 21_474_836_480,    // 20GB for movies
                     "audio" => 104_857_600,       // 100MB
                     "document" => 1_073_741_824,  // 1GB
-                    _ => 20_971_520
+                    _ => 209_715_200
                 };
 
                 if (file.Length > maxSize)

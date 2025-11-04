@@ -1,8 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync, unlinkSync } from 'fs';
+import { mkdir } from 'fs/promises';
+import { existsSync, unlinkSync, createWriteStream } from 'fs';
 import path from 'path';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 
 // Use absolute path to Back/Data/media/content/blog
 const BASE_UPLOAD_DIR = path.resolve(process.cwd(), '../Back/Data/media/content/blog');
@@ -116,9 +118,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
         }
 
         // Save new file
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        await writeFile(filepath, buffer);
+        const readable = Readable.fromWeb(file.stream());
+        const writable = createWriteStream(filepath, { flags: 'w' });
+        await pipeline(readable, writable);
 
         // Return contextual path for database storage
         const relativePath = `content/blog/posts/${blogPostId}/${config.folder}/${filename}`;

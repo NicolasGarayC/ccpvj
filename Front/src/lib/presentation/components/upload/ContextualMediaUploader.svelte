@@ -18,11 +18,12 @@ export let currentMedia: string = '';
 export let disabled: boolean = false;
 export let label: string = '';
 export let required: boolean = false;
-export let onUploadStart: (() => void) | undefined;
-export let onUploadSuccess: ((result: UploadResult) => void) | undefined;
-export let onUploadError: ((message: string) => void) | undefined;
-export let onMediaRemoved: (() => void) | undefined;
-export let onUploadProgress: ((payload: { progress: number; fileName: string; mediaType: MediaType; size: number }) => void) | undefined;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
+export let onUploadStart: (() => void) | undefined = undefined;
+export let onUploadSuccess: ((result: UploadResult) => void) | undefined = undefined;
+export let onUploadError: ((message: string) => void) | undefined = undefined;
+export let onMediaRemoved: (() => void) | undefined = undefined;
+export let onUploadProgress: ((payload: { progress: number; fileName: string; mediaType: MediaType; size: number }) => void) | undefined = undefined;
 
 	// Support legacy properties
 	$: actualContentId = contentId || materialApoyoId || courseId;
@@ -253,12 +254,12 @@ const emitProgress = (value: number, file: File) => {
 
 function getMaxSizeInfo(type: MediaType): string {
 	const sizes: Record<MediaType, string> = {
-		image: '20MB',
+		image: '200MB',
 		video: '20GB',
 		audio: '100MB',
 		document: '1GB'
 	};
-	return sizes[type] ?? '20MB';
+	return sizes[type] ?? '200MB';
 }
 </script>
 

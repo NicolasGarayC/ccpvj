@@ -109,6 +109,8 @@
       <UserList
         bind:this={userListComponent}
         currentUserRole={currentUser?.role || ''}
+        onToggleUser={undefined}
+        onChangeRole={undefined}
         on:editUser={handleEditUser}
       />
     </div>

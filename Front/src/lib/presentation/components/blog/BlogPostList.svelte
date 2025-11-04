@@ -8,18 +8,19 @@
   import { t } from '$lib/i18n';
 
 export let showActions = false;
+// TODO: Revisar uso de callbacks - considerar hacer pattern con eventos solamente
 export let onPostsLoadedCallback:
 	| ((event: CustomEvent<BlogPost[]>) => void)
-	| undefined;
+	| undefined = undefined;
 export let onDeletePostCallback:
 	| ((event: CustomEvent<BlogPost>) => void)
-	| undefined;
+	| undefined = undefined;
 export let onPostCreatedCallback:
 	| ((event: CustomEvent<BlogPost>) => void)
-	| undefined;
+	| undefined = undefined;
 export let onPostUpdatedCallback:
 	| ((event: CustomEvent<BlogPost>) => void)
-	| undefined;
+	| undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -195,7 +196,7 @@ function handlePostUpdated(event: CustomEvent<BlogPost>) {
 				</svg>
 				<h3>{$t('blog.error_loading_articles_header')}</h3>
 				<p>{error}</p>
-				<button class="btn-retry" on:click={loadPosts}>
+				<button class="btn-retry" on:click={() => loadPosts()}>
 					{$t('blog.retry')}
 				</button>
 			</div>

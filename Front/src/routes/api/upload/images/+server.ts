@@ -1,11 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
+import { mkdir } from 'fs/promises';
+import { existsSync, createWriteStream } from 'fs';
 import path from 'path';
 import { getMediaDir } from '$lib/server/utils/media-paths';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
 const ALLOWED_TYPES = [
     'image/jpeg',
@@ -39,7 +41,7 @@ export const POST: RequestHandler = async ({ request }) => {
         // Validate file size
         if (file.size > MAX_FILE_SIZE) {
             return json({
-                error: 'File too large. Maximum size is 20MB.'
+                error: 'File too large. Maximum size is 200MB.'
             }, { status: 400 });
         }
 
@@ -59,9 +61,9 @@ export const POST: RequestHandler = async ({ request }) => {
         const filepath = path.join(uploadDir, filename);
 
         // Save file
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        await writeFile(filepath, buffer);
+        const readable = Readable.fromWeb(file.stream());
+        const writable = createWriteStream(filepath, { flags: 'w' });
+        await pipeline(readable, writable);
 
         // Return relative path for database storage
         const relativePath = `image/${filename}`;

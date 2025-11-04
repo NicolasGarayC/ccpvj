@@ -51,15 +51,15 @@ public class BlogControllerTests
     public async Task GetBlogPosts_WithValidSearch_ShouldReturnOkWithData()
     {
         // Arrange
-        var searchDto = new BlogPostSearchDto { PageNumber = 1, PageSize = 10 };
+        var searchDto = new BlogPostSearchDto { Page = 1, PageSize = 10 };
         var expectedResult = new BlogPostPagedResultDto
         {
-            Items = new List<BlogPostSummaryDto>
+            Posts = new List<BlogPostSummaryDto>
             {
                 new BlogPostSummaryDto { Id = "1", Title = "Test Post", Slug = "test-post" }
             },
-            TotalItems = 1,
-            PageNumber = 1,
+            TotalCount = 1,
+            Page = 1,
             PageSize = 10
         };
 
@@ -286,7 +286,10 @@ public class BlogControllerTests
         {
             Title = "New Post",
             Slug = "new-post",
-            Content = "Post content"
+            Elements = new List<BlogPostElementDto>
+            {
+                new BlogPostElementDto { ElementType = "text", Content = "Post content", OrderNumber = 1 }
+            }
         };
 
         var createdPost = new BlogPostDto
@@ -314,14 +317,21 @@ public class BlogControllerTests
     public async Task CreateBlogPost_WithoutUserId_ShouldReturnUnauthorized()
     {
         // Arrange
-        // No se configuran claims, por lo que GetCurrentUserId() retornará null
+        // Configurar un HttpContext sin claims de usuario
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
         var createDto = new CreateBlogPostDto { Title = "Test" };
 
         // Act
         var result = await _controller.CreateBlogPost(createDto);
 
         // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        var objectResult = result.Result as ObjectResult;
+        objectResult.Should().NotBeNull();
+        objectResult!.StatusCode.Should().Be(401);
     }
 
     [Fact]
@@ -446,8 +456,13 @@ public class BlogControllerTests
         // Assert
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
-        var response = okResult!.Value as dynamic;
-        ((string)response!.message).Should().Be("Blog post published successfully");
+        okResult.Should().NotBeNull();
+
+        // Usar reflexión para acceder a la propiedad del objeto anónimo
+        var response = okResult!.Value;
+        var type = response!.GetType();
+        var message = (string)type.GetProperty("message")!.GetValue(response)!;
+        message.Should().Be("Blog post published successfully");
     }
 
     [Fact]
@@ -558,8 +573,13 @@ public class BlogControllerTests
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        var response = okResult!.Value as dynamic;
-        ((bool)response!.isAvailable).Should().BeTrue();
+        okResult.Should().NotBeNull();
+
+        // Usar reflexión para acceder a la propiedad del objeto anónimo
+        var response = okResult!.Value;
+        var type = response!.GetType();
+        var isAvailable = (bool)type.GetProperty("isAvailable")!.GetValue(response)!;
+        isAvailable.Should().BeTrue();
     }
 
     [Fact]
@@ -578,8 +598,13 @@ public class BlogControllerTests
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        var response = okResult!.Value as dynamic;
-        ((bool)response!.isAvailable).Should().BeFalse();
+        okResult.Should().NotBeNull();
+
+        // Usar reflexión para acceder a la propiedad del objeto anónimo
+        var response = okResult!.Value;
+        var type = response!.GetType();
+        var isAvailable = (bool)type.GetProperty("isAvailable")!.GetValue(response)!;
+        isAvailable.Should().BeFalse();
     }
 
     [Fact]
@@ -604,8 +629,13 @@ public class BlogControllerTests
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        var response = okResult!.Value as dynamic;
-        ((string)response!.slug).Should().Be(expectedSlug);
+        okResult.Should().NotBeNull();
+
+        // Usar reflexión para acceder al slug del objeto anónimo
+        var response = okResult!.Value;
+        var type = response!.GetType();
+        var slug = (string)type.GetProperty("slug")!.GetValue(response)!;
+        slug.Should().Be(expectedSlug);
     }
 
     #endregion

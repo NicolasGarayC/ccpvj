@@ -6,15 +6,163 @@
 
 Plataforma web educativa offline-first para el Centro Cultural Víctor Jara en Bogotá, diseñada para funcionar en redes locales mesh sin dependencia de internet.
 
-### 🎯 Objetivo
+## 👥 Reglas de Negocio para Usuarios
 
-Crear una plataforma educativa y cultural que permita:
-- ✅ Gestión de material educativo organizado en módulos
-- ✅ Sistema de blog y noticias del centro
-- ✅ Calendario de eventos con recurrencia
-- ✅ Biblioteca digital con recursos multimedia
-- ✅ Autenticación con roles diferenciados
-- ✅ Sistema multimedia contextual integrado
+> **Nota**: Para información técnica completa, consulta [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md).
+
+### Roles del Sistema
+
+| Rol | Descripción |
+|-----|-------------|
+| **Visitante** | Usuario no autenticado. Solo puede ver contenido público. |
+| **Colaborador** | Puede crear y editar su propio contenido. |
+| **Administrador** | Control total del sistema. |
+
+---
+
+### 📝 1. Blog
+
+**Permisos clave:**
+- Colaboradores pueden crear, editar y eliminar **sus propias** publicaciones
+- Solo administradores pueden **destacar** publicaciones (máx. 5)
+- Las publicaciones tienen dos estados: **Borrador** (privado) y **Publicado** (público)
+
+**Límites de archivos:**
+| Tipo | Tamaño Máximo | Formatos |
+|------|---------------|----------|
+| Imágenes | 1 GB | JPG, PNG, GIF, WebP, SVG |
+| Videos | 20 GB | MP4, WebM, AVI, MOV |
+| Audios | 20 GB | MP3, WAV, OGG, M4A |
+| PDFs | 1 GB | PDF |
+
+**Reglas importantes:**
+- El título debe ser único (máx. 200 caracteres)
+- Eliminar una publicación borra **todos** sus archivos multimedia
+- Los visitantes solo ven publicaciones publicadas
+
+---
+
+### 📅 2. Calendario de Eventos
+
+**Permisos clave:**
+- Colaboradores pueden crear y gestionar **sus propios** eventos
+- Solo administradores pueden **destacar** eventos (máx. 5)
+- Todos pueden ver eventos públicos
+
+**Tipos de eventos:**
+- 🎓 **Clase**: Sesiones educativas regulares
+- 🔧 **Taller**: Actividades prácticas
+- 🎤 **Conferencia**: Charlas y presentaciones
+- 🎨 **Evento Cultural**: Exposiciones, conciertos
+- 📅 **General**: Otros eventos
+
+**Eventos recurrentes:**
+- Pueden repetirse: diaria, semanal, mensual o anualmente
+- Para semanales: elige días específicos (Lun, Mié, Vie)
+- Indica fecha de finalización de la recurrencia
+
+**Reglas importantes:**
+- Los eventos eliminados se marcan como **inactivos** (no se borran físicamente)
+- Puedes vincular eventos con publicaciones del blog o material de apoyo
+
+---
+
+### 📚 3. Biblioteca Digital
+
+**Permisos clave:**
+- Todos pueden **ver y descargar** recursos
+- Colaboradores y administradores pueden **crear y gestionar** recursos
+- Los recursos se organizan en **colecciones temáticas**
+
+**Tipos de recursos y límites:**
+| Tipo | Tamaño Máximo | Formatos |
+|------|---------------|----------|
+| 🖼️ Imágenes | 1 GB | JPG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF |
+| 🎥 Videos | 20 GB | MP4, WebM, AVI, MOV, MKV, FLV, WMV |
+| 🔊 Audios | 20 GB | MP3, WAV, OGG, M4A, FLAC, AAC, WMA |
+| 📄 Documentos | 1 GB | PDF, Word, Excel, PowerPoint, TXT, CSV, ZIP |
+
+**Reglas importantes:**
+- Un recurso puede estar en **múltiples colecciones**
+- Al eliminar un recurso, se marca como **inactivo** (el archivo permanece)
+- Todas las descargas se registran para estadísticas
+- Usa etiquetas (tags) para facilitar búsquedas
+
+---
+
+### 📖 4. Material de Apoyo
+
+**Estructura jerárquica de 4 niveles:**
+```
+📚 Material de Apoyo (Nivel 1: Proyecto/Curso)
+    └─ 📁 Módulo (Nivel 2: Sección/Capítulo)
+        └─ 📝 Post (Nivel 3: Lección/Tema)
+            └─ 🧩 Elemento (Nivel 4: Componentes)
+```
+
+**Ejemplo real:**
+```
+📚 Curso de Fotografía Digital
+    └─ 📁 Módulo 1: Fundamentos de la Cámara
+        └─ 📝 Post: Conociendo tu Cámara DSLR
+            └─ 🧩 Título: "Introducción"
+            └─ 🧩 Texto: "La cámara DSLR es..."
+            └─ 🧩 Imagen: diagrama-camara.jpg
+            └─ 🧩 Video: tutorial-basico.mp4
+```
+
+**Límites de archivos:**
+| Tipo | Tamaño Máximo | Formatos |
+|------|---------------|----------|
+| Imágenes | 1 GB | JPG, PNG, GIF, WebP, SVG |
+| Videos | 20 GB | MP4, WebM, AVI, MOV |
+| Audios | 20 GB | MP3, WAV, OGG, M4A |
+| PDFs | 1 GB | PDF |
+
+**Tipos de elementos (Nivel 4):**
+1. **Título de sección**: Organizar contenido
+2. **Texto**: Párrafos con formato enriquecido
+3. **Imagen**: Con texto alternativo y pie de foto
+4. **Video**: Con duración y miniatura
+5. **Audio**: Con duración y nombre del narrador
+6. **PDF**: Documentos descargables
+7. **Código**: Bloques de código fuente
+
+**⚠️ Reglas de eliminación en cascada:**
+- **Eliminar Material**: Borra TODOS sus módulos, posts, elementos y archivos
+- **Eliminar Módulo**: Borra TODOS sus posts, elementos y archivos
+- **Eliminar Post**: Borra TODOS sus elementos y archivos
+- **No hay recuperación** del contenido eliminado
+
+---
+
+### 📊 Resumen de Límites de Archivos por Módulo
+
+| Módulo | Imágenes | Videos | Audios | Documentos |
+|--------|----------|--------|--------|------------|
+| Blog | 1 GB | 20 GB | 20 GB | 1 GB (PDF) |
+| Calendario | - | - | - | - |
+| Biblioteca | 1 GB | 20 GB | 20 GB | 1 GB |
+| Material de Apoyo | 1 GB | 20 GB | 20 GB | 1 GB (PDF) |
+
+---
+
+### ⚠️ Advertencias Importantes
+
+**Eliminación de contenido:**
+- ❌ No hay recuperación de contenido eliminado
+- ⚠️ Material de Apoyo usa eliminación en cascada (¡cuidado!)
+- 💡 Consulta con administradores antes de eliminar contenido importante
+
+**Archivos multimedia:**
+- ✅ Usa formatos compatibles según la tabla anterior
+- 💾 Comprime videos grandes antes de subirlos
+- 🔄 Los archivos reemplazan y eliminan automáticamente los anteriores
+
+**Búsqueda y organización:**
+- 📝 Usa títulos descriptivos (no genéricos como "documento1")
+- 🏷️ Agrega etiquetas relevantes para facilitar búsquedas
+- 📄 Completa las descripciones con información útil
 
 ---
 
@@ -219,7 +367,7 @@ Back/Data/media/
 
 ### Formatos Soportados
 
-- **Imágenes** (20MB): JPEG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF
+- **Imágenes** (200MB): JPEG, PNG, GIF, WebP, SVG, AVIF, BMP, TIFF
 - **Videos** (500MB): MP4, WebM, AVI, MOV
 - **Audio** (100MB): MP3, WAV, OGG, M4A
 - **Documentos** (100MB): PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT

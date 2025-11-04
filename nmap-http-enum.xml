@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///snap/nmap/4171/usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Thu Oct 30 02:31:51 2025 as: /snap/nmap/4171/usr/bin/nmap -Pn -p 80,3000 -&#45;script=http-enum -oA nmap-http-enum 192.168.68.101 -->
+<nmaprun scanner="nmap" args="/snap/nmap/4171/usr/bin/nmap -Pn -p 80,3000 -&#45;script=http-enum -oA nmap-http-enum 192.168.68.101" start="1761809511" startstr="Thu Oct 30 02:31:51 2025" version="7.95" xmloutputversion="1.05">
+<scaninfo type="connect" protocol="tcp" numservices="2" services="80,3000"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1761809511" endtime="1761809532"><status state="up" reason="user-set" reason_ttl="0"/>
+<address addr="192.168.68.101" addrtype="ipv4"/>
+<hostnames>
+<hostname name="ccpvj.com" type="PTR"/>
+</hostnames>
+<ports><port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="http" method="table" conf="3"/><script id="http-enum" output="&#xa;  /blog/wp-login.php: Wordpress login page.&#xa;"/></port>
+<port protocol="tcp" portid="3000"><state state="open" reason="syn-ack" reason_ttl="0"/><service name="ppp" method="table" conf="3"/></port>
+</ports>
+<times srtt="381" rttvar="3806" to="100000"/>
+</host>
+<runstats><finished time="1761809532" timestr="Thu Oct 30 02:32:12 2025" summary="Nmap done at Thu Oct 30 02:32:12 2025; 1 IP address (1 host up) scanned in 21.70 seconds" elapsed="21.70" exit="success"/><hosts up="1" down="0" total="1"/>
+</runstats>
+</nmaprun>

@@ -76,7 +76,9 @@ vi.mock('@testing-library/svelte', async (importOriginal) => {
 });
 
 vi.mock('$env/dynamic/public', () => ({
-	env: {}
+	env: {
+		PUBLIC_BACKEND_BASE_URL: 'http://localhost:5251'
+	}
 }));
 
 type Locale = 'es' | 'en';

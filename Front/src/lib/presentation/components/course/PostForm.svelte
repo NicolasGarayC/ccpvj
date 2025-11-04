@@ -5,8 +5,9 @@
 	import type { PostDetail } from '$lib/application/services/material-apoyo/ModulePostService';
 	import type { PostElement } from '$lib/application/services/material-apoyo/PostElementService';
 	import ContextualMediaUploader from '../upload/ContextualMediaUploader.svelte';
-	import type { UploadResult } from '$lib/application/services/upload/ContextualUploadService';
-	import { contextualUploadService } from '$lib/application/services/upload/ContextualUploadService';
+	import type { UploadResult } from '$lib/services/contextualUploadService';
+	import { contextualUploadService } from '$lib/services/contextualUploadService';
+	import { safeRandomUUID } from '$lib/utils/uuid';
 
 	export let visible = false;
 	export let moduleId: string;
@@ -424,7 +425,7 @@ function handleBackdropKeydown(event: KeyboardEvent) {
 	// Element management functions
 	function addElement(type: ElementType) {
 	const newElement: ElementBlock = {
-		id: crypto.randomUUID(),
+		id: safeRandomUUID(),
 		elementType: type,
 		content: type === 'title' ? 'Nuevo título' : (type === 'text' ? 'Nuevo texto' : ''),
 		orderNumber: elements.length + 1,
