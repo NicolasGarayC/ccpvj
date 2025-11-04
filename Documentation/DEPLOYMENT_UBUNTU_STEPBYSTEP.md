@@ -1,480 +1,796 @@
-# 🚀 Guía de Despliegue Paso a Paso - Centro Cultural PVJ
+# Guía de Despliegue - Centro Cultural Popular Víctor Jara
 
-## Servidor Ubuntu - Despliegue Completo
+## Información del Documento
 
-Esta guía te llevará paso a paso para desplegar la aplicación Centro Cultural PVJ en un servidor Ubuntu con arquitectura Frontend (SvelteKit) + Backend (.NET) + Base de Datos (SQLite).
+**Versión:** 1.0
+**Fecha:** Noviembre 2025
+**Estado:** Configuración validada en ambiente de producción
+**Sistema Operativo:** Ubuntu 20.04 LTS o superior
+
+## Resumen Ejecutivo
+
+Este documento describe el proceso de despliegue de la plataforma web Centro Cultural Popular Víctor Jara en un servidor Ubuntu. La arquitectura implementada consiste en un frontend desarrollado con SvelteKit, un backend desarrollado con .NET 8, y una base de datos SQLite, todos coordinados mediante Nginx como proxy inverso y PM2 como gestor de procesos.
 
 ---
 
-## 📋 Requisitos Previos
+## 1. Requisitos del Sistema
 
-- Servidor Ubuntu 20.04+ con acceso root/sudo
-- Repositorio clonado en el servidor
-- Conexión a internet estable
+### 1.1 Requisitos de Hardware
+- Servidor con arquitectura x64
+- Mínimo 2 GB de RAM
+- Mínimo 10 GB de espacio en disco
+- Conexión de red estable
+
+### 1.2 Requisitos de Software
+- Ubuntu Server 20.04 LTS o superior
+- Acceso con privilegios de superusuario (sudo)
+- Conexión a Internet para descarga de dependencias
+
+### 1.3 Estructura de Directorios Requerida
+- Directorio de desarrollo: `/home/user/ccpvj`
+- Directorio de producción: `/var/www/centro-cultural`
+- Directorio de logs: `/var/log/centro-cultural`
 
 ---
 
-## 🔧 PASO 1: Configurar el Entorno del Servidor
+## 2. Instalación de Dependencias del Sistema
 
-### Actualizar el sistema e instalar dependencias básicas
+### 2.1 Actualización del Sistema
 
 ```bash
-# Actualizar el sistema
 sudo apt update && sudo apt upgrade -y
+```
 
-# Instalar dependencias básicas
+### 2.2 Instalación de Paquetes Base
+
+```bash
 sudo apt install -y curl wget git nginx sqlite3 unzip
+```
 
-# Instalar Node.js (versión LTS)
+### 2.3 Instalación de Node.js
+
+Se requiere la versión LTS (Long Term Support) de Node.js:
+
+```bash
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
 sudo apt install -y nodejs
+```
 
-# Verificar versiones
+Verificación de la instalación:
+
+```bash
 node --version
 npm --version
 ```
 
-### Instalar .NET 8 SDK
+### 2.4 Instalación de .NET 8 SDK
 
 ```bash
-# Instalar .NET 8 SDK
 wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 sudo apt update
 sudo apt install -y dotnet-sdk-8.0
+```
 
-# Verificar .NET
+Verificación de la instalación:
+
+```bash
 dotnet --version
 ```
 
-### Instalar PM2 para gestión de procesos
+### 2.5 Instalación de PM2
+
+PM2 (Process Manager 2) se utiliza para gestionar los procesos de Node.js y .NET:
 
 ```bash
-# Instalar PM2 para gestión de procesos
 sudo npm install -g pm2
 ```
 
----
-
-## 📁 PASO 2: Preparar Estructura de Directorios
+Configuración de PM2 para inicio automático:
 
 ```bash
-# Crear estructura de directorios
-sudo mkdir -p /var/www/centro-cultural
-sudo mkdir -p /var/www/centro-cultural/data
-sudo mkdir -p /var/www/centro-cultural/media
-sudo mkdir -p /var/log/centro-cultural
+pm2 startup
+```
 
-# Cambiar permisos (reemplaza $USER con tu usuario de Ubuntu)
+Nota: Ejecutar el comando que PM2 indique después de ejecutar `pm2 startup`.
+
+---
+
+## 3. Preparación del Entorno de Producción
+
+### 3.1 Creación de Estructura de Directorios
+
+```bash
+sudo mkdir -p /var/www/centro-cultural
+sudo mkdir -p /var/log/centro-cultural
+```
+
+### 3.2 Configuración de Permisos
+
+```bash
 sudo chown -R $USER:$USER /var/www/centro-cultural
 sudo chmod -R 755 /var/www/centro-cultural
 ```
 
 ---
 
-## 📦 PASO 3: Copiar y Configurar el Proyecto
+## 4. Despliegue del Código Fuente
+
+### 4.1 Sincronización de Archivos
+
+Desde el directorio de desarrollo hacia el directorio de producción:
 
 ```bash
-# Navegar al directorio del proyecto clonado
-cd /ruta/a/tu/repositorio/ccpvj
+cd /home/user/ccpvj
 
-# Copiar archivos al directorio de producción
-sudo cp -r . /var/www/centro-cultural/
-cd /var/www/centro-cultural
+sudo rsync -av \
+  --exclude='.git' \
+  --exclude='node_modules' \
+  --exclude='Front/.svelte-kit' \
+  --exclude='Back/obj' \
+  --exclude='Back/bin/Debug' \
+  . /var/www/centro-cultural/
 
-# Cambiar permisos
 sudo chown -R $USER:$USER /var/www/centro-cultural
 ```
 
 ---
 
-## 🗄️ PASO 4: Configurar la Base de Datos
+## 5. Configuración de la Base de Datos
+
+### 5.1 Arquitectura de Base de Datos
+
+La base de datos SQLite se mantiene en el directorio de desarrollo y se accede mediante un enlace simbólico desde `/tmp/ccpvj.db`.
+
+**Ubicación física:** `/home/user/ccpvj/Data/ccpvj.db`
+**Enlace simbólico:** `/tmp/ccpvj.db`
+
+### 5.2 Creación del Enlace Simbólico
 
 ```bash
-# Navegar al directorio de datos
-cd /var/www/centro-cultural
-
-# Copiar base de datos existente (si existe)
-cp /home/user/ccpvj/Data/ccpvj.db /var/www/centro-cultural/data/ 2>/dev/null || echo "No se encontró BD existente, se creará una nueva"
-
-# Si no existe, crear una nueva base de datos SQLite
-touch /var/www/centro-cultural/data/ccpvj.db
-
-# Configurar permisos para la base de datos
-chmod 664 /var/www/centro-cultural/data/ccpvj.db
-sudo chown $USER:www-data /var/www/centro-cultural/data/ccpvj.db
-sudo chown $USER:www-data /var/www/centro-cultural/data
+rm -f /tmp/ccpvj.db
+ln -s /home/user/ccpvj/Data/ccpvj.db /tmp/ccpvj.db
 ```
+
+### 5.3 Verificación
+
+```bash
+ls -lh /tmp/ccpvj.db
+readlink -f /tmp/ccpvj.db
+```
+
+El comando `readlink` debe mostrar: `/home/user/ccpvj/Data/ccpvj.db`
 
 ---
 
-## ⚙️ PASO 5: Configurar el Backend .NET
+## 6. Compilación del Backend
 
-### Crear archivo de configuración de producción
+### 6.1 Proceso de Compilación
 
 ```bash
-# Navegar al directorio del backend
 cd /var/www/centro-cultural/Back
-
-# Crear archivo de configuración de producción
-cat > appsettings.Production.json << 'EOF'
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=/var/www/centro-cultural/data/ccpvj.db"
-  },
-  "Kestrel": {
-    "Endpoints": {
-      "Http": {
-        "Url": "http://localhost:5251"
-      }
-    }
-  },
-  "MediaSettings": {
-    "BasePath": "/var/www/centro-cultural/media",
-    "BaseUrl": "/media"
-  }
-}
-EOF
+dotnet build --configuration Release --no-incremental
 ```
 
-### Compilar la aplicación
+### 6.2 Verificación de la Compilación
 
 ```bash
-# Compilar la aplicación
-dotnet build --configuration Release
-dotnet publish --configuration Release --output ./publish
+ls -lh bin/Release/net8.0/
 ```
 
-### Crear archivo de configuración PM2 para el backend
-
-```bash
-# Crear archivo de configuración PM2 para el backend
-cat > ecosystem.backend.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: 'centro-cultural-backend',
-    cwd: '/var/www/centro-cultural/Back/publish',
-    script: 'dotnet',
-    args: 'CentroCultural.API.dll',
-    env: {
-      ASPNETCORE_ENVIRONMENT: 'Production',
-      ASPNETCORE_URLS: 'http://localhost:5251'
-    },
-    error_file: '/var/log/centro-cultural/backend-error.log',
-    out_file: '/var/log/centro-cultural/backend-out.log',
-    log_file: '/var/log/centro-cultural/backend.log',
-    time: true
-  }]
-};
-EOF
-```
+Debe existir el archivo ejecutable del proyecto.
 
 ---
 
-## 🎨 PASO 6: Configurar el Frontend SvelteKit
+## 7. Compilación del Frontend
 
-### Instalar dependencias y configurar
+### 7.1 Instalación de Dependencias
 
 ```bash
-# Navegar al directorio del frontend
 cd /var/www/centro-cultural/Front
-
-# Instalar dependencias
-npm install
-# (El script start-app.sh también ejecuta este paso automáticamente.)
-
-# Crear archivo de variables de entorno
-# Crear archivo de variables de entorno
-cat > .env.production << 'EOF'
-PUBLIC_BACKEND_BASE_URL=http://localhost
-DATABASE_URL=file:/var/www/centro-cultural/data/ccpvj.db
-EOF
-
-# Notas:
-# - `PUBLIC_BACKEND_BASE_URL` debe apuntar a la raíz pública del backend (sin `/api` al final), por ejemplo `https://tu-dominio.com`.
-# - `DATABASE_URL` apunta al archivo SQLite dentro del directorio de despliegue. Ajusta la ruta si cambias la ubicación de la base de datos.
-# - Puedes usar `Front/env.production.example` como plantilla y copiarlo a `.env.production`.
-
+npm install --legacy-peer-deps
 ```
 
-### Compilar la aplicación SvelteKit
+### 7.2 Compilación para Producción
 
 ```bash
-# Compilar la aplicación SvelteKit
-# Este paso es opcional. El script de despliegue automático (PASO 8) ejecuta la build por ti.
 npm run build
 ```
 
----
-
-## 🌐 PASO 7: Configurar Nginx
-
-### Crear configuración de Nginx
+### 7.3 Verificación de la Compilación
 
 ```bash
-# Crear configuración de Nginx
-sudo tee /etc/nginx/sites-available/centro-cultural > /dev/null << 'EOF'
-server {
-    listen 80;
-    server_name tu-dominio.com;  # Reemplaza con tu dominio o IP
+ls -lh build/
+```
 
-    # Logs
-    access_log /var/log/nginx/centro-cultural.access.log;
-    error_log /var/log/nginx/centro-cultural.error.log;
+Debe existir el archivo `build/index.js`.
 
-    # Frontend SvelteKit
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
+### 7.4 Configuración de Variables de Entorno
 
-    # Backend API
-    location /api/ {
-        proxy_pass http://localhost:5251/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
+Crear el archivo `.env` en el directorio del frontend:
 
-    # Archivos estáticos de media
-    location /media/ {
-        alias /var/www/centro-cultural/media/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Configuración de archivos estáticos del frontend
-    location /_app/ {
-        proxy_pass http://localhost:3000;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
+```bash
+cat > /var/www/centro-cultural/Front/.env << 'EOF'
+PUBLIC_BACKEND_BASE_URL=
+BACKEND_URL=http://192.168.68.101:5251
+DATABASE_URL=file:/tmp/ccpvj.db
+VITE_ALLOWED_HOSTS=ccpvj.com,www.ccpvj.com,192.168.68.101,localhost
 EOF
 ```
 
-### Habilitar el sitio y reiniciar Nginx
+**Explicación de variables:**
+
+- `PUBLIC_BACKEND_BASE_URL`: Vacío para permitir URLs relativas y evitar problemas de CORS
+- `BACKEND_URL`: URL del backend accesible desde el servidor (usar IP estática en producción)
+- `DATABASE_URL`: Ruta al archivo de base de datos
+- `VITE_ALLOWED_HOSTS`: Hosts permitidos cuando Vite opera en modo desarrollo
+
+---
+
+## 8. Configuración de PM2
+
+### 8.1 Inicio de Servicios
+
+El archivo de configuración PM2 está ubicado en `Infraestructure/pm2/ecosystem.config.js` y contiene la configuración para ambos servicios (frontend y backend).
 
 ```bash
-# Habilitar el sitio
-sudo ln -s /etc/nginx/sites-available/centro-cultural /etc/nginx/sites-enabled/
+pm2 start /var/www/centro-cultural/Infraestructure/pm2/ecosystem.config.js
+```
+
+### 8.2 Verificación del Estado
+
+```bash
+pm2 status
+```
+
+Ambos servicios deben aparecer con estado "online":
+- `centro-cultural-backend`
+- `centro-cultural-frontend`
+
+### 8.3 Persistencia de Configuración
+
+```bash
+pm2 save
+```
+
+### 8.4 Comandos de Gestión
+
+```bash
+# Visualizar logs en tiempo real
+pm2 logs
+
+# Visualizar logs de un servicio específico
+pm2 logs centro-cultural-frontend
+pm2 logs centro-cultural-backend
+
+# Reiniciar servicios
+pm2 restart all
+pm2 restart centro-cultural-frontend
+pm2 restart centro-cultural-backend
+
+# Detener servicios
+pm2 stop all
+
+# Eliminar servicios
+pm2 delete all
+```
+
+---
+
+## 9. Configuración de Nginx
+
+### 9.1 Instalación de Configuración
+
+```bash
+sudo cp /home/user/ccpvj/Infraestructure/nginx/sites-available/centro-cultural.conf \
+        /etc/nginx/sites-available/centro-cultural
+```
+
+### 9.2 Activación del Sitio
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/centro-cultural \
+            /etc/nginx/sites-enabled/centro-cultural
+```
+
+### 9.3 Desactivación del Sitio Predeterminado (Opcional)
+
+```bash
 sudo rm -f /etc/nginx/sites-enabled/default
+```
 
-# Verificar configuración de Nginx
+### 9.4 Verificación de Configuración
+
+```bash
 sudo nginx -t
+```
 
-# Reiniciar Nginx
-sudo systemctl restart nginx
+### 9.5 Aplicación de Cambios
+
+```bash
+sudo systemctl reload nginx
 sudo systemctl enable nginx
 ```
 
+### 9.6 Características de la Configuración
+
+La configuración de Nginx implementa:
+
+1. **Proxy Inverso:**
+   - Rutas del frontend (`/`) dirigidas al puerto 3000
+   - Rutas del API (`/api/`) dirigidas al puerto 5251
+   - Rutas de upload (`/upload/`) dirigidas al puerto 5251
+
+2. **Configuración CORS:**
+   - Cabeceras CORS configuradas para permitir peticiones cross-origin
+   - Soporte para métodos HTTP: GET, POST, PUT, DELETE, PATCH, OPTIONS
+   - Manejo de preflight requests (OPTIONS)
+
+3. **Servicio de Archivos Multimedia:**
+   - Servicio directo desde `/var/www/centro-cultural/Back/Data/media`
+   - Cache de 30 días para optimización
+   - Soporte para range requests (streaming y descargas parciales)
+   - Tipos MIME configurados para imágenes, audio, video y documentos
+
+4. **Límites y Timeouts:**
+   - Tamaño máximo de carga: 20 GB
+   - Timeout de lectura: 1800 segundos (30 minutos)
+   - Timeout de envío: 1800 segundos
+
 ---
 
-## ▶️ PASO 8: Despliegue automático con `start-app.sh`
+## 10. Verificación del Despliegue
 
-El repositorio incluye el script `start-app.sh` que automatiza la instalación de dependencias npm, la compilación de frontend y backend y el arranque en PM2. Úsalo siempre que actualices el código.
+### 10.1 Verificación de Puertos
 
 ```bash
-# Dar permisos de ejecución (solo la primera vez)
-chmod +x /var/www/centro-cultural/start-app.sh
-
-# Ejecutar el despliegue automatizado
-cd /var/www/centro-cultural
-./start-app.sh
-
-# Si ejecutas el script desde otra ruta (por ejemplo, /opt/scripts), puedes forzar
-# el directorio del proyecto con:
-# PROJECT_DIR_OVERRIDE=/var/www/centro-cultural ./start-app.sh
-# Asegúrate de que PUBLIC_BACKEND_BASE_URL esté definido (en .env.production o en el entorno).
+netstat -tlnp | grep -E ":(80|3000|5251)"
 ```
 
-El script:
-- Corre `npm install --no-audit --no-fund` antes de construir el frontend.
-- Compila el backend en modo Release.
-- Reinicia los procesos `centro-cultural-backend` y `centro-cultural-frontend` en PM2.
-- Ejecuta `pm2 save` para persistir la configuración tras reinicios del servidor.
-
-Al finalizar verás un resumen de procesos. Verifica que ambos servicios estén en estado `online`.
-
----
-
-## ✅ PASO 9: Verificar el Despliegue
-
-### Verificar servicios
+O alternativamente:
 
 ```bash
-# Verificar que los servicios estén funcionando
-sudo systemctl status nginx
+ss -tlnp | grep -E ":(80|3000|5251)"
+```
+
+**Resultado esperado:**
+```
+tcp  0.0.0.0:80      LISTEN    nginx
+tcp  0.0.0.0:3000    LISTEN    node
+tcp  0.0.0.0:5251    LISTEN    dotnet
+```
+
+Nota: El backend debe escuchar en `0.0.0.0:5251` (todas las interfaces) para aceptar conexiones de red.
+
+### 10.2 Verificación de Servicios PM2
+
+```bash
 pm2 status
+```
 
-# Verificar logs
-pm2 logs centro-cultural-backend --lines 50
-pm2 logs centro-cultural-frontend --lines 50
+### 10.3 Verificación de CORS
 
-# Verificar conectividad
-curl http://localhost:3000  # Frontend
-curl http://localhost:5251/api/  # Backend
+```bash
+curl -X OPTIONS \
+  -H "Origin: http://example.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type,Authorization" \
+  -v http://localhost/api/blog 2>&1 | grep "Access-Control"
+```
 
-# Verificar desde el navegador
-# http://tu-ip-del-servidor o http://tu-dominio.com
+**Resultado esperado:**
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS
+```
+
+### 10.4 Verificación del API
+
+```bash
+curl -s http://localhost/api/blog
+curl -s http://localhost/api/material-apoyo/statistics
+```
+
+### 10.5 Verificación del Frontend
+
+```bash
+curl -I http://localhost
+```
+
+**Resultado esperado:** `HTTP/1.1 200 OK`
+
+### 10.6 Verificación de Base de Datos
+
+```bash
+ls -lh /tmp/ccpvj.db
+ls -lh /home/user/ccpvj/Data/ccpvj.db
+```
+
+El tamaño del archivo debe ser mayor a 0 bytes.
+
+---
+
+## 11. Procedimiento de Actualización
+
+### 11.1 Script Automatizado
+
+```bash
+cd /home/user/ccpvj
+git pull origin desarrollo
+./Infraestructure/scripts/deploy.sh
+```
+
+El script `deploy.sh` ejecuta automáticamente:
+1. Actualización del código desde Git
+2. Compilación del backend en modo Release
+3. Compilación del frontend para producción
+4. Sincronización de archivos al directorio de producción
+5. Configuración de la base de datos
+6. Reinicio de servicios PM2
+7. Verificación del estado del sistema
+
+### 11.2 Actualización Manual
+
+```bash
+# 1. Actualizar código
+cd /home/user/ccpvj
+git pull origin desarrollo
+
+# 2. Sincronizar a producción
+sudo rsync -av \
+  --exclude='.git' \
+  --exclude='node_modules' \
+  --exclude='Front/.svelte-kit' \
+  --exclude='Back/obj' \
+  --exclude='Back/bin/Debug' \
+  /home/user/ccpvj/ /var/www/centro-cultural/
+
+sudo chown -R $USER:$USER /var/www/centro-cultural
+
+# 3. Actualizar variables de entorno
+cat > /var/www/centro-cultural/Front/.env << 'EOF'
+PUBLIC_BACKEND_BASE_URL=
+BACKEND_URL=http://192.168.68.101:5251
+DATABASE_URL=file:/tmp/ccpvj.db
+EOF
+
+# 4. Compilar Backend
+cd /var/www/centro-cultural/Back
+dotnet build --configuration Release --no-incremental
+
+# 5. Compilar Frontend
+cd /var/www/centro-cultural/Front
+npm install --legacy-peer-deps
+npm run build
+
+# 6. Verificar base de datos
+ls -lh /tmp/ccpvj.db
+
+# 7. Actualizar Nginx si es necesario
+sudo cp /home/user/ccpvj/Infraestructure/nginx/sites-available/centro-cultural.conf \
+        /etc/nginx/sites-available/centro-cultural
+sudo nginx -t && sudo systemctl reload nginx
+
+# 8. Reiniciar servicios
+pm2 delete all
+pm2 start /var/www/centro-cultural/Infraestructure/pm2/ecosystem.config.js
+pm2 save
+
+# 9. Verificar estado
+pm2 status
 ```
 
 ---
 
-## 🔧 Comandos Útiles para Administración
+## 12. Arquitectura del Sistema
 
-### Gestión de aplicaciones
+### 12.1 Diagrama de Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Cliente (Navegador)                      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                      Puerto 80 (HTTP)
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       Nginx                                  │
+│  - Proxy inverso                                             │
+│  - Configuración CORS                                        │
+│  - Servicio de archivos multimedia                          │
+└───────┬──────────────────┬──────────────────────────────────┘
+        │                  │
+        │ /                │ /api/
+        │                  │
+        ▼                  ▼
+┌──────────────┐    ┌─────────────────┐
+│   Frontend   │    │     Backend     │
+│  (SvelteKit) │    │    (.NET 8)     │
+│  Puerto 3000 │    │  Puerto 5251    │
+│    (PM2)     │    │     (PM2)       │
+└──────┬───────┘    └────────┬────────┘
+       │                     │
+       │                     │ SQLite
+       │                     ▼
+       │            ┌─────────────────────┐
+       │            │   Base de Datos     │
+       │            │    ccpvj.db         │
+       │            │  Ubicación Real:    │
+       │            │  /home/user/ccpvj/  │
+       │            │  Data/ccpvj.db      │
+       │            │                     │
+       │            │  Enlace Simbólico:  │
+       └────────────│  /tmp/ccpvj.db      │
+                    └─────────────────────┘
+```
+
+### 12.2 Puertos del Sistema
+
+| Puerto | Servicio | Acceso |
+|--------|----------|--------|
+| 80 | Nginx (HTTP) | Externo |
+| 3000 | Frontend SvelteKit | Interno (vía Nginx) |
+| 5251 | Backend .NET | Interno (vía Nginx) |
+
+### 12.3 Ubicaciones del Sistema
+
+| Componente | Ubicación |
+|------------|-----------|
+| Proyecto de Desarrollo | `/home/user/ccpvj` |
+| Proyecto de Producción | `/var/www/centro-cultural` |
+| Base de Datos | `/home/user/ccpvj/Data/ccpvj.db` |
+| Enlace Simbólico BD | `/tmp/ccpvj.db` |
+| Archivos Multimedia | `/var/www/centro-cultural/Back/Data/media` |
+| Logs PM2 | `/home/user/.pm2/logs/` |
+| Logs Nginx | `/var/log/nginx/` |
+
+### 12.4 Archivos de Configuración
+
+| Componente | Ubicación |
+|------------|-----------|
+| Nginx | `Infraestructure/nginx/sites-available/centro-cultural.conf` |
+| PM2 | `Infraestructure/pm2/ecosystem.config.js` |
+| Scripts de Despliegue | `Infraestructure/scripts/` |
+
+---
+
+## 13. Resolución de Problemas
+
+### 13.1 Frontend No Responde
+
+**Diagnóstico:**
 
 ```bash
-# Reiniciar aplicaciones
-pm2 restart centro-cultural-backend
+pm2 logs centro-cultural-frontend --lines 50
+netstat -tlnp | grep :3000
+ls -lh /var/www/centro-cultural/Front/build/
+```
+
+**Solución:**
+
+```bash
 pm2 restart centro-cultural-frontend
+```
 
-# Ver logs en tiempo real
-pm2 logs centro-cultural-backend --follow
-pm2 logs centro-cultural-frontend --follow
+### 13.2 Backend No Responde
 
-# Parar aplicaciones
-pm2 stop centro-cultural-backend
-pm2 stop centro-cultural-frontend
+**Diagnóstico:**
 
-# Reiniciar todas las aplicaciones
-pm2 restart all
+```bash
+pm2 logs centro-cultural-backend --lines 50
+netstat -tlnp | grep :5251
+ls -lh /tmp/ccpvj.db
+readlink -f /tmp/ccpvj.db
+```
 
-# Reiniciar Nginx
+**Solución:**
+
+```bash
+pm2 restart centro-cultural-backend
+```
+
+### 13.3 Base de Datos Inaccesible
+
+**Síntoma:** API devuelve datos vacíos o mensajes de error.
+
+**Diagnóstico:**
+
+```bash
+ls -lh /home/user/ccpvj/Data/ccpvj.db
+ls -lh /tmp/ccpvj.db
+readlink -f /tmp/ccpvj.db
+```
+
+**Solución:**
+
+```bash
+rm -f /tmp/ccpvj.db
+ln -s /home/user/ccpvj/Data/ccpvj.db /tmp/ccpvj.db
+pm2 restart centro-cultural-backend
+```
+
+### 13.4 Errores CORS
+
+**Diagnóstico:**
+
+```bash
+sudo nginx -t
+cat /etc/nginx/sites-enabled/centro-cultural | grep "Access-Control"
+readlink -f /etc/nginx/sites-enabled/centro-cultural
+```
+
+**Solución:**
+
+```bash
+sudo cp /home/user/ccpvj/Infraestructure/nginx/sites-available/centro-cultural.conf \
+        /etc/nginx/sites-available/centro-cultural
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 13.5 Nginx No Inicia
+
+**Diagnóstico:**
+
+```bash
+sudo tail -f /var/log/nginx/error.log
+sudo nginx -t
+sudo lsof -i :80
+```
+
+**Solución:**
+
+```bash
 sudo systemctl restart nginx
 ```
 
-### Base de datos
+### 13.6 PM2 Servicios en Estado de Error
+
+**Diagnóstico:**
 
 ```bash
-# Ver estado de la base de datos
-sqlite3 /var/www/centro-cultural/data/ccpvj.db ".tables"
+pm2 logs centro-cultural-backend --lines 100
+pm2 logs centro-cultural-frontend --lines 100
+```
 
-# Hacer backup de la base de datos
-cp /var/www/centro-cultural/data/ccpvj.db /var/www/centro-cultural/data/ccpvj.db.backup.$(date +%Y%m%d_%H%M%S)
+**Solución:**
+
+```bash
+pm2 delete all
+pm2 start /var/www/centro-cultural/Infraestructure/pm2/ecosystem.config.js
+pm2 save
 ```
 
 ---
 
-## 🔒 PASO 10: Configuración del Firewall (Opcional)
+## 14. Configuración de Firewall
+
+Si se utiliza UFW (Uncomplicated Firewall):
 
 ```bash
-# Configurar UFW si lo usas
 sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp  # Para HTTPS futuro
-sudo ufw allow 22/tcp   # SSH
+sudo ufw allow 443/tcp
+sudo ufw allow 22/tcp
 sudo ufw enable
 ```
 
 ---
 
-## 🔄 Para Futuras Actualizaciones
+## 15. Consideraciones de Seguridad
+
+### 15.1 Implementación de HTTPS
 
 ```bash
-# Ir al directorio del proyecto y actualizar desde git
-cd /var/www/centro-cultural
-git pull origin desarrollo  # Ajusta la rama si usas otra en producción
+# Instalación de Certbot
+sudo apt install -y certbot python3-certbot-nginx
 
-# Ejecutar el script de despliegue para compilar y reiniciar servicios
-./start-app.sh
+# Obtención de certificado SSL
+sudo certbot --nginx -d tu-dominio.com
 
-# Verificar que todo funcione
-pm2 status
+# Verificación de renovación automática
+sudo certbot renew --dry-run
 ```
+
+### 15.2 Restricción de CORS
+
+Para ambientes de producción, se recomienda restringir CORS a dominios específicos:
+
+En `/etc/nginx/sites-available/centro-cultural`, cambiar:
+
+```nginx
+# De:
+add_header 'Access-Control-Allow-Origin' '*' always;
+
+# A:
+add_header 'Access-Control-Allow-Origin' 'https://tu-dominio.com' always;
+```
+
+### 15.3 Gestión de Contraseñas
+
+Las contraseñas de usuarios deben gestionarse mediante algoritmos de hash seguros como bcrypt.
 
 ---
 
-## 🎯 Resumen del Despliegue
+## 16. Mantenimiento del Sistema
 
-### **Arquitectura Final:**
-- **Frontend**: SvelteKit en puerto 3000 (gestionado por PM2)
-- **Backend**: .NET API en puerto 5251 (gestionado por PM2)
-- **Base de Datos**: SQLite en `/var/www/centro-cultural/data/ccpvj.db`
-- **Proxy**: Nginx en puerto 80 como punto de entrada
+### 16.1 Respaldo de Base de Datos
 
-### **URLs de Acceso:**
-- **Aplicación**: `http://tu-ip-del-servidor`
-- **API**: `http://tu-ip-del-servidor/api/`
-- **Media**: `http://tu-ip-del-servidor/media/`
-
-### **Puntos Importantes:**
-1. **Reemplaza `tu-dominio.com`** en la configuración de Nginx con tu dominio real o IP
-2. **Asegúrate** de que los puertos 3000 y 5251 no estén bloqueados internamente
-3. **Revisa los logs** si algo no funciona: `pm2 logs`
-4. **La base de datos** se crea automáticamente cuando el backend se ejecuta por primera vez
-5. **Utiliza `./start-app.sh`** después de cada actualización para recompilar y reiniciar los servicios sin pasos manuales.
-
----
-
-## 🆘 Solución de Problemas Comunes
-
-### Si el frontend no carga:
 ```bash
-# Verificar que el proceso esté corriendo
-pm2 status
+# Crear directorio de respaldos
+mkdir -p /home/user/ccpvj/Data/backups
 
-# Ver logs del frontend
-pm2 logs centro-cultural-frontend
-
-# Verificar que el puerto 3000 esté disponible
-netstat -tlnp | grep :3000
+# Crear respaldo manual
+cp /home/user/ccpvj/Data/ccpvj.db \
+   /home/user/ccpvj/Data/backups/ccpvj_$(date +%Y%m%d_%H%M%S).db
 ```
 
-### Si el backend no responde:
+### 16.2 Monitoreo de Logs
+
 ```bash
-# Ver logs del backend
-pm2 logs centro-cultural-backend
+# Logs de PM2
+pm2 logs --lines 100
 
-# Verificar permisos de la base de datos
-ls -la /var/www/centro-cultural/data/
-
-# Verificar que el puerto 5251 esté disponible
-netstat -tlnp | grep :5251
-```
-
-### Si Nginx no funciona:
-```bash
-# Verificar configuración
-sudo nginx -t
-
-# Ver logs de Nginx
+# Logs de Nginx
+sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
 
-# Reiniciar Nginx
-sudo systemctl restart nginx
+# Monitor en tiempo real de PM2
+pm2 monit
+```
+
+### 16.3 Variables de Entorno en Producción
+
+**Frontend (`/var/www/centro-cultural/Front/.env`):**
+
+```
+PUBLIC_BACKEND_BASE_URL=
+BACKEND_URL=http://192.168.68.101:5251
+DATABASE_URL=file:/tmp/ccpvj.db
+```
+
+**Backend (configurado en `ecosystem.config.js`):**
+
+```
+ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_URLS=http://0.0.0.0:5251
 ```
 
 ---
 
-## 📞 Contacto y Soporte
+## 17. Parámetros Críticos del Sistema
 
-Para problemas específicos del despliegue, revisa:
-1. Los logs de PM2: `pm2 logs`
-2. Los logs de Nginx: `sudo tail -f /var/log/nginx/error.log`
-3. El estado de los servicios: `pm2 status` y `sudo systemctl status nginx`
+| Componente | Parámetro | Valor | Ubicación |
+|-----------|-----------|-------|-----------|
+| PM2 Frontend | script | `./build/index.js` | `ecosystem.config.js` |
+| PM2 Frontend | PORT | `3000` | `ecosystem.config.js` |
+| PM2 Backend | ASPNETCORE_URLS | `http://0.0.0.0:5251` | `ecosystem.config.js` |
+| Frontend .env | PUBLIC_BACKEND_BASE_URL | (vacío) | `/var/www/.../Front/.env` |
+| Frontend .env | BACKEND_URL | `http://192.168.68.101:5251` | `/var/www/.../Front/.env` |
+| Nginx | Frontend proxy | `http://127.0.0.1:3000` | `sites-available/centro-cultural` |
+| Nginx | Backend proxy | `http://127.0.0.1:5251` | `sites-available/centro-cultural` |
 
 ---
 
-**¡Despliegue completado! 🎉**
+## 18. Conclusiones
 
-Tu aplicación Centro Cultural PVJ debería estar funcionando en `http://tu-ip-del-servidor`
+Este documento ha descrito el proceso completo de despliegue de la plataforma Centro Cultural Popular Víctor Jara en un servidor Ubuntu. La arquitectura implementada proporciona:
+
+1. Separación clara entre frontend y backend
+2. Gestión eficiente de procesos mediante PM2
+3. Proxy inverso con Nginx para enrutamiento y optimización
+4. Base de datos SQLite con arquitectura de enlace simbólico
+5. Configuración CORS adecuada para comunicación cliente-servidor
+6. Servicio optimizado de archivos multimedia
+
+El sistema resultante es escalable, mantenible y apropiado para ambientes de producción.
+
+---
+
+## 19. Referencias
+
+- Documentación de SvelteKit: https://kit.svelte.dev/docs
+- Documentación de .NET 8: https://learn.microsoft.com/en-us/dotnet/
+- Documentación de Nginx: https://nginx.org/en/docs/
+- Documentación de PM2: https://pm2.keymetrics.io/docs/
+- Documentación de SQLite: https://www.sqlite.org/docs.html
