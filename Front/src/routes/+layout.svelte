@@ -135,8 +135,8 @@
 		}
 	});
 
-	// Reactividad para actualizar el estado cuando cambie la página
-	$: if ($page && $page.route.id !== '/auth/login') {
+	// Reactividad para actualizar el estado cuando cambie la página (solo en navegador)
+	$: if (browser && $page && $page.route.id !== '/auth/login') {
 		updateAuthState();
 	}
 

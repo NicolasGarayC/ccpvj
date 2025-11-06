@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { blogService } from '$lib/application/services/blog/blogService';
   import BlogPostCard from './BlogPostCard.svelte';
   import BlogPostModal from './BlogPostModal.svelte';
@@ -37,10 +38,18 @@ export let onPostUpdatedCallback:
   $: nextOrderNumber = posts.length > 0 ? Math.max(...posts.map((p) => p.viewCount || 0)) + 1 : 1;
 
   let lastLoadedWithShowActions: boolean | undefined = undefined;
+  let isMounted = false;
 
-  // Reactivo: cargar posts cuando showActions cambie
+  // Load posts on mount
+  onMount(() => {
+    isMounted = true;
+    loadPosts(showActions);
+    lastLoadedWithShowActions = showActions;
+  });
+
+  // Reactivo: cargar posts cuando showActions cambie (solo después de mount)
   $: {
-    if (showActions !== lastLoadedWithShowActions) {
+    if (browser && isMounted && showActions !== lastLoadedWithShowActions) {
       loadPosts(showActions);
       lastLoadedWithShowActions = showActions;
     }
