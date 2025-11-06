@@ -11,13 +11,14 @@
 3. [Inventario Completo de Tests](#-inventario-completo-de-tests)
 4. [Cómo Ejecutar las Pruebas](#-cómo-ejecutar-las-pruebas)
 5. [Interpretación de Resultados](#-interpretación-de-resultados)
-6. [Cuándo Alarmarse y Cuándo No](#-cuándo-alarmarse-y-cuándo-no)
-7. [Ejemplos Prácticos](#-ejemplos-prácticos)
-8. [Cómo Están Construidas](#-cómo-están-construidas)
-9. [Checklist Antes de Commit/PR](#-checklist-antes-de-commitpr)
-10. [Troubleshooting](#-troubleshooting)
-11. [Mejores Prácticas](#-mejores-prácticas)
-12. [Comandos Rápidos](#-comandos-rápidos)
+6. [Generación de Reportes HTML/PDF](#-generación-de-reportes-htmlpdf)
+7. [Cuándo Alarmarse y Cuándo No](#-cuándo-alarmarse-y-cuándo-no)
+8. [Ejemplos Prácticos](#-ejemplos-prácticos)
+9. [Cómo Están Construidas](#-cómo-están-construidas)
+10. [Checklist Antes de Commit/PR](#-checklist-antes-de-commitpr)
+11. [Troubleshooting](#-troubleshooting)
+12. [Mejores Prácticas](#-mejores-prácticas)
+13. [Comandos Rápidos](#-comandos-rápidos)
 
 ---
 
@@ -453,6 +454,173 @@ Test Files  1 passed (1)
 ```
 
 **Interpretación:** ⚠️ La prueba funciona pero tarda mucho. Considerar optimización.
+
+---
+
+## 📊 Generación de Reportes HTML/PDF
+
+### 🎯 Reporte Consolidado (Recomendado)
+
+El proyecto incluye un sistema completo para generar reportes visuales profesionales en HTML que incluyen estadísticas de todos los tests.
+
+#### Generar Reporte Completo
+
+```bash
+cd Front/
+npm run test:report
+```
+
+**Este comando ejecutará automáticamente:**
+1. ✅ Tests unitarios con cobertura de código
+2. ✅ Tests E2E (Playwright)
+3. ✅ Generación de reporte consolidado HTML
+
+**⏱️ Tiempo estimado:** 5-15 minutos
+
+#### Ubicación de los Reportes
+
+Después de ejecutar, encontrarás los siguientes archivos:
+
+1. **📊 Reporte Consolidado** (Recomendado)
+   - **Archivo:** `Front/test-reports/consolidated-report.html`
+   - **Contenido:** Vista unificada con estadísticas de Vitest + Playwright + Cobertura
+   - **Ideal para:** Presentaciones, reportes ejecutivos, documentación
+
+2. **🧪 Reporte Vitest (Tests Unitarios)**
+   - **Archivo:** `Front/test-results/vitest-report.html`
+   - **Contenido:** Detalle de tests unitarios por archivo
+   - **Incluye:** Tests pasados/fallidos, duración, errores detallados
+
+3. **📈 Reporte de Cobertura**
+   - **Archivo:** `Front/coverage/index.html`
+   - **Contenido:** Cobertura de código línea por línea
+   - **Incluye:** % Líneas, % Statements, % Funciones, % Branches
+
+4. **🎭 Reporte Playwright (Tests E2E)**
+   - **Archivo:** `Front/playwright-report/index.html`
+   - **Contenido:** Tests end-to-end por navegador
+   - **Incluye:** Screenshots de fallos, videos, traces interactivos
+
+### 📤 Exportar a PDF
+
+#### Opción 1: Desde el Navegador (Más Fácil)
+
+1. Abre el reporte: `Front/test-reports/consolidated-report.html`
+2. Presiona `Ctrl+P` (Windows/Linux) o `Cmd+P` (Mac)
+3. Selecciona "Guardar como PDF"
+4. Configura:
+   - ✅ **Gráficos de fondo:** Activados
+   - ✅ **Márgenes:** Mínimos
+   - ✅ **Escala:** 100% o ajustar a página
+5. Guarda el PDF
+
+#### Opción 2: Usando wkhtmltopdf (Automatizado)
+
+```bash
+# Instalar wkhtmltopdf (una vez)
+# Ubuntu/Debian:
+sudo apt-get install wkhtmltopdf
+
+# macOS:
+brew install wkhtmltopdf
+
+# Generar PDF
+wkhtmltopdf Front/test-reports/consolidated-report.html Front/test-reports/test-report.pdf
+```
+
+### 🎨 Características del Reporte Consolidado
+
+El reporte consolidado incluye:
+
+- ✅ **Resumen General**
+  - Tasa de éxito total (ejemplo: 99.51%)
+  - Número de tests pasados/fallidos
+  - Cobertura promedio de código
+  - Duración total de ejecución
+
+- ✅ **Estadísticas por Tipo**
+  - Tests Unitarios (Vitest): Total, pasados, fallidos, omitidos
+  - Tests E2E (Playwright): Desglose por navegador
+  - Barras de progreso visuales
+
+- ✅ **Cobertura de Código**
+  - % Líneas cubiertas
+  - % Statements cubiertos
+  - % Funciones cubiertas
+  - % Branches cubiertos
+
+- ✅ **Enlaces a Reportes Detallados**
+  - Acceso rápido a reportes específicos de cada herramienta
+
+- ✅ **Diseño Profesional**
+  - Responsive (móvil/tablet/desktop)
+  - Optimizado para impresión
+  - Color coding (verde=éxito, rojo=fallo, amarillo=advertencia)
+
+### 🔍 Comandos Individuales
+
+Si solo necesitas generar algunos reportes:
+
+```bash
+# Solo tests unitarios con cobertura
+npm run test:unit:coverage
+
+# Solo tests E2E
+npm run test:e2e
+
+# Solo regenerar reporte consolidado (sin ejecutar tests)
+npm run report:generate
+```
+
+### 📊 Interpretación del Reporte
+
+#### Tasa de Éxito
+
+| Porcentaje | Estado | Acción |
+|------------|--------|--------|
+| ≥ 95% | ✅ Excelente | Sistema estable |
+| 80-95% | ⚠️ Aceptable | Revisar tests fallidos |
+| < 80% | ❌ Crítico | Corregir urgente |
+
+#### Cobertura de Código
+
+| Porcentaje | Estado | Meta |
+|------------|--------|------|
+| ≥ 80% | ✅ Excelente | Mantener |
+| 60-80% | ⚠️ Aceptable | Mejorar |
+| < 60% | ❌ Insuficiente | Aumentar urgente |
+
+### 💡 Tips y Recomendaciones
+
+1. **Genera reportes antes de Pull Requests** para adjuntar evidencia de que los tests pasan
+2. **Revisa el reporte de cobertura** para identificar áreas sin tests
+3. **Usa el reporte consolidado para presentaciones** a stakeholders
+4. **Exporta a PDF** para documentación o reportes formales
+5. **Compara reportes** entre diferentes commits para ver progreso
+
+### 🐛 Solución de Problemas
+
+**Error: "No se encuentran resultados de tests"**
+- **Causa:** No se ejecutaron los tests antes
+- **Solución:** Ejecutar `npm run test:unit:coverage` y `npm run test:e2e` primero
+
+**Error: "vitest: command not found"**
+- **Causa:** Dependencias no instaladas
+- **Solución:** `npm install`
+
+**Reporte no se abre en navegador**
+- **Causa:** Archivo no existe o ruta incorrecta
+- **Solución:** Verificar que existe el archivo:
+  ```bash
+  ls -la Front/test-reports/consolidated-report.html
+  ```
+
+### 📚 Documentación Adicional
+
+Para más información sobre reportes, consulta:
+- `Front/TESTING_REPORTS.md` - Guía detallada de reportes
+- [Vitest Coverage](https://vitest.dev/guide/coverage.html)
+- [Playwright Reporters](https://playwright.dev/docs/test-reporters)
 
 ---
 

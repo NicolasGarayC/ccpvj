@@ -230,7 +230,8 @@ describe('MediaUploader', () => {
 			});
 
 			const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
-			const largeFile = new File([new ArrayBuffer(25 * 1024 * 1024)], 'large.jpg', {
+			// Create a file larger than 200MB limit
+			const largeFile = new File([new ArrayBuffer(250 * 1024 * 1024)], 'large.jpg', {
 				type: 'image/jpeg'
 			});
 
@@ -791,6 +792,7 @@ describe('MediaUploader', () => {
 		it('should show error when course image removal fails', async () => {
 			vi.mocked(global.fetch).mockResolvedValue({
 				ok: false,
+				text: async () => JSON.stringify({ error: 'Failed to remove image' }),
 				json: async () => ({ error: 'Failed to remove image' })
 			} as Response);
 
@@ -814,6 +816,7 @@ describe('MediaUploader', () => {
 		it('should not clear UI when course image removal fails', async () => {
 			vi.mocked(global.fetch).mockResolvedValue({
 				ok: false,
+				text: async () => JSON.stringify({ error: 'Failed to remove image' }),
 				json: async () => ({ error: 'Failed to remove image' })
 			} as Response);
 

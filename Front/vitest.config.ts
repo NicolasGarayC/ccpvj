@@ -24,6 +24,31 @@ export default defineConfig({
 		environment: 'jsdom',
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		exclude: ['node_modules', 'dist', '.svelte-kit', 'build'],
-		setupFiles: ['./vitest-setup-client.ts']
+		setupFiles: ['./vitest-setup-client.ts'],
+		// Configuración de reportes
+		reporters: ['default', 'html', 'json'],
+		outputFile: {
+			json: './test-results/vitest-results.json',
+			html: './test-results/vitest-report.html'
+		},
+		// Configuración de cobertura
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'html', 'json', 'lcov'],
+			reportsDirectory: './coverage',
+			include: ['src/**/*.{js,ts,svelte}'],
+			exclude: [
+				'src/**/*.{test,spec}.{js,ts}',
+				'src/**/__tests__/**',
+				'node_modules/**',
+				'.svelte-kit/**',
+				'build/**'
+			],
+			all: true,
+			lines: 80,
+			functions: 80,
+			branches: 80,
+			statements: 80
+		}
 	}
 });

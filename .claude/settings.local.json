@@ -155,7 +155,9 @@
       "Bash(npm --version:*)",
       "Bash(tree:*)",
       "Bash(k6 run:*)",
-      "Bash(dmesg:*)"
+      "Bash(dmesg:*)",
+      "Bash(npm run test:unit:coverage:*)",
+      "Bash(npm run report:generate:*)"
     ],
     "deny": [],
     "ask": []
