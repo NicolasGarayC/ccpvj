@@ -1,7 +1,7 @@
 import { cleanup } from '@testing-library/svelte';
 import { afterEach, expect, vi } from 'vitest';
 import * as matchers from '@testing-library/jest-dom/matchers';
-import { readable, writable } from 'svelte/store';
+import { derived, readable, writable } from 'svelte/store';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
@@ -90,6 +90,20 @@ let currentLocale: Locale = 'es';
 
 const localeStore = writable<Locale>(currentLocale);
 
+// Create a writable store that holds the translation function
+// This allows us to trigger updates when translations change
+const translationFunctionStore = writable<(key: string, params?: Record<string, string | number>) => string>(
+	(key: string, params?: Record<string, string | number>) => {
+		let result = translations[key] ?? key;
+		if (params) {
+			for (const [param, value] of Object.entries(params)) {
+				result = result.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+			}
+		}
+		return result;
+	}
+);
+
 const translateKey = (key: string, params?: Record<string, string | number>): string => {
 	let result = translations[key] ?? key;
 
@@ -110,22 +124,38 @@ const translateParamsMock = vi.fn(
 	(key: string, params?: Record<string, string | number>) => translateKey(key, params)
 );
 
-const tStore = readable(
-	(key: string, params?: Record<string, string | number>) => translateKey(key, params)
-);
-
-const tParamsStore = readable(
-	(key: string, params?: Record<string, string | number>) => translateKey(key, params)
-);
+// Create derived stores that properly react to translation changes
+const tStore = derived(translationFunctionStore, ($fn) => $fn);
+const tParamsStore = derived(translationFunctionStore, ($fn) => $fn);
 
 const setTestTranslations = (overrides: TranslationMap) => {
 	translations = { ...DEFAULT_TRANSLATIONS, ...overrides };
+	// Update the store to trigger reactivity in components
+	translationFunctionStore.set((key: string, params?: Record<string, string | number>) => {
+		let result = translations[key] ?? key;
+		if (params) {
+			for (const [param, value] of Object.entries(params)) {
+				result = result.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+			}
+		}
+		return result;
+	});
 };
 
 const resetTestTranslations = () => {
 	translations = { ...DEFAULT_TRANSLATIONS };
 	translateMock.mockClear();
 	translateParamsMock.mockClear();
+	// Reset the store to initial state
+	translationFunctionStore.set((key: string, params?: Record<string, string | number>) => {
+		let result = translations[key] ?? key;
+		if (params) {
+			for (const [param, value] of Object.entries(params)) {
+				result = result.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+			}
+		}
+		return result;
+	});
 };
 
 vi.mock('$lib/i18n', () => ({
